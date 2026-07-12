@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin
+Disallow: /carrito
+Disallow: /checkout
+Disallow: /mis-pedidos
+Disallow: /profile
+
+Sitemap: /sitemap.xml
