@@ -22,6 +22,11 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 12;
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
