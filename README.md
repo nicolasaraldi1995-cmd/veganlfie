@@ -59,6 +59,36 @@ vendor/bin/pint --test   # chequeo de estilo, sin modificar archivos
 vendor/bin/pint          # aplica el estilo automáticamente
 ```
 
+## Backups
+
+`php artisan backup:database` genera un dump comprimido (`.sql.gz`) de la base MySQL en `storage/app/backups/` (nunca se sube a git — son datos reales de clientes) y borra automáticamente los backups más viejos que los últimos 14 (`--keep=N` para cambiar la cantidad).
+
+```bash
+php artisan backup:database
+```
+
+**Activar el backup diario automático (Windows/Laragon local):** correr una sola vez, con Laragon cerrado o abierto, en una terminal:
+
+```powershell
+schtasks /create /tn "VeganLife DB Backup" /tr "\"C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe\" \"C:\laragon\www\veganlife\artisan\" backup:database" /sc daily /st 20:00 /f
+```
+
+Esto corre el backup todos los días a las 20:00 **si la PC está prendida y Laragon (MySQL) está corriendo** en ese momento — cambiá `/st 20:00` por el horario que más te convenga. Para desactivarlo: `schtasks /delete /tn "VeganLife DB Backup" /f`.
+
+**En un hosting real** (Linux con cron), no hace falta el paso anterior: alcanza con la entrada de cron estándar de Laravel corriendo cada minuto —
+
+```
+* * * * * cd /ruta/al/proyecto && php artisan schedule:run >> /dev/null 2>&1
+```
+
+— porque el backup diario ya está registrado en `routes/console.php` (`Schedule::command('backup:database')->dailyAt('03:00')`).
+
+**Restaurar un backup** (reemplaza todo el contenido actual de la base — usar con cuidado):
+
+```bash
+gzip -dc storage/app/backups/veganlife-2026-07-12_20-00-00.sql.gz | mysql -u root veganlife
+```
+
 ## Notas de arquitectura
 
 - El stock de `Presentacion` se reserva/libera automáticamente vía `PedidoItemObserver` cada vez que se crea, actualiza o elimina un `PedidoItem` (checkout, autoservicio del cliente en "Mis pedidos", o edición desde el panel admin). Al cancelar un pedido desde el panel, `Pedido::restaurarStock()` devuelve las unidades reservadas.
