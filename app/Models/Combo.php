@@ -44,7 +44,8 @@ class Combo extends Model
     public function getPrecioCalculadoAttribute(): float
     {
         return $this->items->sum(function (ComboItem $item) {
-            return $item->presentacion->precio_final * $item->cantidad;
+            // presentacion puede ser null si se borró después de armar el combo.
+            return $item->presentacion ? $item->presentacion->precio_final * $item->cantidad : 0;
         });
     }
 

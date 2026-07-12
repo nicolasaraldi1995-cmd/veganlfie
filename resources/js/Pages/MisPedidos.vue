@@ -28,7 +28,7 @@ const estados = { pending:{l:'Pendiente',c:'text-amber-400 bg-amber-400/10'}, co
                     <div v-if="expanded===p.id" class="px-6 pb-5 border-t border-border pt-4">
                         <div class="space-y-2">
                             <div v-for="it in p.items" :key="it.id" class="flex justify-between text-[13px]">
-                                <span class="text-text">{{ it.presentacion.producto.nombre }} <span class="text-text-muted">({{ it.presentacion.unidad }}) x{{ it.cantidad }}</span></span>
+                                <span class="text-text">{{ it.presentacion?.producto?.nombre ?? 'Producto no disponible' }} <span class="text-text-muted">({{ it.presentacion?.unidad }}) x{{ it.cantidad }}</span></span>
                                 <span class="font-medium text-text">${{ parseFloat(it.subtotal).toLocaleString('es-AR') }}</span>
                             </div>
                         </div>

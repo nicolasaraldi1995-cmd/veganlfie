@@ -92,9 +92,9 @@ function addToCart() {
                     </div>
                     <h1 class="text-2xl section-title text-text">{{ producto.nombre }}</h1>
                     <p class="brand-label text-text-muted mt-2">
-                        <Link :href="route('marcas.show', producto.marca.slug)" class="hover:text-accent transition">{{ producto.marca.nombre }}</Link>
-                        <span class="mx-1 text-surface-4">·</span>
-                        <Link :href="route('categorias.show', producto.categoria.slug)" class="hover:text-accent transition">{{ producto.categoria.nombre }}</Link>
+                        <Link v-if="producto.marca" :href="route('marcas.show', producto.marca.slug)" class="hover:text-accent transition">{{ producto.marca.nombre }}</Link>
+                        <span v-if="producto.marca && producto.categoria" class="mx-1 text-surface-4">·</span>
+                        <Link v-if="producto.categoria" :href="route('categorias.show', producto.categoria.slug)" class="hover:text-accent transition">{{ producto.categoria.nombre }}</Link>
                     </p>
                     <p v-if="producto.descripcion" class="text-text-secondary mt-4 leading-relaxed text-[15px]">{{ producto.descripcion }}</p>
 

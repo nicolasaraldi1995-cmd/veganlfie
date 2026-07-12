@@ -33,6 +33,19 @@ class Producto extends Model
                 $producto->slug = Str::slug($producto->nombre);
             }
         });
+
+        // Sin esto, borrar un Producto deja sus Presentaciones "huérfanas"
+        // (siguen activas pero apuntan a un producto invisible), lo que
+        // hacía explotar el selector de productos al armar un pedido.
+        static::deleting(function (Producto $producto) {
+            if (! $producto->isForceDeleting()) {
+                $producto->presentaciones()->delete();
+            }
+        });
+
+        static::restoring(function (Producto $producto) {
+            $producto->presentaciones()->onlyTrashed()->restore();
+        });
     }
 
     public function marca(): BelongsTo

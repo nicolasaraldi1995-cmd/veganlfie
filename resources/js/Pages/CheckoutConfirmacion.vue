@@ -18,13 +18,13 @@ defineProps({ pedido: Object });
                     <div class="space-y-2">
                         <div v-for="it in pedido.items" :key="it.id" class="flex justify-between text-[13px]">
                             <span class="text-text-secondary">
-                                {{ it.presentacion.producto.nombre }} ({{ it.presentacion.unidad }}) x{{ it.cantidad }}
-                                <span v-if="it.presentacion.producto.congelado" class="inline-flex items-center gap-0.5 ml-1 text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md align-middle">❄</span>
+                                {{ it.presentacion?.producto?.nombre ?? 'Producto no disponible' }} ({{ it.presentacion?.unidad }}) x{{ it.cantidad }}
+                                <span v-if="it.presentacion?.producto?.congelado" class="inline-flex items-center gap-0.5 ml-1 text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md align-middle">❄</span>
                             </span>
                             <span class="text-text font-medium">${{ parseFloat(it.subtotal).toLocaleString('es-AR') }}</span>
                         </div>
                     </div>
-                    <div v-if="pedido.items.some(it => it.presentacion.producto.congelado)" class="mt-3 bg-sky-500/5 border border-sky-500/15 rounded-lg px-3 py-2">
+                    <div v-if="pedido.items.some(it => it.presentacion?.producto?.congelado)" class="mt-3 bg-sky-500/5 border border-sky-500/15 rounded-lg px-3 py-2">
                         <p class="text-[11px] text-sky-400">❄ Tu pedido incluye productos congelados. Confirmaremos disponibilidad para tu zona.</p>
                     </div>
                     <div class="h-px bg-border my-3"></div>

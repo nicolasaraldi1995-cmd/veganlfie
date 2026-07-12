@@ -39,7 +39,7 @@ class ProductoController extends Controller
             }
 
             $productos = $query->orderBy('nombre')->get();
-            $porCategoria = $productos->groupBy(fn ($p) => $p->categoria->nombre)
+            $porCategoria = $productos->groupBy(fn ($p) => $p->categoria?->nombre ?? 'Sin categoría')
                 ->sortKeys()
                 ->map(fn ($items, $cat) => ['nombre' => $cat, 'productos' => $items->values()])
                 ->values();

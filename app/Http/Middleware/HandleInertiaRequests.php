@@ -2,13 +2,15 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Presentacion;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
+
+    public function __construct(private CartService $cartService) {}
 
     public function version(Request $request): ?string
     {
@@ -18,46 +20,16 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $cart = session('cart', []);
-        $cartItems = [];
-        $cartTotal = 0;
-
-        if (! empty($cart)) {
-            $presentaciones = Presentacion::with(['producto.marca', 'producto.categoria'])
-                ->whereIn('id', array_keys($cart))
-                ->get();
-
-            foreach ($presentaciones as $p) {
-                $cantidad = $cart[(string) $p->id];
-                $precio = $p->precio_final;
-                $subtotal = round($precio * $cantidad, 2);
-                $cartTotal += $subtotal;
-
-                $cartItems[] = [
-                    'presentacion_id' => $p->id,
-                    'nombre' => $p->producto->nombre,
-                    'marca' => $p->producto->marca->nombre,
-                    'categoria' => $p->producto->categoria->nombre,
-                    'unidad' => $p->unidad,
-                    'precio' => $precio,
-                    'precio_original' => (float) $p->precio,
-                    'en_oferta' => $p->estaEnOferta(),
-                    'cantidad' => $cantidad,
-                    'subtotal' => $subtotal,
-                    'stock' => $p->stock,
-                    'frio' => (bool) $p->producto->frio,
-                    'congelado' => (bool) $p->producto->congelado,
-                ];
-            }
-        }
+        $cartItems = $this->cartService->resolveItems($cart);
 
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
             ],
-            'cartCount' => array_sum($cart),
+            'cartCount' => collect($cartItems)->sum('cantidad'),
             'cartItems' => $cartItems,
-            'cartTotal' => round($cartTotal, 2),
+            'cartTotal' => collect($cartItems)->sum('subtotal'),
         ];
     }
 }

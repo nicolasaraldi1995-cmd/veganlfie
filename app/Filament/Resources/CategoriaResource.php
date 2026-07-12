@@ -6,6 +6,7 @@ use App\Filament\Resources\CategoriaResource\Pages;
 use App\Models\Categoria;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -61,11 +62,31 @@ class CategoriaResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function (Categoria $record, Tables\Actions\DeleteAction $action) {
+                        if ($record->productos()->exists()) {
+                            Notification::make()
+                                ->danger()
+                                ->title('No se puede eliminar')
+                                ->body('Esta categoría todavía tiene productos asociados. Reasigná o eliminá esos productos primero.')
+                                ->send();
+                            $action->cancel();
+                        }
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function ($records, Tables\Actions\DeleteBulkAction $action) {
+                            if ($records->contains(fn (Categoria $r) => $r->productos()->exists())) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('No se puede eliminar')
+                                    ->body('Una o más categorías seleccionadas todavía tienen productos asociados.')
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
                 ]),
             ])
             ->defaultSort('orden');

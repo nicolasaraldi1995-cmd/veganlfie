@@ -15,7 +15,7 @@ class OfertasController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        $porMarca = $productos->groupBy(fn ($p) => $p->marca->nombre)
+        $porMarca = $productos->groupBy(fn ($p) => $p->marca?->nombre ?? 'Sin marca')
             ->sortKeys()
             ->map(fn ($items, $marca) => [
                 'marca' => $marca,

@@ -32,8 +32,8 @@ function removeItem(id) { router.delete(route('pedido.remove-item', props.pedido
                         <div class="divide-y divide-border">
                             <div v-for="it in pedido.items" :key="it.id" class="px-6 py-4 flex items-center gap-3">
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-medium text-text truncate">{{ it.presentacion.producto.nombre }}</p>
-                                    <p class="text-[11px] text-text-muted">{{ it.presentacion.producto.marca.nombre }} · {{ it.presentacion.unidad }} · ${{ parseFloat(it.precio_unitario).toLocaleString('es-AR') }} c/u</p>
+                                    <p class="text-[13px] font-medium text-text truncate">{{ it.presentacion?.producto?.nombre ?? 'Producto no disponible' }}</p>
+                                    <p class="text-[11px] text-text-muted">{{ it.presentacion?.producto?.marca?.nombre ?? '—' }} · {{ it.presentacion?.unidad }} · ${{ parseFloat(it.precio_unitario).toLocaleString('es-AR') }} c/u</p>
                                 </div>
                                 <template v-if="editable">
                                     <div class="flex items-center bg-surface-3 rounded-lg shrink-0">

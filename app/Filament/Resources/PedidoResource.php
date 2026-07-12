@@ -73,6 +73,7 @@ class PedidoResource extends Resource
                                 ->options(function () {
                                     return Presentacion::with('producto.marca')
                                         ->activos()
+                                        ->whereHas('producto')
                                         ->get()
                                         ->mapWithKeys(fn ($p) => [
                                             $p->id => "{$p->producto->nombre} — {$p->unidad} (".($p->producto->marca->nombre ?? 'Sin marca').") \${$p->precio}",
@@ -132,7 +133,7 @@ class PedidoResource extends Resource
                             }
                             $p = Presentacion::with('producto')->find($state['presentacion_id']);
 
-                            return $p ? "{$p->producto->nombre} ({$p->unidad})" : null;
+                            return $p ? ($p->producto?->nombre ?? 'Producto eliminado')." ({$p->unidad})" : null;
                         })
                         ->collapsible(),
                 ]),

@@ -46,6 +46,7 @@ class ComboResource extends Resource
                             ->options(function () {
                                 return Presentacion::with('producto')
                                     ->activos()
+                                    ->whereHas('producto')
                                     ->get()
                                     ->mapWithKeys(fn ($p) => [
                                         $p->id => "{$p->producto->nombre} — {$p->unidad} (\${$p->precio})",

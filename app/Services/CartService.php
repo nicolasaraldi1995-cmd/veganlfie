@@ -16,8 +16,12 @@ class CartService
             return [];
         }
 
+        // whereHas('producto') descarta presentaciones huérfanas (su producto fue
+        // borrado): mejor que desaparezcan silenciosamente del carrito a que rompan
+        // la página, ya que este resolver corre en cada request (ver HandleInertiaRequests).
         $presentaciones = Presentacion::with(['producto.marca', 'producto.categoria'])
             ->whereIn('id', array_keys($cart))
+            ->whereHas('producto')
             ->get();
 
         return $presentaciones->map(function (Presentacion $p) use ($cart) {
@@ -27,8 +31,8 @@ class CartService
             return [
                 'presentacion_id' => $p->id,
                 'nombre' => $p->producto->nombre,
-                'marca' => $p->producto->marca->nombre,
-                'categoria' => $p->producto->categoria->nombre,
+                'marca' => $p->producto->marca?->nombre ?? 'Sin marca',
+                'categoria' => $p->producto->categoria?->nombre ?? 'Sin categoría',
                 'unidad' => $p->unidad,
                 'precio' => $precio,
                 'precio_original' => (float) $p->precio,
