@@ -25,7 +25,7 @@ onUnmounted(() => clearInterval(timer));
 <template>
     <div v-if="banners.length" class="relative group" @touchstart="onTouchStart" @touchend="onTouchEnd">
         <!-- Slides -->
-        <div class="relative overflow-hidden bg-surface-2" style="height: 340px">
+        <div class="relative overflow-hidden bg-surface-2 h-[150px] sm:h-[190px] lg:h-[230px]">
             <TransitionGroup name="slide">
                 <div v-for="(b, i) in banners" :key="b.id"
                     v-show="i === current"

@@ -1,9 +1,8 @@
 <script setup>
 import { Link, usePage, router } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 
 const page = usePage();
-const cartOpen = ref(false);
 const sidebarOpen = ref(false);
 
 const cartCount = computed(() => page.props.cartCount || 0);
@@ -41,7 +40,6 @@ function searchSubmit() {
     }
 }
 
-defineExpose({ cartOpen });
 </script>
 
 <template>
@@ -55,22 +53,22 @@ defineExpose({ cartOpen });
                     </svg>
                 </button>
 
-                <Link :href="route('home')" class="flex items-center gap-3 group">
-                    <img src="/images/logo.png" alt="VEGANLIFE" class="h-9 object-contain group-hover:opacity-90 transition" />
+                <Link :href="route('home')" class="flex items-center gap-3 group shrink-0">
+                    <img src="/images/logo.png" alt="VEGANLIFE" class="h-10 object-contain group-hover:opacity-90 transition" />
                     <div class="hidden sm:block leading-none">
-                        <span class="text-[15px] font-semibold text-text tracking-tight">VEGANLIFE</span>
+                        <span class="text-[16px] font-bold text-text tracking-tight">VEGANLIFE</span>
                         <span class="block text-[10px] text-text-muted tracking-widest uppercase">Distribuidora</span>
                     </div>
                 </Link>
 
-                <div class="flex items-center flex-1 max-w-md mx-3 sm:mx-6 relative" @keydown.escape="searchOpen = false">
+                <div class="flex items-center flex-1 max-w-2xl mx-4 sm:mx-8 relative" @keydown.escape="searchOpen = false">
                     <input type="text" placeholder="Buscar productos o marcas..."
                         :value="searchQuery"
                         @input="onSearchInput"
                         @keyup.enter="searchSubmit"
                         @focus="searchResults.length && (searchOpen = true)"
-                        class="w-full pl-9 pr-3 py-2 text-[13px] bg-surface-2 border border-border rounded-xl focus:border-accent focus:ring-1 focus:ring-accent/20 placeholder:text-text-muted transition" />
-                    <svg class="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                        class="w-full pl-10 pr-3 py-2.5 text-sm bg-surface-1 border border-border rounded-xl shadow-sm focus:border-accent focus:ring-2 focus:ring-accent/15 placeholder:text-text-muted transition" />
+                    <svg class="w-[18px] h-[18px] text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>
                     <!-- Autocomplete dropdown -->
@@ -118,14 +116,13 @@ defineExpose({ cartOpen });
                         </Link>
                     </template>
 
-                    <button @click="cartOpen = true" aria-label="Carrito" class="relative p-2.5 text-text-secondary hover:text-text hover:bg-surface-2 rounded-xl transition-all ml-1">
+                    <Link :href="route('cart.index')" aria-label="Carrito" class="relative flex items-center gap-1.5 pl-2.5 pr-3 py-2.5 rounded-xl transition-all ml-1"
+                        :class="cartCount > 0 ? 'bg-accent text-white hover:bg-accent-bright shadow-sm shadow-accent/25' : 'text-text-secondary hover:text-text hover:bg-surface-2'">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
                         </svg>
-                        <span v-if="cartCount > 0" class="absolute -top-0.5 -right-0.5 bg-accent text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                            {{ cartCount }}
-                        </span>
-                    </button>
+                        <span v-if="cartCount > 0" class="text-[13px] font-bold leading-none">{{ cartCount }}</span>
+                    </Link>
                 </div>
             </div>
         </nav>
@@ -143,8 +140,8 @@ defineExpose({ cartOpen });
                         { href: route('veganlife'), label: 'VEGANLIFE', active: route().current('veganlife'), icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
                         { href: route('ofertas'), label: 'Ofertas', active: route().current('ofertas'), icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
                     ]" :key="item.label" :href="item.href"
-                        class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all"
-                        :class="item.active ? 'bg-accent/10 text-accent' : 'text-text-secondary hover:bg-surface-2 hover:text-text'">
+                        class="flex items-center gap-3 pl-[10px] pr-3 py-2.5 rounded-xl text-[13px] font-medium transition-all border-l-[3px]"
+                        :class="item.active ? 'bg-accent/10 text-accent border-accent' : 'border-transparent text-text-secondary hover:bg-surface-2 hover:text-text'">
                         <svg class="w-[18px] h-[18px] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" :d="item.icon"/>
                         </svg>
@@ -196,88 +193,25 @@ defineExpose({ cartOpen });
             <main class="flex-1 min-w-0"><slot /></main>
         </div>
 
-        <!-- Cart slide -->
-        <Teleport to="body">
-            <Transition name="fade"><div v-if="cartOpen" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" @click="cartOpen = false"></div></Transition>
-            <Transition name="slide-right">
-                <div v-if="cartOpen" class="fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[70] bg-surface-1 border-l border-border flex flex-col">
-                    <div class="flex items-center justify-between px-6 h-16 border-b border-border shrink-0">
-                        <h2 class="text-[15px] font-semibold text-text">Carrito <span v-if="cartCount" class="text-text-muted font-normal">({{ cartCount }})</span></h2>
-                        <button @click="cartOpen = false" class="p-1.5 text-text-muted hover:text-text hover:bg-surface-2 rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>
-
-                    <div v-if="page.props.cartItems.length" class="px-6 py-3 border-b border-border">
-                        <div class="flex justify-between text-[11px] mb-1.5">
-                            <span v-if="page.props.cartTotal < 300000" class="text-red-400">Faltan ${{ (300000 - page.props.cartTotal).toLocaleString('es-AR') }} para comprar</span>
-                            <span v-else-if="page.props.cartTotal < 450000" class="text-accent">${{ (450000 - page.props.cartTotal).toLocaleString('es-AR') }} para envío gratis</span>
-                            <span v-else class="text-accent">Envío gratis</span>
-                        </div>
-                        <div class="w-full bg-surface-3 rounded-full h-1">
-                            <div class="h-1 rounded-full bg-accent transition-all duration-700" :style="{ width: Math.min((page.props.cartTotal / 450000) * 100, 100) + '%' }"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto">
-                        <div v-if="page.props.cartItems.length">
-                            <div v-for="item in page.props.cartItems" :key="item.presentacion_id" class="px-6 py-4 border-b border-border flex items-start gap-3 hover:bg-surface-2/50 transition">
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-medium text-text truncate">{{ item.nombre }}</p>
-                                    <p class="text-[11px] text-text-muted mt-0.5">{{ item.marca }} · {{ item.unidad }}</p>
-                                    <p class="text-[12px] text-text-secondary mt-0.5">${{ item.precio.toLocaleString('es-AR') }}</p>
-                                    <span v-if="item.frio" class="inline-flex items-center gap-1 mt-1 text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md">❄ Frío</span>
-                                    <span v-if="item.congelado" class="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md">❄ Congelado</span>
-                                </div>
-                                <div class="flex items-center bg-surface-3 rounded-lg shrink-0">
-                                    <button @click="router.patch(route('cart.update'), { presentacion_id: item.presentacion_id, cantidad: item.cantidad - 1 }, { preserveScroll: true })"
-                                        class="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text text-xs transition">−</button>
-                                    <span class="w-6 h-7 flex items-center justify-center text-[12px] font-semibold text-text">{{ item.cantidad }}</span>
-                                    <button @click="router.patch(route('cart.update'), { presentacion_id: item.presentacion_id, cantidad: item.cantidad + 1 }, { preserveScroll: true })"
-                                        class="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text text-xs transition">+</button>
-                                </div>
-                                <p class="text-[13px] font-semibold text-text w-16 text-right shrink-0">${{ item.subtotal.toLocaleString('es-AR') }}</p>
-                                <button @click="router.delete(route('cart.remove'), { data: { presentacion_id: item.presentacion_id }, preserveScroll: true })"
-                                    class="text-text-muted hover:text-red-400 transition shrink-0">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div v-else class="flex flex-col items-center justify-center h-full text-text-muted py-16">
-                            <svg class="w-12 h-12 text-white-4 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
-                            </svg>
-                            <p class="text-sm mb-2">Carrito vacío</p>
-                            <Link :href="route('productos.index')" @click="cartOpen = false" class="text-accent text-sm hover:underline">Explorar productos</Link>
-                        </div>
-                    </div>
-
-                    <div v-if="page.props.cartItems.length && page.props.cartItems.some(i => i.frio || i.congelado)" class="px-5 py-2.5 border-t border-border bg-sky-500/5">
-                        <p class="text-[11px] text-sky-400 leading-relaxed">❄ Tu carrito tiene productos fríos/congelados. Consultá disponibilidad para tu zona.</p>
-                    </div>
-                    <div v-if="page.props.cartItems.length" class="border-t border-border px-6 py-5 shrink-0">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-text-secondary text-sm">Total</span>
-                            <span class="text-xl font-semibold text-text">${{ page.props.cartTotal.toLocaleString('es-AR') }}</span>
-                        </div>
-                        <Link v-if="page.props.cartTotal >= 300000" :href="route('checkout.index')" @click="cartOpen = false"
-                            class="block w-full text-center py-3 rounded-xl font-medium text-[13px] bg-accent text-white hover:bg-accent-bright transition-all">
-                            Finalizar compra
-                        </Link>
-                        <span v-else class="block w-full text-center py-3 rounded-xl text-[13px] bg-surface-3 text-text-muted">Mínimo $300.000</span>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
-
         <!-- Footer -->
         <footer class="bg-surface-1 border-t border-border mt-16">
             <div class="max-w-[1440px] mx-auto px-6 py-12">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
                     <div class="md:col-span-2">
                         <img src="/images/logo.png" alt="VEGANLIFE" class="h-10 mb-4 opacity-60" />
-                        <p class="text-sm text-text-muted leading-relaxed max-w-sm">Distribuidora vegana. Productos naturales, sin crueldad animal.</p>
-                        <p class="text-sm text-text-muted mt-2">San Nicolás 1255, Pergamino</p>
+                        <p class="text-sm text-text-muted leading-relaxed max-w-sm">Distribuidora vegana mayorista y minorista. Productos naturales, sin crueldad animal.</p>
+                        <div class="flex items-center gap-2 mt-3 text-sm text-text-muted">
+                            <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                            San Nicolás 1255, Pergamino
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 text-sm text-text-muted">
+                            <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h1.5a1.5 1.5 0 001.5-1.5v-2.379a1.5 1.5 0 00-1.5-1.5h-2.379a1.5 1.5 0 00-1.061.439l-1.13 1.13a12.005 12.005 0 01-6.55-6.55l1.13-1.13a1.5 1.5 0 00.439-1.061V6.75a1.5 1.5 0 00-1.5-1.5H3.75a1.5 1.5 0 00-1.5 1.5z"/></svg>
+                            02477 438329 · 2477504048
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 mt-4">
+                            <span class="text-[11px] text-text-muted mr-1">Medios de pago:</span>
+                            <span v-for="m in ['Efectivo', 'Transferencia', 'MercadoPago']" :key="m" class="text-[11px] text-text-secondary bg-surface-2 px-2 py-0.5 rounded-md">{{ m }}</span>
+                        </div>
                     </div>
                     <div>
                         <h3 class="text-[13px] font-semibold text-text mb-4">Navegación</h3>
@@ -285,19 +219,23 @@ defineExpose({ cartOpen });
                             <Link :href="route('productos.index')" class="block text-sm text-text-muted hover:text-accent transition">Catálogo</Link>
                             <Link :href="route('productos.index', { vista: 'categorias' })" class="block text-sm text-text-muted hover:text-accent transition">Categorías</Link>
                             <Link :href="route('productos.index', { vista: 'marcas' })" class="block text-sm text-text-muted hover:text-accent transition">Marcas</Link>
+                            <Link :href="route('lista-precios')" class="block text-sm text-text-muted hover:text-accent transition">Lista de precios</Link>
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-[13px] font-semibold text-text mb-4">Contacto</h3>
+                        <h3 class="text-[13px] font-semibold text-text mb-4">Atención al cliente</h3>
                         <div class="space-y-2.5 text-sm text-text-muted">
-                            <p>02477 438329</p>
-                            <p>2477504048</p>
-                            <a href="https://wa.me/5492477504048" target="_blank" class="inline-block text-accent hover:text-accent-bright transition">WhatsApp</a>
+                            <p>Consultas y pedidos coordinados por WhatsApp.</p>
+                            <a href="https://wa.me/5492477504048" target="_blank" class="inline-flex items-center gap-1.5 text-accent hover:text-accent-bright transition font-medium">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/><path d="M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884M20.463 3.488A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/></svg>
+                                Escribir por WhatsApp
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="mt-10 pt-6 border-t border-border text-center text-[11px] text-text-muted">
-                    © {{ new Date().getFullYear() }} VEGANLIFE
+                <div class="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-text-muted">
+                    <span>© {{ new Date().getFullYear() }} VEGANLIFE — Distribuidora vegana</span>
+                    <span>Pergamino, Buenos Aires, Argentina</span>
                 </div>
             </div>
         </footer>
@@ -321,8 +259,6 @@ defineExpose({ cartOpen });
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-.slide-right-enter-active, .slide-right-leave-active { transition: transform .3s cubic-bezier(.16,1,.3,1); }
-.slide-right-enter-from, .slide-right-leave-to { transform: translateX(100%); }
 .slide-left-enter-active, .slide-left-leave-active { transition: transform .3s cubic-bezier(.16,1,.3,1); }
 .slide-left-enter-from, .slide-left-leave-to { transform: translateX(-100%); }
 </style>
