@@ -96,8 +96,8 @@ const imageSrc = computed(() => {
         </div>
 
         <div class="p-4 flex-1 flex flex-col">
-            <!-- Badges -->
-            <div class="flex gap-1.5 flex-wrap mb-2 min-h-[18px]" v-if="producto.sin_tacc || producto.frio || producto.congelado || producto.nuevo">
+            <!-- Badges: contenedor siempre presente para que todas las cards arranquen el título a la misma altura -->
+            <div class="flex gap-1.5 flex-wrap mb-2 min-h-[18px]">
                 <span v-if="producto.sin_tacc" class="text-[8px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-1.5 py-0.5 rounded">Sin TACC</span>
                 <span v-if="producto.frio" class="text-[8px] font-bold uppercase tracking-wider text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded">Frío</span>
                 <span v-if="producto.congelado" class="text-[8px] font-bold uppercase tracking-wider text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">Congelado</span>
@@ -105,17 +105,19 @@ const imageSrc = computed(() => {
             </div>
 
             <h3 class="section-title text-text text-[13px] leading-snug line-clamp-2 min-h-[2.5rem]">{{ producto.nombre }}</h3>
-            <p class="brand-label text-text-muted mt-1">{{ producto.marca?.nombre }}</p>
+            <p class="brand-label text-text-muted mt-1 truncate">{{ producto.marca?.nombre }}</p>
 
-            <!-- Pills -->
-            <div v-if="presentaciones.length > 1" class="flex flex-wrap gap-1.5 mt-3">
-                <button v-for="(p, i) in presentaciones" :key="p.id" @click="selectPresentation(i)"
-                    class="px-2.5 py-[5px] text-[11px] font-medium rounded-lg transition-all duration-200"
-                    :class="i === selectedIndex ? 'bg-accent text-white' : 'bg-surface-3 text-text-secondary hover:bg-surface-4 hover:text-text'">
-                    {{ p.unidad }}
-                </button>
+            <!-- Pills: alto fijo y recorte de overflow para que productos con muchas o pocas presentaciones ocupen el mismo espacio -->
+            <div class="mt-3 min-h-[26px] overflow-hidden">
+                <div v-if="presentaciones.length > 1" class="flex flex-wrap gap-1.5">
+                    <button v-for="(p, i) in presentaciones" :key="p.id" @click="selectPresentation(i)"
+                        class="px-2.5 py-[5px] text-[11px] font-medium rounded-lg transition-all duration-200"
+                        :class="i === selectedIndex ? 'bg-accent text-white' : 'bg-surface-3 text-text-secondary hover:bg-surface-4 hover:text-text'">
+                        {{ p.unidad }}
+                    </button>
+                </div>
+                <p v-else-if="presentaciones.length === 1" class="text-[11px] text-text-muted leading-[26px]">{{ presentaciones[0].unidad }}</p>
             </div>
-            <p v-else-if="presentaciones.length === 1" class="text-[11px] text-text-muted mt-3">{{ presentaciones[0].unidad }}</p>
 
             <!-- Price -->
             <div class="mt-auto pt-3">
