@@ -21,10 +21,10 @@ export default {
                     4: '#ccc9c1',
                 },
                 accent: {
-                    DEFAULT: '#38bdf8',
-                    dim: '#0284c7',
-                    bright: '#0ea5e9',
-                    muted: 'rgba(56,189,248,0.10)',
+                    DEFAULT: '#5ca8cc',
+                    dim: '#31799b',
+                    bright: '#3d98c2',
+                    muted: 'rgba(92,168,204,0.10)',
                 },
                 text: {
                     DEFAULT: '#1a1d21',
