@@ -10,7 +10,7 @@
         color: #1a1d21;
     }
     ::selection {
-        background-color: rgba(45,122,95,0.25);
+        background-color: rgba(31,143,128,0.25);
         color: #1a1d21;
     }
     input, select, textarea {
@@ -23,8 +23,8 @@
         color: #8e919a;
     }
     input:focus, select:focus, textarea:focus {
-        border-color: #2d7a5f;
-        box-shadow: 0 0 0 2px rgba(45,122,95,0.15);
+        border-color: #1f8f80;
+        box-shadow: 0 0 0 2px rgba(31,143,128,0.15);
     }
 }
 
