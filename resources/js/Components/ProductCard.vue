@@ -119,11 +119,11 @@ const imageSrc = computed(() => {
 
             <!-- Price -->
             <div class="mt-auto pt-3">
-                <div v-if="selected" class="flex items-baseline gap-2 flex-wrap">
-                    <span class="text-2xl price-display" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR') }}</span>
-                    <del v-if="enOferta" class="text-[11px] text-text-muted">${{ precioOriginal.toLocaleString('es-AR') }}</del>
-                    <span v-if="precioUnidad" class="text-[10px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</span>
+                <div v-if="selected" class="flex items-baseline gap-2">
+                    <span class="text-xl price-display truncate" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR') }}</span>
+                    <del v-if="enOferta" class="text-[11px] text-text-muted shrink-0">${{ precioOriginal.toLocaleString('es-AR') }}</del>
                 </div>
+                <p v-if="precioUnidad" class="text-[10px] text-text-muted mt-0.5">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</p>
                 <p class="text-[10px] mt-0.5" :class="sinStock ? 'text-red-400' : 'text-text-muted'">{{ sinStock ? 'Sin stock' : `Stock: ${stock}` }}</p>
             </div>
 
