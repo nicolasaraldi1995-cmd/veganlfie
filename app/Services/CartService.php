@@ -28,11 +28,14 @@ class CartService
             $cantidad = $cart[(string) $p->id];
             $precio = $p->precio_final;
 
+            $imagen = $p->imagen ?? $p->producto->imagen;
+
             return [
                 'presentacion_id' => $p->id,
                 'nombre' => $p->producto->nombre,
                 'marca' => $p->producto->marca?->nombre ?? 'Sin marca',
                 'categoria' => $p->producto->categoria?->nombre ?? 'Sin categoría',
+                'imagen' => $imagen ? "/storage/{$imagen}" : null,
                 'unidad' => $p->unidad,
                 'precio' => $precio,
                 'precio_original' => (float) $p->precio,

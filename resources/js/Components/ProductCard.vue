@@ -44,7 +44,7 @@ const sinStock = computed(() => stock.value <= 0);
 
 const enCarrito = computed(() => {
     if (!selected.value) return false;
-    return page.props.cartItems?.some(i => i.presentacion_id === selected.value.id) ?? false;
+    return page.props.cartPresentacionIds?.includes(selected.value.id) ?? false;
 });
 
 const precioUnidad = computed(() => {

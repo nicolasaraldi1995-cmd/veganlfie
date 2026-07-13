@@ -1,9 +1,8 @@
 <script setup>
 import { Link, usePage, router } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 
 const page = usePage();
-const cartOpen = ref(false);
 const sidebarOpen = ref(false);
 
 const cartCount = computed(() => page.props.cartCount || 0);
@@ -41,7 +40,6 @@ function searchSubmit() {
     }
 }
 
-defineExpose({ cartOpen });
 </script>
 
 <template>
@@ -118,13 +116,13 @@ defineExpose({ cartOpen });
                         </Link>
                     </template>
 
-                    <button @click="cartOpen = true" aria-label="Carrito" class="relative flex items-center gap-1.5 pl-2.5 pr-3 py-2.5 rounded-xl transition-all ml-1"
+                    <Link :href="route('cart.index')" aria-label="Carrito" class="relative flex items-center gap-1.5 pl-2.5 pr-3 py-2.5 rounded-xl transition-all ml-1"
                         :class="cartCount > 0 ? 'bg-accent text-white hover:bg-accent-bright shadow-sm shadow-accent/25' : 'text-text-secondary hover:text-text hover:bg-surface-2'">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
                         </svg>
                         <span v-if="cartCount > 0" class="text-[13px] font-bold leading-none">{{ cartCount }}</span>
-                    </button>
+                    </Link>
                 </div>
             </div>
         </nav>
@@ -195,80 +193,6 @@ defineExpose({ cartOpen });
             <main class="flex-1 min-w-0"><slot /></main>
         </div>
 
-        <!-- Cart slide -->
-        <Teleport to="body">
-            <Transition name="fade"><div v-if="cartOpen" class="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" @click="cartOpen = false"></div></Transition>
-            <Transition name="slide-right">
-                <div v-if="cartOpen" class="fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[70] bg-surface-1 border-l border-border flex flex-col">
-                    <div class="flex items-center justify-between px-6 h-16 border-b border-border shrink-0">
-                        <h2 class="text-[15px] font-semibold text-text">Carrito <span v-if="cartCount" class="text-text-muted font-normal">({{ cartCount }})</span></h2>
-                        <button @click="cartOpen = false" class="p-1.5 text-text-muted hover:text-text hover:bg-surface-2 rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>
-
-                    <div v-if="page.props.cartItems.length" class="px-6 py-3 border-b border-border">
-                        <div class="flex justify-between text-[11px] mb-1.5">
-                            <span v-if="page.props.cartTotal < 300000" class="text-red-400">Faltan ${{ (300000 - page.props.cartTotal).toLocaleString('es-AR') }} para comprar</span>
-                            <span v-else-if="page.props.cartTotal < 450000" class="text-accent">${{ (450000 - page.props.cartTotal).toLocaleString('es-AR') }} para envío gratis</span>
-                            <span v-else class="text-accent">Envío gratis</span>
-                        </div>
-                        <div class="w-full bg-surface-3 rounded-full h-1">
-                            <div class="h-1 rounded-full bg-accent transition-all duration-700" :style="{ width: Math.min((page.props.cartTotal / 450000) * 100, 100) + '%' }"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto">
-                        <div v-if="page.props.cartItems.length">
-                            <div v-for="item in page.props.cartItems" :key="item.presentacion_id" class="px-6 py-4 border-b border-border flex items-start gap-3 hover:bg-surface-2/50 transition">
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-[13px] font-medium text-text truncate">{{ item.nombre }}</p>
-                                    <p class="text-[11px] text-text-muted mt-0.5">{{ item.marca }} · {{ item.unidad }}</p>
-                                    <p class="text-[12px] text-text-secondary mt-0.5">${{ item.precio.toLocaleString('es-AR') }}</p>
-                                    <span v-if="item.frio" class="inline-flex items-center gap-1 mt-1 text-[10px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md">❄ Frío</span>
-                                    <span v-if="item.congelado" class="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-md">❄ Congelado</span>
-                                </div>
-                                <div class="flex items-center bg-surface-3 rounded-lg shrink-0">
-                                    <button @click="router.patch(route('cart.update'), { presentacion_id: item.presentacion_id, cantidad: item.cantidad - 1 }, { preserveScroll: true })"
-                                        class="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text text-xs transition">−</button>
-                                    <span class="w-6 h-7 flex items-center justify-center text-[12px] font-semibold text-text">{{ item.cantidad }}</span>
-                                    <button @click="router.patch(route('cart.update'), { presentacion_id: item.presentacion_id, cantidad: item.cantidad + 1 }, { preserveScroll: true })"
-                                        class="w-7 h-7 flex items-center justify-center text-text-muted hover:text-text text-xs transition">+</button>
-                                </div>
-                                <p class="text-[13px] font-semibold text-text w-16 text-right shrink-0">${{ item.subtotal.toLocaleString('es-AR') }}</p>
-                                <button @click="router.delete(route('cart.remove'), { data: { presentacion_id: item.presentacion_id }, preserveScroll: true })"
-                                    class="text-text-muted hover:text-red-400 transition shrink-0">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div v-else class="flex flex-col items-center justify-center h-full text-text-muted py-16">
-                            <svg class="w-12 h-12 text-white-4 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
-                            </svg>
-                            <p class="text-sm mb-2">Carrito vacío</p>
-                            <Link :href="route('productos.index')" @click="cartOpen = false" class="text-accent text-sm hover:underline">Explorar productos</Link>
-                        </div>
-                    </div>
-
-                    <div v-if="page.props.cartItems.length && page.props.cartItems.some(i => i.frio || i.congelado)" class="px-5 py-2.5 border-t border-border bg-sky-500/5">
-                        <p class="text-[11px] text-sky-400 leading-relaxed">❄ Tu carrito tiene productos fríos/congelados. Consultá disponibilidad para tu zona.</p>
-                    </div>
-                    <div v-if="page.props.cartItems.length" class="border-t border-border px-6 py-5 shrink-0">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-text-secondary text-sm">Total</span>
-                            <span class="text-xl font-semibold text-text">${{ page.props.cartTotal.toLocaleString('es-AR') }}</span>
-                        </div>
-                        <Link v-if="page.props.cartTotal >= 300000" :href="route('checkout.index')" @click="cartOpen = false"
-                            class="block w-full text-center py-3 rounded-xl font-medium text-[13px] bg-accent text-white hover:bg-accent-bright transition-all">
-                            Finalizar compra
-                        </Link>
-                        <span v-else class="block w-full text-center py-3 rounded-xl text-[13px] bg-surface-3 text-text-muted">Mínimo $300.000</span>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
-
         <!-- Footer -->
         <footer class="bg-surface-1 border-t border-border mt-16">
             <div class="max-w-[1440px] mx-auto px-6 py-12">
@@ -335,8 +259,6 @@ defineExpose({ cartOpen });
 <style scoped>
 .fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-.slide-right-enter-active, .slide-right-leave-active { transition: transform .3s cubic-bezier(.16,1,.3,1); }
-.slide-right-enter-from, .slide-right-leave-to { transform: translateX(100%); }
 .slide-left-enter-active, .slide-left-leave-active { transition: transform .3s cubic-bezier(.16,1,.3,1); }
 .slide-left-enter-from, .slide-left-leave-to { transform: translateX(-100%); }
 </style>
