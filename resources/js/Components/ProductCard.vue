@@ -70,8 +70,8 @@ function addToCart() {
     showControls.value = false;
 }
 const imageSrc = computed(() => {
-    if (selected.value?.imagen) return `/storage/${selected.value.imagen}`;
-    if (props.producto.imagen) return `/storage/${props.producto.imagen}`;
+    if (selected.value?.imagen_url) return selected.value.imagen_url;
+    if (props.producto.imagen_url) return props.producto.imagen_url;
     return null;
 });
 </script>

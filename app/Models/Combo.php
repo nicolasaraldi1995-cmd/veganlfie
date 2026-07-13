@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasMediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,9 +12,11 @@ use Illuminate\Support\Str;
 
 class Combo extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasMediaUrl, SoftDeletes;
 
     protected $fillable = ['nombre', 'slug', 'descripcion', 'imagen', 'precio_manual', 'descuento_porcentaje', 'activo'];
+
+    protected $appends = ['imagen_url'];
 
     protected $casts = [
         'precio_manual' => 'decimal:2',
@@ -65,5 +68,10 @@ class Combo extends Model
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function getImagenUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->imagen);
     }
 }

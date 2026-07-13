@@ -272,7 +272,7 @@ class ProductoController extends Controller
                 'nombre' => $p->nombre,
                 'marca' => $p->marca->nombre ?? '',
                 'slug' => $p->slug,
-                'imagen' => $p->imagen ? "/storage/{$p->imagen}" : null,
+                'imagen' => $p->imagen_url,
             ]);
 
         return response()->json($productos);

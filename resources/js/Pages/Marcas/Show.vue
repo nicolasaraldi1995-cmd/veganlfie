@@ -14,7 +14,7 @@ const modalImage = ref(null);
         <div class="px-6 py-8">
             <nav class="text-[13px] text-text-muted mb-6"><Link :href="route('home')" class="hover:text-accent transition">Inicio</Link><span class="mx-2 text-surface-4">/</span><span class="text-text">{{ marca.nombre }}</span></nav>
             <div class="flex items-center gap-4 mb-6">
-                <img v-if="marca.logo" :src="`/storage/${marca.logo}`" class="h-12 object-contain opacity-70" />
+                <img v-if="marca.logo_url" :src="marca.logo_url" class="h-12 object-contain opacity-70" />
                 <h1 class="text-xl font-semibold text-text">{{ marca.nombre }}</h1>
                 <span class="text-[13px] text-text-muted ml-auto">{{ productos.total }} productos</span>
             </div>

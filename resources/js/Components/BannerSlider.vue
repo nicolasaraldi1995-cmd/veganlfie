@@ -31,12 +31,12 @@ onUnmounted(() => clearInterval(timer));
                     v-show="i === current"
                     class="absolute inset-0">
                     <a v-if="b.url" :href="b.url" class="block w-full h-full">
-                        <img :src="`/storage/${b.imagen}`" :alt="`Banner ${i + 1}`"
+                        <img :src="b.imagen" :alt="`Banner ${i + 1}`"
                             class="w-full h-full object-cover" />
                         <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                     </a>
                     <div v-else class="w-full h-full">
-                        <img :src="`/storage/${b.imagen}`" :alt="`Banner ${i + 1}`"
+                        <img :src="b.imagen" :alt="`Banner ${i + 1}`"
                             class="w-full h-full object-cover" />
                     </div>
                 </div>

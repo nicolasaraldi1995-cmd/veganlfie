@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasMediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,9 +11,11 @@ use Illuminate\Support\Str;
 
 class Marca extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasMediaUrl, SoftDeletes;
 
     protected $fillable = ['nombre', 'slug', 'logo', 'activo'];
+
+    protected $appends = ['logo_url'];
 
     protected $casts = [
         'activo' => 'boolean',
@@ -35,5 +38,10 @@ class Marca extends Model
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->logo);
     }
 }

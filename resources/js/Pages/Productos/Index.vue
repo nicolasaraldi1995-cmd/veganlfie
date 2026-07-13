@@ -43,7 +43,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                     <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'categorias', categoria: cat.id })" class="group">
                         <div class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
                             <div class="aspect-[4/3] bg-surface-3 relative">
-                                <img v-if="cat.imagen" :src="`/storage/${cat.imagen}`" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+                                <img v-if="cat.imagen_url" :src="cat.imagen_url" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
                                 <div v-else class="w-full h-full flex items-center justify-center"><span class="text-2xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span></div>
                                 <span class="absolute bottom-2.5 right-2.5 bg-surface/80 backdrop-blur-sm text-text text-[10px] font-medium px-2 py-0.5 rounded-lg">{{ cat.productos_count }}</span>
                             </div>
@@ -60,7 +60,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'categorias', categoria: categoriaActual.id, marca: m.id })"
                         class="bg-surface-2 rounded-2xl border border-border p-6 flex flex-col items-center justify-center hover:border-border-hover hover:bg-surface-3 transition-all duration-300 min-h-[140px]">
-                        <img v-if="m.logo" :src="`/storage/${m.logo}`" class="max-h-10 object-contain opacity-60 mb-3" />
+                        <img v-if="m.logo_url" :src="m.logo_url" class="max-h-10 object-contain opacity-60 mb-3" />
                         <span v-else class="text-lg font-bold text-surface-4 mb-3">{{ m.nombre.charAt(0) }}</span>
                         <span class="text-[13px] text-text-secondary font-medium">{{ m.nombre }}</span>
                         <span class="text-[10px] text-text-muted mt-1">{{ m.productos_count }} prod.</span>
@@ -74,7 +74,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'marcas', marca: m.id })"
                         class="bg-surface-2 rounded-2xl border border-border p-6 flex flex-col items-center justify-center hover:border-border-hover hover:bg-surface-3 transition-all duration-300 min-h-[140px]">
-                        <img v-if="m.logo" :src="`/storage/${m.logo}`" class="max-h-10 object-contain opacity-60 mb-3" />
+                        <img v-if="m.logo_url" :src="m.logo_url" class="max-h-10 object-contain opacity-60 mb-3" />
                         <span v-else class="text-lg font-bold text-surface-4 mb-3">{{ m.nombre.charAt(0) }}</span>
                         <span class="text-[13px] text-text-secondary font-medium">{{ m.nombre }}</span>
                         <span class="text-[10px] text-text-muted mt-1">{{ m.productos_count }} prod.</span>
@@ -85,7 +85,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <!-- Categories in brand -->
             <template v-else-if="modo === 'categorias_en_marca'">
                 <div class="flex items-center gap-4 mb-1">
-                    <img v-if="marcaActual?.logo" :src="`/storage/${marcaActual.logo}`" class="h-10 object-contain opacity-60" />
+                    <img v-if="marcaActual?.logo_url" :src="marcaActual.logo_url" class="h-10 object-contain opacity-60" />
                     <h1 class="text-xl font-semibold text-text">{{ marcaActual?.nombre }}</h1>
                 </div>
                 <p class="text-[13px] text-text-muted mb-6">{{ items.length }} categorías</p>
@@ -93,7 +93,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                     <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'marcas', marca: marcaActual.id, categoria: cat.id })" class="group">
                         <div class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
                             <div class="aspect-[4/3] bg-surface-3 relative">
-                                <img v-if="cat.imagen" :src="`/storage/${cat.imagen}`" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+                                <img v-if="cat.imagen_url" :src="cat.imagen_url" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
                                 <div v-else class="w-full h-full flex items-center justify-center"><span class="text-2xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span></div>
                                 <span class="absolute bottom-2.5 right-2.5 bg-surface/80 backdrop-blur-sm text-text text-[10px] font-medium px-2 py-0.5 rounded-lg">{{ cat.productos_count }}</span>
                             </div>

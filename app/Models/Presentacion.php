@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasMediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Presentacion extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasMediaUrl, SoftDeletes;
 
     protected $table = 'presentaciones';
 
@@ -17,6 +18,8 @@ class Presentacion extends Model
         'producto_id', 'unidad', 'sku', 'imagen', 'precio', 'stock', 'activo',
         'oferta_porcentaje', 'oferta_precio', 'oferta_inicio', 'oferta_fin',
     ];
+
+    protected $appends = ['imagen_url'];
 
     protected $casts = [
         'precio' => 'decimal:2',
@@ -82,5 +85,10 @@ class Presentacion extends Model
         }
 
         return true;
+    }
+
+    public function getImagenUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->imagen);
     }
 }

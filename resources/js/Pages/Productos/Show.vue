@@ -29,8 +29,8 @@ const precioFinal = computed(() => {
     return parseFloat(selected.value.precio);
 });
 const imageSrc = computed(() => {
-    if (selected.value?.imagen) return `/storage/${selected.value.imagen}`;
-    if (props.producto.imagen) return `/storage/${props.producto.imagen}`;
+    if (selected.value?.imagen_url) return selected.value.imagen_url;
+    if (props.producto.imagen_url) return props.producto.imagen_url;
     return null;
 });
 const stock = computed(() => selected.value?.stock ?? 0);
@@ -62,7 +62,7 @@ function addToCart() {
         <meta :content="`${producto.nombre} — ${producto.marca?.nombre}. Comprá online en VEGANLIFE.`" name="description" />
         <meta :content="producto.nombre" property="og:title" />
         <meta :content="`${producto.nombre} de ${producto.marca?.nombre}. Pedí online.`" property="og:description" />
-        <meta v-if="producto.imagen" :content="`/storage/${producto.imagen}`" property="og:image" />
+        <meta v-if="producto.imagen_url" :content="producto.imagen_url" property="og:image" />
         <meta content="product" property="og:type" />
         <script type="application/ld+json" v-html="jsonLd"></script>
     </Head>

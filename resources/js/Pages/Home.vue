@@ -75,7 +75,7 @@ function scrollTo(id) {
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div v-for="c in combos" :key="c.id" class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
                         <div class="relative aspect-video bg-surface-3">
-                            <img v-if="c.imagen" :src="`/storage/${c.imagen}`" loading="lazy" class="w-full h-full object-cover" />
+                            <img v-if="c.imagen_url" :src="c.imagen_url" loading="lazy" class="w-full h-full object-cover" />
                             <span class="absolute top-2.5 left-2.5 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">COMBO</span>
                         </div>
                         <div class="p-5">

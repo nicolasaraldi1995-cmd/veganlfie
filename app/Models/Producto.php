@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasMediaUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,12 +12,14 @@ use Illuminate\Support\Str;
 
 class Producto extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasMediaUrl, SoftDeletes;
 
     protected $fillable = [
         'nombre', 'slug', 'marca_id', 'categoria_id',
         'descripcion', 'imagen', 'sin_tacc', 'frio', 'congelado', 'nuevo', 'activo',
     ];
+
+    protected $appends = ['imagen_url'];
 
     protected $casts = [
         'sin_tacc' => 'boolean',
@@ -86,5 +89,10 @@ class Producto extends Model
     public function scopeNuevos($query)
     {
         return $query->where('nuevo', true);
+    }
+
+    public function getImagenUrlAttribute(): ?string
+    {
+        return $this->resolveMediaUrl($this->imagen);
     }
 }
