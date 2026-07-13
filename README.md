@@ -89,6 +89,26 @@ Esto corre el backup todos los días a las 20:00 **si la PC está prendida y Lar
 gzip -dc storage/app/backups/veganlife-2026-07-12_20-00-00.sql.gz | mysql -u root veganlife
 ```
 
+## Deploy a producción
+
+Checklist de `.env` — estos valores **tienen** que cambiar respecto al `.env` local:
+
+| Variable | Local | Producción |
+|---|---|---|
+| `APP_ENV` | `local` | `production` |
+| `APP_DEBUG` | `true` | `false` — con `true` en vivo, un error muestra rutas de archivos y variables internas a cualquiera |
+| `APP_URL` | `http://veganlife.test` | `https://tu-dominio-real.com` |
+| `SESSION_SECURE_COOKIE` | (vacío) | `true` — exige HTTPS para la cookie de sesión |
+| `DB_HOST` / `DB_USERNAME` / `DB_PASSWORD` | localhost, root, sin clave | los que te dé el hosting |
+| `MAIL_MAILER` | `log` | el proveedor real que elijas (Resend, SES, etc.) |
+
+Con `APP_ENV=production`, el sitio ya fuerza que todas las URLs generadas usen `https://` automáticamente (`AppServiceProvider`), así que no hace falta tocar código para eso — solo el `.env` del servidor.
+
+**Antes de anunciar el sitio a clientes nuevos:**
+1. Cambiá la contraseña del admin sembrado por el seeder (`admin@veganlife.com`). Si nunca la tocaste después de armar el sitio, hoy sigue siendo `password` — entrá al panel → Clientes → tu usuario → cambiar contraseña.
+2. Corré `php artisan config:cache` y `php artisan route:cache` en el servidor después de cada deploy (acelera bastante; si no lo hacés no rompe nada, pero es más lento).
+3. Verificá que `storage/` y `bootstrap/cache/` tengan permisos de escritura para el usuario del servidor web.
+
 ## Notas de arquitectura
 
 - El stock de `Presentacion` se reserva/libera automáticamente vía `PedidoItemObserver` cada vez que se crea, actualiza o elimina un `PedidoItem` (checkout, autoservicio del cliente en "Mis pedidos", o edición desde el panel admin). Al cancelar un pedido desde el panel, `Pedido::restaurarStock()` devuelve las unidades reservadas.
