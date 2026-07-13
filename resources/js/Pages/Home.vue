@@ -4,6 +4,7 @@ import ProductRow from '@/Components/ProductRow.vue';
 import ProductCard from '@/Components/ProductCard.vue';
 import ImageModal from '@/Components/ImageModal.vue';
 import BannerSlider from '@/Components/BannerSlider.vue';
+import BenefitsBar from '@/Components/BenefitsBar.vue';
 import { Link, Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 function addCombo(id) { router.post(route('cart.add-combo'), { combo_id: id }, { preserveScroll: true }); }
@@ -27,7 +28,9 @@ function scrollTo(id) {
     <PublicLayout>
         <BannerSlider :banners="banners" />
 
-        <div class="px-6 py-6">
+        <div class="px-6 py-5">
+            <BenefitsBar />
+
             <!-- Info banner -->
             <div class="mb-6 bg-sky-500/5 border border-sky-500/15 rounded-xl px-5 py-3.5 flex items-start gap-3">
                 <svg class="w-5 h-5 text-sky-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
@@ -38,7 +41,7 @@ function scrollTo(id) {
             </div>
 
             <!-- Más vendidos -->
-            <div v-if="masVendidos.length" class="mb-10">
+            <div v-if="masVendidos.length" class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-1 h-6 rounded-full bg-amber-400"></div>
                     <h2 class="text-[15px] section-title text-text">Más vendidos</h2>
@@ -48,7 +51,7 @@ function scrollTo(id) {
             </div>
 
             <!-- Category aisles -->
-            <div v-for="pasillo in pasillos" :key="pasillo.id" :id="'cat-' + pasillo.id" class="mb-10 scroll-mt-20">
+            <div v-for="pasillo in pasillos" :key="pasillo.id" :id="'cat-' + pasillo.id" class="mb-8 scroll-mt-20">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-1 h-6 rounded-full bg-accent"></div>
@@ -64,7 +67,7 @@ function scrollTo(id) {
             </div>
 
             <!-- Combos -->
-            <div v-if="combos.length" class="mb-10">
+            <div v-if="combos.length" class="mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-1 h-6 rounded-full bg-accent"></div>

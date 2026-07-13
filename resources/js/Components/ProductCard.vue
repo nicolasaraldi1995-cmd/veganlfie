@@ -81,7 +81,7 @@ const imageSrc = computed(() => {
         :class="enCarrito ? 'border-accent/40 shadow-sm shadow-accent/5' : 'border-border hover:border-border-hover hover:shadow-lg hover:shadow-black/8'">
 
         <!-- Image -->
-        <div class="relative aspect-[3/2] bg-surface-2 overflow-hidden cursor-pointer shrink-0" @click="imageSrc && emit('imageClick', imageSrc)">
+        <div class="relative aspect-square bg-surface-2 overflow-hidden cursor-pointer shrink-0" @click="imageSrc && emit('imageClick', imageSrc)">
             <img v-if="imageSrc" :src="imageSrc" :alt="producto.nombre" loading="lazy" class="w-full h-full object-cover hover:scale-[1.03] transition-transform duration-500" />
             <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-8 h-8 text-surface-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
@@ -119,9 +119,9 @@ const imageSrc = computed(() => {
 
             <!-- Price -->
             <div class="mt-auto pt-3">
-                <div v-if="selected" class="flex items-baseline gap-2">
+                <div v-if="selected" class="flex items-baseline gap-2 flex-wrap">
+                    <span class="text-2xl price-display" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR') }}</span>
                     <del v-if="enOferta" class="text-[11px] text-text-muted">${{ precioOriginal.toLocaleString('es-AR') }}</del>
-                    <span class="text-lg price-display" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR') }}</span>
                     <span v-if="precioUnidad" class="text-[10px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</span>
                 </div>
                 <p class="text-[10px] mt-0.5" :class="sinStock ? 'text-red-400' : 'text-text-muted'">{{ sinStock ? 'Sin stock' : `Stock: ${stock}` }}</p>
@@ -141,14 +141,15 @@ const imageSrc = computed(() => {
                                 class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text text-sm transition">+</button>
                         </div>
                         <button @click="addToCart"
-                            class="flex-1 text-[12px] font-semibold py-2 rounded-lg bg-accent text-white hover:bg-accent-bright active:scale-[0.98] transition-all">
+                            class="flex-1 text-[13px] font-bold py-2.5 rounded-lg bg-accent text-white shadow-sm shadow-accent/25 hover:bg-accent-bright hover:shadow-md hover:shadow-accent/30 active:scale-[0.98] transition-all">
                             Agregar
                         </button>
                     </div>
                     <button v-else key="add" @click="sinStock ? null : (showControls = true)" :disabled="sinStock"
-                        class="w-full text-[12px] font-semibold py-2.5 rounded-lg transition-all duration-200"
-                        :class="sinStock ? 'bg-surface-3 text-text-muted cursor-not-allowed' : 'bg-accent text-white hover:bg-accent-bright active:scale-[0.98]'">
-                        {{ sinStock ? 'Sin stock' : (enCarrito ? '+ Agregar más' : 'Agregar al carrito') }}
+                        class="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold py-3 rounded-lg transition-all duration-200"
+                        :class="sinStock ? 'bg-surface-3 text-text-muted cursor-not-allowed' : 'bg-accent text-white shadow-sm shadow-accent/25 hover:bg-accent-bright hover:shadow-md hover:shadow-accent/30 active:scale-[0.98]'">
+                        <svg v-if="!sinStock" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        {{ sinStock ? 'Sin stock' : (enCarrito ? 'Agregar más' : 'Agregar al carrito') }}
                     </button>
                 </Transition>
             </div>
