@@ -42,6 +42,7 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::post('/carrito/add-combo', [CartController::class, 'addCombo'])->name('cart.add-combo');
     Route::patch('/carrito/update', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/carrito/remove', [CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('/carrito/remove-frio-congelado', [CartController::class, 'removeFrioCongelado'])->name('cart.remove-frio-congelado');
 });
 
 Route::middleware('auth')->group(function () {

@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CheckoutStoreRequest;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
-use App\Models\Presentacion;
-use App\Models\Producto;
 use App\Services\CartService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,49 +25,7 @@ class CheckoutController extends Controller
         $total = collect($items)->sum('subtotal');
         $user = auth()->user();
 
-        $cartPresentacionIds = array_keys($cart);
-        $cartProductoIds = Presentacion::whereIn('id', $cartPresentacionIds)
-            ->pluck('producto_id')
-            ->unique();
-
-        $recomendados = collect();
-
-        // Products the client has bought before but aren't in this cart
-        $historialProductoIds = PedidoItem::whereHas('pedido', fn ($q) => $q->where('user_id', $user->id))
-            ->join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')
-            ->whereNotIn('presentaciones.producto_id', $cartProductoIds)
-            ->select('presentaciones.producto_id')
-            ->distinct()
-            ->pluck('producto_id');
-
-        if ($historialProductoIds->isNotEmpty()) {
-            $recomendados = Producto::activos()
-                ->whereIn('id', $historialProductoIds)
-                ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()])
-                ->inRandomOrder()
-                ->take(8)
-                ->get();
-        }
-
-        // Fill remaining slots with products from same categories
-        if ($recomendados->count() < 8) {
-            $categoriaIds = Presentacion::whereIn('id', $cartPresentacionIds)
-                ->with('producto')
-                ->get()
-                ->pluck('producto.categoria_id')
-                ->unique();
-
-            $fill = Producto::activos()
-                ->whereIn('categoria_id', $categoriaIds)
-                ->whereNotIn('id', $cartProductoIds)
-                ->whereNotIn('id', $recomendados->pluck('id'))
-                ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()])
-                ->inRandomOrder()
-                ->take(8 - $recomendados->count())
-                ->get();
-
-            $recomendados = $recomendados->concat($fill);
-        }
+        $recomendados = $this->cartService->recomendadosPara($user, array_keys($cart));
 
         return Inertia::render('Checkout', [
             'items' => $items,

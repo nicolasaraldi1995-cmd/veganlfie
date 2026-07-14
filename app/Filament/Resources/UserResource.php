@@ -52,6 +52,9 @@ class UserResource extends Resource
                 ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
                 ->dehydrated(fn ($state) => filled($state))
                 ->required(fn (string $operation) => $operation === 'create'),
+            Forms\Components\Toggle::make('recibe_frio_congelado')
+                ->label('Puede recibir fríos/congelados')
+                ->helperText('Si lo activás, a este cliente no le va a aparecer el aviso de "consultar disponibilidad de fríos/congelados" en el carrito.'),
         ]);
     }
 
