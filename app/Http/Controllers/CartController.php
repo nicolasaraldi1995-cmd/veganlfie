@@ -32,21 +32,27 @@ class CartController extends Controller
                 ->first();
 
             if ($ultimo) {
-                $pedidoAnterior = [
-                    'id' => $ultimo->id,
-                    'fecha' => $ultimo->created_at->format('d/m/Y'),
-                    'items' => $ultimo->items
-                        ->filter(fn ($it) => $it->presentacion?->producto)
-                        ->map(fn ($it) => [
-                            'presentacion_id' => $it->presentacion_id,
-                            'producto_id' => $it->presentacion->producto_id,
-                            'nombre' => $it->presentacion->producto->nombre,
-                            'marca' => $it->presentacion->producto->marca?->nombre ?? 'Sin marca',
-                            'unidad' => $it->presentacion->unidad,
-                            'imagen' => $it->presentacion->imagen_url ?? $it->presentacion->producto->imagen_url,
-                        ])
-                        ->values(),
-                ];
+                $itemsValidos = $ultimo->items
+                    ->filter(fn ($it) => $it->presentacion?->producto)
+                    ->map(fn ($it) => [
+                        'presentacion_id' => $it->presentacion_id,
+                        'producto_id' => $it->presentacion->producto_id,
+                        'nombre' => $it->presentacion->producto->nombre,
+                        'marca' => $it->presentacion->producto->marca?->nombre ?? 'Sin marca',
+                        'unidad' => $it->presentacion->unidad,
+                        'imagen' => $it->presentacion->imagen_url ?? $it->presentacion->producto->imagen_url,
+                    ])
+                    ->values();
+
+                // Si todos los productos del pedido anterior ya no existen, no hay nada
+                // real para comparar: mejor ocultar la función que decir "tenés todo".
+                if ($itemsValidos->isNotEmpty()) {
+                    $pedidoAnterior = [
+                        'id' => $ultimo->id,
+                        'fecha' => $ultimo->created_at->format('d/m/Y'),
+                        'items' => $itemsValidos,
+                    ];
+                }
             }
         }
 

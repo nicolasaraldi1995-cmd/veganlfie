@@ -35,6 +35,7 @@ class ProfileController extends Controller
             ->join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')
             ->where('pedidos.user_id', $user->id)
             ->where('pedidos.estado', '!=', 'canceled')
+            ->whereNull('pedidos.deleted_at')
             ->selectRaw('presentaciones.producto_id, SUM(pedido_items.cantidad) as total_comprado')
             ->groupBy('presentaciones.producto_id')
             ->orderByDesc('total_comprado')
@@ -42,7 +43,8 @@ class ProfileController extends Controller
             ->pluck('producto_id');
 
         $productosFrecuentes = $topProductoIds->isNotEmpty()
-            ? Producto::whereIn('id', $topProductoIds)
+            ? Producto::activos()
+                ->whereIn('id', $topProductoIds)
                 ->with('marca')
                 ->get()
                 ->sortBy(fn ($p) => $topProductoIds->search($p->id))

@@ -71,7 +71,7 @@ class CartService
         $recomendados = collect();
 
         if ($user) {
-            $historialProductoIds = PedidoItem::whereHas('pedido', fn ($q) => $q->where('user_id', $user->id))
+            $historialProductoIds = PedidoItem::whereHas('pedido', fn ($q) => $q->where('user_id', $user->id)->where('estado', '!=', 'canceled'))
                 ->join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')
                 ->whereNotIn('presentaciones.producto_id', $cartProductoIds)
                 ->select('presentaciones.producto_id')
