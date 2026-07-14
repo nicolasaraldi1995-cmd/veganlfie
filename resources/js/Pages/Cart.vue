@@ -3,9 +3,8 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 const props = defineProps({ items: Array, total: Number });
-const MIN = 300000; const FREE = 450000;
+const FREE = 600000;
 const progress = computed(() => Math.min((props.total / FREE) * 100, 100));
-const canBuy = computed(() => props.total >= MIN);
 const tieneFrioOCongelado = computed(() => props.items.some(i => i.frio || i.congelado));
 
 const grupos = computed(() => {
@@ -35,8 +34,7 @@ function remove(id) { router.delete(route('cart.remove'), { data: { presentacion
             <div v-if="items.length">
                 <div class="bg-surface-1 rounded-2xl border border-border p-5 mb-6">
                     <div class="flex justify-between text-[11px] mb-2">
-                        <span v-if="!canBuy" class="text-red-400">Faltan ${{ (MIN - total).toLocaleString('es-AR') }} (mín ${{ MIN.toLocaleString('es-AR') }})</span>
-                        <span v-else-if="total < FREE" class="text-accent">${{ (FREE - total).toLocaleString('es-AR') }} para envío gratis</span>
+                        <span v-if="total < FREE" class="text-accent">${{ (FREE - total).toLocaleString('es-AR') }} para envío gratis</span>
                         <span v-else class="text-accent">Envío gratis</span>
                     </div>
                     <div class="w-full bg-surface-3 rounded-full h-1"><div class="h-1 rounded-full bg-accent transition-all duration-700" :style="{ width: progress + '%' }"></div></div>
@@ -80,8 +78,7 @@ function remove(id) { router.delete(route('cart.remove'), { data: { presentacion
                     </div>
                     <div class="flex gap-3">
                         <Link :href="route('productos.index')" class="flex-1 text-center border border-border text-text-secondary py-3 rounded-xl hover:bg-surface-2 hover:text-text transition text-[13px] font-medium">Seguir comprando</Link>
-                        <Link v-if="canBuy" :href="route('checkout.index')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white py-3 rounded-xl transition text-[13px] font-medium">Finalizar compra</Link>
-                        <span v-else class="flex-1 text-center bg-surface-3 text-text-muted py-3 rounded-xl text-[13px]">Mínimo ${{ MIN.toLocaleString('es-AR') }}</span>
+                        <Link :href="route('checkout.index')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white py-3 rounded-xl transition text-[13px] font-medium">Finalizar compra</Link>
                     </div>
                 </div>
             </div>

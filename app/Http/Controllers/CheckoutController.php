@@ -74,7 +74,7 @@ class CheckoutController extends Controller
         return Inertia::render('Checkout', [
             'items' => $items,
             'total' => $total,
-            'envioGratis' => $total >= 450000,
+            'envioGratis' => $total >= 600000,
             'recomendados' => $recomendados,
             'cliente' => [
                 'nombre' => $user->name,
