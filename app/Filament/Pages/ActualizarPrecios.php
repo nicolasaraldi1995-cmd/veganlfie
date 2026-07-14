@@ -51,6 +51,8 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
                 ->label('Porcentaje de aumento')
                 ->numeric()
                 ->required()
+                ->minValue(-99)
+                ->maxValue(500)
                 ->suffix('%')
                 ->helperText('Positivo para subir, negativo para bajar. Ej: 15 sube un 15%, -10 baja un 10%.'),
         ]);
@@ -63,6 +65,8 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
 
             return;
         }
+
+        $this->validate();
 
         $this->preview = Presentacion::whereHas('producto', fn ($q) => $q->where('marca_id', $this->marca_id))
             ->with('producto')
@@ -87,6 +91,8 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
 
             return;
         }
+
+        $this->validate();
 
         $factor = 1 + $this->porcentaje / 100;
 

@@ -55,7 +55,10 @@ class ProductImportService
                 }
 
                 try {
-                    $this->importProductGroup($first, $presentaciones, $options);
+                    // Transacción anidada (savepoint): si falla algo a mitad del grupo
+                    // (ej. un precio inválido en una de sus presentaciones), se revierte
+                    // solo lo de este producto en vez de dejarlo huérfano sin presentaciones.
+                    DB::transaction(fn () => $this->importProductGroup($first, $presentaciones, $options));
                 } catch (\Throwable $e) {
                     $this->stats['errores'][] = "Error en '{$first['nombre']}': {$e->getMessage()}";
                     $this->stats['filas_saltadas'] += $presentaciones->count();
@@ -138,7 +141,7 @@ class ProductImportService
                     'producto_id' => $producto->id,
                     'unidad' => $unidad,
                     'precio' => $precio,
-                    'stock' => (int) ($row['stock'] ?? 0),
+                    'stock' => max(0, (int) ($row['stock'] ?? 0)),
                 ]);
                 $this->stats['presentaciones_creadas']++;
             }
@@ -244,12 +247,24 @@ class ProductImportService
     private function parsePrice($value): float
     {
         if (is_numeric($value)) {
-            return (float) $value;
-        }
-        $cleaned = preg_replace('/[^\d.,]/', '', (string) $value);
-        $cleaned = str_replace(',', '.', $cleaned);
+            $price = (float) $value;
+        } else {
+            $cleaned = preg_replace('/[^\d.,]/', '', (string) $value);
 
-        return (float) $cleaned ?: 0;
+            if (str_contains($cleaned, ',') && str_contains($cleaned, '.')) {
+                // Formato argentino ("1.234,56"): "." separa miles, "," separa decimales.
+                $cleaned = str_replace('.', '', $cleaned);
+            }
+            $cleaned = str_replace(',', '.', $cleaned);
+
+            $price = (float) $cleaned;
+        }
+
+        if ($price < 0) {
+            throw new \InvalidArgumentException("Precio inválido: \"{$value}\".");
+        }
+
+        return $price;
     }
 
     private function parseBool($value): bool

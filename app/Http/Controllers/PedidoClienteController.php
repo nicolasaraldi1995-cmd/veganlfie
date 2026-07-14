@@ -16,9 +16,7 @@ class PedidoClienteController extends Controller
 {
     public function pdf(Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('view', $pedido);
         $pedido->load(['items.presentacion.producto.marca']);
 
         return Pdf::loadView('pdf.pedido', compact('pedido'))
@@ -27,9 +25,7 @@ class PedidoClienteController extends Controller
 
     public function show(Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('view', $pedido);
 
         $pedido->load(['items.presentacion.producto.marca', 'items.presentacion.producto.categoria']);
 
@@ -52,9 +48,7 @@ class PedidoClienteController extends Controller
 
     public function updateItem(Request $request, Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('update', $pedido);
         if (! $pedido->esEditable()) {
             return back()->withErrors(['pedido' => 'Este pedido ya no se puede modificar.']);
         }
@@ -91,9 +85,7 @@ class PedidoClienteController extends Controller
 
     public function addItem(Request $request, Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('update', $pedido);
         if (! $pedido->esEditable()) {
             return back()->withErrors(['pedido' => 'Este pedido ya no se puede modificar.']);
         }
@@ -138,9 +130,7 @@ class PedidoClienteController extends Controller
 
     public function removeItem(Request $request, Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('update', $pedido);
         if (! $pedido->esEditable()) {
             return back()->withErrors(['pedido' => 'Este pedido ya no se puede modificar.']);
         }

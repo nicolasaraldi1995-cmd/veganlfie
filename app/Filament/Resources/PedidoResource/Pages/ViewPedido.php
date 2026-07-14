@@ -27,6 +27,7 @@ class ViewPedido extends ViewRecord
                 ->form([
                     Forms\Components\TextInput::make('monto')
                         ->numeric()
+                        ->minValue(0)
                         ->required()
                         ->prefix('$')
                         ->autofocus(),

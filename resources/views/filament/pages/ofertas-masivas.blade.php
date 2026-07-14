@@ -6,7 +6,12 @@
             <x-filament::button wire:click="generarPreview" icon="heroicon-o-eye">
                 Vista previa
             </x-filament::button>
-            <x-filament::button wire:click="quitarOfertas" color="danger" icon="heroicon-o-x-mark">
+            <x-filament::button
+                wire:click="quitarOfertas"
+                wire:confirm="¿Quitar la oferta de todas las presentaciones que coincidan con el filtro? Esta acción no se puede deshacer."
+                color="danger"
+                icon="heroicon-o-x-mark"
+            >
                 Quitar ofertas
             </x-filament::button>
         </div>
@@ -44,7 +49,12 @@
             @endif
 
             <div class="mt-4">
-                <x-filament::button wire:click="aplicarOfertas" color="success" icon="heroicon-o-check">
+                <x-filament::button
+                    wire:click="aplicarOfertas"
+                    wire:confirm="¿Aplicar esta oferta a todas las presentaciones que coincidan con el filtro? La vista previa muestra hasta 50, puede haber más. Esta acción no se puede deshacer."
+                    color="success"
+                    icon="heroicon-o-check"
+                >
                     Aplicar oferta a todas
                 </x-filament::button>
             </div>

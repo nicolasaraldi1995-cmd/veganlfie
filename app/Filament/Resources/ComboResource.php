@@ -84,6 +84,7 @@ class ComboResource extends Resource
                     ->helperText(fn ($record) => $record ? 'Precio sin descuento: $'.number_format($record->precio_calculado, 2, ',', '.') : ''),
                 Forms\Components\TextInput::make('precio_manual')
                     ->numeric()
+                    ->minValue(0)
                     ->prefix('$')
                     ->visible(fn (Forms\Get $get) => $get('tipo_precio') === 'manual'),
                 Forms\Components\Placeholder::make('precio_auto')

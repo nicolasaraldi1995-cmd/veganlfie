@@ -66,20 +66,26 @@ class ProductoResource extends Resource
                                     ->placeholder('Código opcional'),
                                 Forms\Components\TextInput::make('precio')
                                     ->numeric()
+                                    ->minValue(0)
                                     ->required()
                                     ->prefix('$')
                                     ->visible(fn () => auth()->user()?->isAdmin()),
                                 Forms\Components\TextInput::make('stock')
                                     ->numeric()
+                                    ->minValue(0)
+                                    ->required()
                                     ->default(0),
                             ]),
                             Forms\Components\Grid::make(4)->schema([
                                 Forms\Components\TextInput::make('oferta_porcentaje')
                                     ->numeric()
+                                    ->minValue(1)
+                                    ->maxValue(90)
                                     ->suffix('%')
                                     ->label('Oferta %'),
                                 Forms\Components\TextInput::make('oferta_precio')
                                     ->numeric()
+                                    ->minValue(0)
                                     ->prefix('$')
                                     ->label('Precio oferta'),
                                 Forms\Components\DatePicker::make('oferta_inicio')

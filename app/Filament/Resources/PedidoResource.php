@@ -106,6 +106,7 @@ class PedidoResource extends Resource
                             Forms\Components\TextInput::make('precio_unitario')
                                 ->label('Precio unit.')
                                 ->numeric()
+                                ->minValue(0)
                                 ->prefix('$')
                                 ->required()
                                 ->reactive()
@@ -172,6 +173,7 @@ class PedidoResource extends Resource
                                 ->columnSpan(1),
                             Forms\Components\TextInput::make('monto')
                                 ->numeric()
+                                ->minValue(0)
                                 ->required()
                                 ->prefix('$')
                                 ->columnSpan(1),

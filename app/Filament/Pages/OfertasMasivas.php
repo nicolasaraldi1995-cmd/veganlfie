@@ -89,6 +89,8 @@ class OfertasMasivas extends Page implements Forms\Contracts\HasForms
             return;
         }
 
+        $this->validate();
+
         $this->preview = $query->with('producto.marca')
             ->take(50)
             ->get()
@@ -111,6 +113,8 @@ class OfertasMasivas extends Page implements Forms\Contracts\HasForms
         if (! $query) {
             return;
         }
+
+        $this->validate();
 
         $count = $query->update([
             'oferta_porcentaje' => $this->porcentaje,

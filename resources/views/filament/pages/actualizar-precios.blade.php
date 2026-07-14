@@ -37,7 +37,12 @@
             </div>
 
             <div class="mt-4">
-                <x-filament::button wire:click="aplicarAumento" color="success" icon="heroicon-o-check">
+                <x-filament::button
+                    wire:click="aplicarAumento"
+                    wire:confirm="¿Aplicar este cambio de precio a las {{ count($preview) }} presentaciones? Esta acción no se puede deshacer."
+                    color="success"
+                    icon="heroicon-o-check"
+                >
                     Aplicar a todos ({{ count($preview) }} presentaciones)
                 </x-filament::button>
             </div>

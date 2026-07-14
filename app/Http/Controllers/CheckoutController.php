@@ -100,9 +100,7 @@ class CheckoutController extends Controller
 
     public function confirmacion(Pedido $pedido)
     {
-        if ($pedido->user_id !== auth()->id()) {
-            abort(403);
-        }
+        $this->authorize('view', $pedido);
 
         $pedido->load(['items.presentacion.producto.marca', 'items.presentacion.producto.categoria']);
 
