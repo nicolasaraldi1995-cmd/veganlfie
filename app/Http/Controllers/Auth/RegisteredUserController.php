@@ -59,6 +59,8 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        session()->put('mostrar_guia_bienvenida', true);
+
         return redirect(route('dashboard', absolute: false));
     }
 }

@@ -73,6 +73,7 @@ class HomeController extends Controller
             'pasillos' => $pasillos,
             'combos' => $combos,
             'masVendidos' => $masVendidos,
+            'mostrarGuiaBienvenida' => session()->pull('mostrar_guia_bienvenida', false),
         ]);
     }
 }

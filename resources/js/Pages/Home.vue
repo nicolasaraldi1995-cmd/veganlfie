@@ -8,9 +8,10 @@ import { Link, Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 function addCombo(id) { router.post(route('cart.add-combo'), { combo_id: id }, { preserveScroll: true }); }
 
-defineProps({ banners: Array, pasillos: Array, combos: Array, masVendidos: Array });
+const props = defineProps({ banners: Array, pasillos: Array, combos: Array, masVendidos: Array, mostrarGuiaBienvenida: Boolean });
 
 const modalImage = ref(null);
+const mostrarGuia = ref(props.mostrarGuiaBienvenida);
 
 function scrollTo(id) {
     document.getElementById('cat-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -28,6 +29,17 @@ function scrollTo(id) {
         <BannerSlider :banners="banners" />
 
         <div class="px-6 py-5">
+            <!-- Guía de bienvenida: solo la primera vez que un usuario recién registrado ve el Inicio -->
+            <div v-if="mostrarGuia" class="mb-6 bg-accent-muted border border-accent/25 rounded-xl px-5 py-3.5 flex items-start gap-3">
+                <svg class="w-5 h-5 text-accent-dim shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.4.3.6.8.6 1.3v.3h5.8v-.3c0-.5.2-1 .6-1.3A6 6 0 0012 3z"/></svg>
+                <div class="flex-1">
+                    <p class="text-[13px] text-text leading-relaxed"><span class="font-semibold">¡Bienvenido a VEGANLIFE!</span> Tip: en los productos con varias medidas, tocá las presentaciones (ej. <span class="font-medium text-accent-dim">90ml, 180ml</span>) para ver cómo cambia el precio antes de agregarlos al carrito.</p>
+                </div>
+                <button @click="mostrarGuia = false" class="text-text-muted hover:text-text transition shrink-0" aria-label="Cerrar">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
             <!-- Info banner -->
             <div class="mb-6 bg-sky-500/5 border border-sky-500/15 rounded-xl px-5 py-3.5 flex items-start gap-3">
                 <svg class="w-5 h-5 text-sky-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
