@@ -56,8 +56,6 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/mis-pedidos', [MisPedidosController::class, 'index'])->name('mis-pedidos');
     Route::get('/mis-pedidos/{pedido}', [PedidoClienteController::class, 'show'])->name('pedido.show');
     Route::middleware('throttle:30,1')->group(function () {

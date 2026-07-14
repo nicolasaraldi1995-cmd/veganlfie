@@ -2,62 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\RedirectResponse;
+use App\Models\PedidoItem;
+use App\Models\Producto;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display the user's account dashboard.
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
-        ]);
-    }
-
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
-
-        return Redirect::route('profile.edit');
-    }
-
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
         $user = $request->user();
 
-        Auth::logout();
+        $pedidosRecientes = $user->pedidos()
+            ->where('estado', '!=', 'draft')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'estado' => $p->estado,
+                'total' => (float) $p->total,
+                'fecha' => $p->created_at->format('d/m/Y'),
+            ]);
 
-        $user->delete();
+        $totalPedidos = $user->pedidos()->where('estado', '!=', 'draft')->count();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $topProductoIds = PedidoItem::join('pedidos', 'pedido_items.pedido_id', '=', 'pedidos.id')
+            ->join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')
+            ->where('pedidos.user_id', $user->id)
+            ->where('pedidos.estado', '!=', 'canceled')
+            ->selectRaw('presentaciones.producto_id, SUM(pedido_items.cantidad) as total_comprado')
+            ->groupBy('presentaciones.producto_id')
+            ->orderByDesc('total_comprado')
+            ->take(8)
+            ->pluck('producto_id');
 
-        return Redirect::to('/');
+        $productosFrecuentes = $topProductoIds->isNotEmpty()
+            ? Producto::whereIn('id', $topProductoIds)
+                ->with('marca')
+                ->get()
+                ->sortBy(fn ($p) => $topProductoIds->search($p->id))
+                ->values()
+            : collect();
+
+        return Inertia::render('Profile/Edit', [
+            'cliente' => [
+                'nombre' => $user->name,
+                'negocio' => $user->negocio,
+                'email' => $user->email,
+                'celular' => $user->celular,
+                'direccion' => $user->direccion,
+                'ciudad' => $user->ciudad,
+                'provincia' => $user->provincia,
+            ],
+            'totalPedidos' => $totalPedidos,
+            'pedidosRecientes' => $pedidosRecientes,
+            'productosFrecuentes' => $productosFrecuentes,
+        ]);
     }
 }
