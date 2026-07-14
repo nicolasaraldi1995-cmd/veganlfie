@@ -54,7 +54,9 @@ class Presentacion extends Model
         })->where(function ($q) {
             $q->whereNull('oferta_inicio')->orWhere('oferta_inicio', '<=', now());
         })->where(function ($q) {
-            $q->whereNull('oferta_fin')->orWhere('oferta_fin', '>=', now());
+            // oferta_fin es una columna DATE (medianoche); comparar contra la fecha
+            // sola (no now() completo) para que la oferta siga activa todo ese día.
+            $q->whereNull('oferta_fin')->orWhere('oferta_fin', '>=', now()->toDateString());
         });
     }
 
@@ -80,7 +82,7 @@ class Presentacion extends Model
         if ($this->oferta_inicio && $this->oferta_inicio->isFuture()) {
             return false;
         }
-        if ($this->oferta_fin && $this->oferta_fin->isPast()) {
+        if ($this->oferta_fin && $this->oferta_fin->copy()->endOfDay()->isPast()) {
             return false;
         }
 

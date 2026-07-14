@@ -39,6 +39,7 @@ class EditPedido extends EditRecord
                 ->requiresConfirmation()
                 ->visible(fn () => in_array($this->record->estado, ['pending', 'confirmed']))
                 ->action(function () {
+                    $this->record->restaurarStock();
                     $this->record->update(['estado' => 'canceled']);
                     Notification::make()->title('Pedido cancelado')->warning()->send();
                     $this->redirect(PedidoResource::getUrl('index'));

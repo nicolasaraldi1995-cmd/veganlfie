@@ -33,9 +33,9 @@ class PresentacionResource extends Resource
                 ->dehydrated(false)
                 ->default(fn ($record) => $record?->producto?->nombre),
             Forms\Components\TextInput::make('unidad')->disabled(),
-            Forms\Components\TextInput::make('precio')->numeric()->prefix('$')
+            Forms\Components\TextInput::make('precio')->numeric()->minValue(0)->prefix('$')
                 ->visible(fn () => auth()->user()?->isAdmin()),
-            Forms\Components\TextInput::make('stock')->numeric()->required()->autofocus(),
+            Forms\Components\TextInput::make('stock')->numeric()->minValue(0)->required()->autofocus(),
             Forms\Components\Toggle::make('activo'),
         ]);
     }

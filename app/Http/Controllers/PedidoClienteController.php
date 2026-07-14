@@ -8,6 +8,8 @@ use App\Models\Presentacion;
 use App\Models\Producto;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class PedidoClienteController extends Controller
@@ -62,21 +64,27 @@ class PedidoClienteController extends Controller
             'cantidad' => 'required|integer|min:0',
         ]);
 
-        $item = $pedido->items()->where('presentacion_id', $request->presentacion_id)->first();
+        try {
+            DB::transaction(function () use ($request, $pedido) {
+                $item = $pedido->items()->where('presentacion_id', $request->presentacion_id)->first();
 
-        if ($request->cantidad <= 0) {
-            $item?->delete();
-        } elseif ($item) {
-            $presentacion = Presentacion::find($request->presentacion_id);
-            $precio = $presentacion->precio_final;
-            $item->update([
-                'cantidad' => $request->cantidad,
-                'precio_unitario' => $precio,
-                'subtotal' => round($precio * $request->cantidad, 2),
-            ]);
+                if ($request->cantidad <= 0) {
+                    $item?->delete();
+                } elseif ($item) {
+                    $presentacion = Presentacion::find($request->presentacion_id);
+                    $precio = $presentacion->precio_final;
+                    $item->update([
+                        'cantidad' => $request->cantidad,
+                        'precio_unitario' => $precio,
+                        'subtotal' => round($precio * $request->cantidad, 2),
+                    ]);
+                }
+
+                $pedido->recalcularTotal();
+            });
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
         }
-
-        $pedido->recalcularTotal();
 
         return back();
     }
@@ -95,29 +103,35 @@ class PedidoClienteController extends Controller
             'cantidad' => 'required|integer|min:1',
         ]);
 
-        $presentacion = Presentacion::findOrFail($request->presentacion_id);
-        $precio = $presentacion->precio_final;
+        try {
+            DB::transaction(function () use ($request, $pedido) {
+                $presentacion = Presentacion::findOrFail($request->presentacion_id);
+                $precio = $presentacion->precio_final;
 
-        $existing = $pedido->items()->where('presentacion_id', $request->presentacion_id)->first();
+                $existing = $pedido->items()->where('presentacion_id', $request->presentacion_id)->first();
 
-        if ($existing) {
-            $newQty = $existing->cantidad + $request->cantidad;
-            $existing->update([
-                'cantidad' => $newQty,
-                'precio_unitario' => $precio,
-                'subtotal' => round($precio * $newQty, 2),
-            ]);
-        } else {
-            PedidoItem::create([
-                'pedido_id' => $pedido->id,
-                'presentacion_id' => $request->presentacion_id,
-                'cantidad' => $request->cantidad,
-                'precio_unitario' => $precio,
-                'subtotal' => round($precio * $request->cantidad, 2),
-            ]);
+                if ($existing) {
+                    $newQty = $existing->cantidad + $request->cantidad;
+                    $existing->update([
+                        'cantidad' => $newQty,
+                        'precio_unitario' => $precio,
+                        'subtotal' => round($precio * $newQty, 2),
+                    ]);
+                } else {
+                    PedidoItem::create([
+                        'pedido_id' => $pedido->id,
+                        'presentacion_id' => $request->presentacion_id,
+                        'cantidad' => $request->cantidad,
+                        'precio_unitario' => $precio,
+                        'subtotal' => round($precio * $request->cantidad, 2),
+                    ]);
+                }
+
+                $pedido->recalcularTotal();
+            });
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
         }
-
-        $pedido->recalcularTotal();
 
         return back();
     }
@@ -131,10 +145,12 @@ class PedidoClienteController extends Controller
             return back()->withErrors(['pedido' => 'Este pedido ya no se puede modificar.']);
         }
 
-        // Se borra vía instancia (no ->where()->delete()) para que PedidoItemObserver
-        // dispare el evento "deleted" y restaure el stock reservado.
-        $pedido->items()->where('presentacion_id', $request->presentacion_id)->first()?->delete();
-        $pedido->recalcularTotal();
+        DB::transaction(function () use ($request, $pedido) {
+            // Se borra vía instancia (no ->where()->delete()) para que PedidoItemObserver
+            // dispare el evento "deleted" y restaure el stock reservado.
+            $pedido->items()->where('presentacion_id', $request->presentacion_id)->first()?->delete();
+            $pedido->recalcularTotal();
+        });
 
         return back();
     }
