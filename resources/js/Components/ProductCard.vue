@@ -130,12 +130,10 @@ const imageSrc = computed(() => {
                         <span class="text-2xl price-display truncate" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</span>
                         <del v-if="enOferta" class="text-[11px] text-text-muted shrink-0">${{ precioOriginal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</del>
                     </div>
-                    <div v-if="precioUnidad || !sinStock" class="flex items-center gap-1.5 mt-1.5">
+                    <div v-if="precioUnidad || stockBajo" class="flex items-center gap-1.5 mt-1.5">
                         <p v-if="precioUnidad" class="text-[9.5px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</p>
-                        <span v-if="precioUnidad && !sinStock" class="text-text-muted/50 text-[9px]">·</span>
-                        <p v-if="!sinStock" class="text-[10px] font-semibold" :class="stockBajo ? 'text-amber-600' : 'text-emerald-600'">
-                            {{ stockBajo ? `¡Últimas ${stock}!` : 'Disponible' }}
-                        </p>
+                        <span v-if="precioUnidad && stockBajo" class="text-text-muted/50 text-[9px]">·</span>
+                        <p v-if="stockBajo" class="text-[10px] font-semibold text-amber-600">¡Últimas {{ stock }}!</p>
                     </div>
                 </div>
 
