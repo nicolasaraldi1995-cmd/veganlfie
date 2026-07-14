@@ -47,6 +47,22 @@ class ViewPedido extends ViewRecord
                         ->success()
                         ->send();
                 }),
+            Actions\Action::make('recordar_pago')
+                ->label('Recordar pago por WhatsApp')
+                ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                ->color('warning')
+                ->visible(fn () => auth()->user()?->isAdmin() && $this->record->saldo > 0 && ! empty($this->record->datos_cliente['celular']))
+                ->url(function () {
+                    $cel = preg_replace('/\D/', '', $this->record->datos_cliente['celular'] ?? '');
+                    if (! str_starts_with($cel, '54')) {
+                        $cel = '54'.$cel;
+                    }
+                    $nombre = $this->record->datos_cliente['nombre'] ?? '';
+                    $saldo = number_format($this->record->saldo, 0, ',', '.');
+                    $mensaje = "Hola {$nombre}! Te recordamos que tenés un saldo pendiente de \${$saldo} correspondiente a tu pedido #{$this->record->id} en VEGANLIFE. Cualquier consulta, quedamos a disposición. ¡Gracias!";
+
+                    return "https://wa.me/{$cel}?text=".urlencode($mensaje);
+                }, shouldOpenInNewTab: true),
             Actions\EditAction::make()->label('Modificar pedido'),
         ];
     }
