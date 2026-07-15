@@ -10,8 +10,8 @@ const page = usePage();
 const modalImage = ref(null);
 const mostrarComparacion = ref(false);
 
-const FREE = 600000;
-const progress = computed(() => Math.min((props.total / FREE) * 100, 100));
+const FREE = computed(() => page.props.envioGratisDesde);
+const progress = computed(() => Math.min((props.total / FREE.value) * 100, 100));
 const tieneFrioOCongelado = computed(() => props.items.some(i => i.frio || i.congelado));
 const mostrarAvisoFrio = computed(() => tieneFrioOCongelado.value && !page.props.auth.user?.recibe_frio_congelado);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Configuracion;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -27,6 +28,7 @@ class HandleInertiaRequests extends Middleware
             // categoría se resuelve una sola vez, en CartController::index (/carrito).
             'cartCount' => array_sum($cart),
             'cartPresentacionIds' => array_map('intval', array_keys($cart)),
+            'envioGratisDesde' => (float) Configuracion::actual()->envio_gratis_desde,
         ];
     }
 }

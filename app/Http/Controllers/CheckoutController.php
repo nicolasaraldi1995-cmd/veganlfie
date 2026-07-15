@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutStoreRequest;
+use App\Models\Configuracion;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Services\CartService;
@@ -30,7 +31,7 @@ class CheckoutController extends Controller
         return Inertia::render('Checkout', [
             'items' => $items,
             'total' => $total,
-            'envioGratis' => $total >= 600000,
+            'envioGratis' => $total >= (float) Configuracion::actual()->envio_gratis_desde,
             'recomendados' => $recomendados,
             'cliente' => [
                 'nombre' => $user->name,
