@@ -58,7 +58,7 @@ class ProductImportService
                     // Transacción anidada (savepoint): si falla algo a mitad del grupo
                     // (ej. un precio inválido en una de sus presentaciones), se revierte
                     // solo lo de este producto en vez de dejarlo huérfano sin presentaciones.
-                    DB::transaction(fn () => $this->importProductGroup($first, $presentaciones, $options));
+                    DB::transaction(fn () => $this->importProductGroup($first, $presentaciones, $options, $columnMap));
                 } catch (\Throwable $e) {
                     $this->stats['errores'][] = "Error en '{$first['nombre']}': {$e->getMessage()}";
                     $this->stats['filas_saltadas'] += $presentaciones->count();
@@ -74,20 +74,30 @@ class ProductImportService
         return $this->stats;
     }
 
-    private function importProductGroup(array $first, Collection $presentaciones, array $options): void
+    private function importProductGroup(array $first, Collection $presentaciones, array $options, array $columnMap): void
     {
-        $marca = Marca::firstOrCreate(
-            ['nombre' => trim($first['marca'])],
-        );
-        if ($marca->wasRecentlyCreated) {
+        // firstOrCreate no ve las filas con soft-delete, pero su nombre/slug sigue
+        // ocupado a nivel de base: si la marca o categoría fue borrada antes y el
+        // Excel la vuelve a mencionar, hay que restaurarla (no crear una nueva con
+        // el mismo nombre, porque el índice único de "slug" lo rechaza).
+        $marca = Marca::withTrashed()->where('nombre', trim($first['marca']))->first();
+        if ($marca) {
+            if ($marca->trashed()) {
+                $marca->restore();
+            }
+        } else {
+            $marca = Marca::create(['nombre' => trim($first['marca'])]);
             $this->stats['marcas_creadas']++;
         }
 
         $categoriaNombre = trim($first['categoria'] ?? 'Sin categoría');
-        $categoria = Categoria::firstOrCreate(
-            ['nombre' => $categoriaNombre],
-        );
-        if ($categoria->wasRecentlyCreated) {
+        $categoria = Categoria::withTrashed()->where('nombre', $categoriaNombre)->first();
+        if ($categoria) {
+            if ($categoria->trashed()) {
+                $categoria->restore();
+            }
+        } else {
+            $categoria = Categoria::create(['nombre' => $categoriaNombre]);
             $this->stats['categorias_creadas']++;
         }
 
@@ -101,12 +111,22 @@ class ProductImportService
 
         if ($producto) {
             if ($options['actualizar_existentes'] ?? true) {
-                $producto->update([
-                    'categoria_id' => $categoria->id,
-                    'sin_tacc' => $sinTacc,
-                    'congelado' => $congelado,
-                    'nuevo' => $nuevo,
-                ]);
+                $datosActualizar = ['categoria_id' => $categoria->id];
+
+                // Estos flags solo se pisan si el Excel realmente trae esa columna
+                // mapeada: si no la trae, no hay forma de saber el valor real y hay
+                // que dejar lo que el producto ya tenía en vez de resetearlo a "no".
+                if (! empty($columnMap['sin_tacc'])) {
+                    $datosActualizar['sin_tacc'] = $sinTacc;
+                }
+                if (! empty($columnMap['congelado'])) {
+                    $datosActualizar['congelado'] = $congelado;
+                }
+                if (! empty($columnMap['nuevo'])) {
+                    $datosActualizar['nuevo'] = $nuevo;
+                }
+
+                $producto->update($datosActualizar);
                 $this->stats['productos_actualizados']++;
             }
         } else {
