@@ -45,7 +45,7 @@ class HomeController extends Controller
             ->values();
 
         $combos = Combo::activos()
-            ->with(['items.presentacion.producto'])
+            ->with(['items.presentacion.producto.marca'])
             ->take(6)->get()
             ->each(function ($combo) {
                 $combo->precio_final = $combo->precio;

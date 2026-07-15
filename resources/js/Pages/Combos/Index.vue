@@ -1,9 +1,12 @@
 <script setup>
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import ComboDetailModal from '@/Components/ComboDetailModal.vue';
 import { Head } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 defineProps({ combos: Object });
+const comboSeleccionado = ref(null);
 function addCombo(id) {
     router.post(route('cart.add-combo'), { combo_id: id }, { preserveScroll: true });
 }
@@ -14,7 +17,7 @@ function addCombo(id) {
         <div class="px-6 py-8">
             <h1 class="text-xl font-semibold text-text mb-6">Combos</h1>
             <div v-if="combos.data.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="c in combos.data" :key="c.id" class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
+                <div v-for="c in combos.data" :key="c.id" @click="comboSeleccionado = c" class="cursor-pointer bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
                     <div class="relative aspect-video bg-surface-3">
                         <img v-if="c.imagen_url" :src="c.imagen_url" loading="lazy" class="w-full h-full object-cover" />
                         <span class="absolute top-2.5 left-2.5 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">COMBO</span>
@@ -31,7 +34,7 @@ function addCombo(id) {
                                 <span v-if="c.descuento_porcentaje" class="text-[11px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
                                 <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
                             </div>
-                            <button @click="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">
+                            <button @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">
                                 Agregar
                             </button>
                         </div>
@@ -41,5 +44,6 @@ function addCombo(id) {
             <div v-else class="text-center py-20 text-text-muted">Sin combos.</div>
             <Pagination :links="combos.links" />
         </div>
+        <ComboDetailModal :combo="comboSeleccionado" @close="comboSeleccionado = null" />
     </PublicLayout>
 </template>

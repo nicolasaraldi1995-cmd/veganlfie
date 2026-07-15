@@ -10,7 +10,7 @@ class ComboController extends Controller
     public function index()
     {
         $combos = Combo::activos()
-            ->with(['items.presentacion.producto'])
+            ->with(['items.presentacion.producto.marca'])
             ->paginate(12);
 
         $combos->getCollection()->transform(function ($combo) {

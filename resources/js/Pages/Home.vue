@@ -3,6 +3,7 @@ import PublicLayout from '@/Layouts/PublicLayout.vue';
 import ProductRow from '@/Components/ProductRow.vue';
 import ProductCard from '@/Components/ProductCard.vue';
 import ImageModal from '@/Components/ImageModal.vue';
+import ComboDetailModal from '@/Components/ComboDetailModal.vue';
 import BannerSlider from '@/Components/BannerSlider.vue';
 import WelcomeGuideModal from '@/Components/WelcomeGuideModal.vue';
 import { Link, Head, router } from '@inertiajs/vue3';
@@ -12,6 +13,7 @@ function addCombo(id) { router.post(route('cart.add-combo'), { combo_id: id }, {
 const props = defineProps({ banners: Array, pasillos: Array, combos: Array, masVendidos: Array, mostrarGuiaBienvenida: Boolean });
 
 const modalImage = ref(null);
+const comboSeleccionado = ref(null);
 const mostrarGuia = ref(props.mostrarGuiaBienvenida);
 
 function scrollTo(id) {
@@ -76,7 +78,7 @@ function scrollTo(id) {
                     <Link :href="route('combos.index')" class="text-[12px] text-accent hover:text-accent-bright transition">Ver todos →</Link>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div v-for="c in combos" :key="c.id" class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
+                    <div v-for="c in combos" :key="c.id" @click="comboSeleccionado = c" class="cursor-pointer bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
                         <div class="relative aspect-video bg-surface-3">
                             <img v-if="c.imagen_url" :src="c.imagen_url" loading="lazy" class="w-full h-full object-cover" />
                             <span class="absolute top-2.5 left-2.5 bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">COMBO</span>
@@ -90,7 +92,7 @@ function scrollTo(id) {
                                 <span v-if="c.descuento_porcentaje" class="text-[11px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
                                 <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
                             </div>
-                                <button @click="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">Agregar</button>
+                                <button @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">Agregar</button>
                             </div>
                         </div>
                     </div>
@@ -99,6 +101,7 @@ function scrollTo(id) {
         </div>
 
         <ImageModal :src="modalImage" @close="modalImage = null" />
+        <ComboDetailModal :combo="comboSeleccionado" @close="comboSeleccionado = null" />
     </PublicLayout>
 </template>
 
