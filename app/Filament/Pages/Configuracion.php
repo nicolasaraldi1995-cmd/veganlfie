@@ -26,6 +26,8 @@ class Configuracion extends Page implements Forms\Contracts\HasForms
 
     public ?float $envio_gratis_desde = null;
 
+    public bool $controlar_stock = true;
+
     public static function canAccess(): bool
     {
         return auth()->user()?->isAdmin() ?? false;
@@ -33,19 +35,32 @@ class Configuracion extends Page implements Forms\Contracts\HasForms
 
     public function mount(): void
     {
-        $this->envio_gratis_desde = (float) ConfiguracionModel::actual()->envio_gratis_desde;
+        $actual = ConfiguracionModel::actual();
+        $this->envio_gratis_desde = (float) $actual->envio_gratis_desde;
+        $this->controlar_stock = (bool) $actual->controlar_stock;
     }
 
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('envio_gratis_desde')
-                ->label('Envío gratis a partir de')
-                ->numeric()
-                ->required()
-                ->minValue(0)
-                ->prefix('$')
-                ->helperText('Monto mínimo de compra para que el envío salga gratis. Se muestra en el carrito y en el checkout.'),
+            Forms\Components\Section::make('Envío')
+                ->description('Definí a partir de qué monto de compra el envío sale gratis.')
+                ->schema([
+                    Forms\Components\TextInput::make('envio_gratis_desde')
+                        ->label('Envío gratis a partir de')
+                        ->numeric()
+                        ->required()
+                        ->minValue(0)
+                        ->prefix('$')
+                        ->helperText('Se muestra en el carrito y en el checkout.'),
+                ]),
+            Forms\Components\Section::make('Stock')
+                ->description('Definí si el stock cargado limita lo que se puede comprar.')
+                ->schema([
+                    Forms\Components\Toggle::make('controlar_stock')
+                        ->label('Controlar stock')
+                        ->helperText('Si lo apagás, se puede comprar cualquier producto en cualquier cantidad sin importar el stock cargado. El número de stock sigue existiendo y se sigue actualizando con cada pedido (podés reactivar el control cuando quieras), solo deja de frenar la compra.'),
+                ]),
         ]);
     }
 
@@ -55,6 +70,7 @@ class Configuracion extends Page implements Forms\Contracts\HasForms
 
         ConfiguracionModel::actual()->update([
             'envio_gratis_desde' => $this->envio_gratis_desde,
+            'controlar_stock' => $this->controlar_stock,
         ]);
 
         Notification::make()

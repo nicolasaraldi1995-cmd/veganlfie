@@ -40,8 +40,10 @@ const descuento = computed(() => {
 });
 
 const stock = computed(() => selected.value?.stock ?? 0);
-const sinStock = computed(() => stock.value <= 0);
-const stockBajo = computed(() => !sinStock.value && stock.value <= 5);
+const controlarStock = computed(() => page.props.controlarStock);
+const sinStock = computed(() => controlarStock.value && stock.value <= 0);
+const stockBajo = computed(() => controlarStock.value && !sinStock.value && stock.value <= 5);
+const maxCompra = computed(() => controlarStock.value ? stock.value : 99999);
 
 const enCarrito = computed(() => {
     if (!selected.value) return false;
@@ -144,10 +146,10 @@ const imageSrc = computed(() => {
                             <div class="inline-flex items-center bg-surface-3 rounded-lg shrink-0">
                                 <button @click="cantidad = Math.max(1, cantidad - 1)"
                                     class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text text-sm transition">−</button>
-                                <input type="number" :value="cantidad" @change="e => { let v = parseInt(e.target.value) || 1; cantidad = Math.max(1, Math.min(v, stock)); e.target.value = cantidad; }"
-                                    min="1" :max="stock"
+                                <input type="number" :value="cantidad" @change="e => { let v = parseInt(e.target.value) || 1; cantidad = Math.max(1, Math.min(v, maxCompra)); e.target.value = cantidad; }"
+                                    min="1" :max="maxCompra"
                                     class="w-10 h-8 text-center text-[12px] font-semibold text-text bg-transparent border-0 p-0 focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-                                <button @click="cantidad = Math.min(cantidad + 1, stock)"
+                                <button @click="cantidad = Math.min(cantidad + 1, maxCompra)"
                                     class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text text-sm transition">+</button>
                             </div>
                             <button @click="addToCart"

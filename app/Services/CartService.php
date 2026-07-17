@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Configuracion;
 use App\Models\PedidoItem;
 use App\Models\Presentacion;
 use App\Models\Producto;
@@ -116,6 +117,10 @@ class CartService
      */
     public function assertStockDisponible(int $presentacionId, int $cantidadDeseada): void
     {
+        if (! Configuracion::actual()->controlar_stock) {
+            return;
+        }
+
         $stock = Presentacion::whereKey($presentacionId)->value('stock') ?? 0;
 
         if ($cantidadDeseada > $stock) {

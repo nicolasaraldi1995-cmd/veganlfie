@@ -2,10 +2,11 @@
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import ProductCard from '@/Components/ProductCard.vue';
 import ImageModal from '@/Components/ImageModal.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 
 const props = defineProps({ producto: Object, relacionados: Array });
+const page = usePage();
 const selectedIndex = ref(0);
 const cantidad = ref(1);
 const modalImage = ref(null);
@@ -34,7 +35,9 @@ const imageSrc = computed(() => {
     return null;
 });
 const stock = computed(() => selected.value?.stock ?? 0);
-const sinStock = computed(() => stock.value <= 0);
+const controlarStock = computed(() => page.props.controlarStock);
+const sinStock = computed(() => controlarStock.value && stock.value <= 0);
+const maxCompra = computed(() => controlarStock.value ? stock.value : 99999);
 const jsonLd = computed(() => JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -117,14 +120,14 @@ function addToCart() {
                     </div>
 
                     <div v-if="selected" class="mt-3">
-                        <p class="text-[11px] mb-3" :class="sinStock ? 'text-red-400' : 'text-text-muted'">{{ sinStock ? 'Sin stock' : `Stock: ${stock}` }}</p>
+                        <p v-if="controlarStock" class="text-[11px] mb-3" :class="sinStock ? 'text-red-400' : 'text-text-muted'">{{ sinStock ? 'Sin stock' : `Stock: ${stock}` }}</p>
                         <div class="flex items-center gap-4">
                             <div class="flex items-center bg-surface-2 rounded-xl border border-border">
                                 <button @click="cantidad = Math.max(1, cantidad - 1)" :disabled="sinStock || cantidad <= 1" class="px-4 py-3 text-text-muted hover:text-text transition disabled:opacity-30">−</button>
-                                <input type="number" :value="cantidad" @change="e => { let v = parseInt(e.target.value) || 1; cantidad = Math.max(1, Math.min(v, stock)); e.target.value = cantidad; }"
-                                    :disabled="sinStock" min="1" :max="stock"
+                                <input type="number" :value="cantidad" @change="e => { let v = parseInt(e.target.value) || 1; cantidad = Math.max(1, Math.min(v, maxCompra)); e.target.value = cantidad; }"
+                                    :disabled="sinStock" min="1" :max="maxCompra"
                                     class="w-14 py-3 text-center font-semibold text-text bg-transparent border-0 p-0 focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
-                                <button @click="cantidad = Math.min(cantidad + 1, stock)" :disabled="sinStock || cantidad >= stock" class="px-4 py-3 text-text-muted hover:text-text transition disabled:opacity-30">+</button>
+                                <button @click="cantidad = Math.min(cantidad + 1, maxCompra)" :disabled="sinStock || cantidad >= maxCompra" class="px-4 py-3 text-text-muted hover:text-text transition disabled:opacity-30">+</button>
                             </div>
                             <button @click="addToCart" :disabled="sinStock"
                                 class="flex-1 font-semibold py-3 rounded-xl transition-all active:scale-[0.98]"

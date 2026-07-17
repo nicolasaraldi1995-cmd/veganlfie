@@ -18,6 +18,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $cart = session('cart', []);
+        $configuracion = Configuracion::actual();
 
         return [
             ...parent::share($request),
@@ -28,7 +29,8 @@ class HandleInertiaRequests extends Middleware
             // categoría se resuelve una sola vez, en CartController::index (/carrito).
             'cartCount' => array_sum($cart),
             'cartPresentacionIds' => array_map('intval', array_keys($cart)),
-            'envioGratisDesde' => (float) Configuracion::actual()->envio_gratis_desde,
+            'envioGratisDesde' => (float) $configuracion->envio_gratis_desde,
+            'controlarStock' => (bool) $configuracion->controlar_stock,
         ];
     }
 }

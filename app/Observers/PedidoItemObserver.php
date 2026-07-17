@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Configuracion;
 use App\Models\PedidoItem;
 use App\Models\Presentacion;
 use Illuminate\Validation\ValidationException;
@@ -48,7 +49,7 @@ class PedidoItemObserver
             return;
         }
 
-        if ($delta > 0 && $delta > $presentacion->stock) {
+        if ($delta > 0 && $delta > $presentacion->stock && Configuracion::actual()->controlar_stock) {
             throw ValidationException::withMessages([
                 'cantidad' => "Solo quedan {$presentacion->stock} unidades disponibles de {$presentacion->unidad}.",
             ]);
