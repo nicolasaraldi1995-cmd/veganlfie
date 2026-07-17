@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\HtmlString;
 
@@ -319,6 +320,23 @@ class PedidoResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    // PedidoPolicy (view/update) existe para el autoservicio del cliente en
+    // PedidoClienteController, donde un cliente solo puede ver su propio
+    // pedido. Sin este override, Filament aplica esa misma policy también
+    // acá y le esconde el botón "Ver" a cualquier staff en cualquier pedido
+    // que no sea suyo — canAccessPanel() ya garantiza que solo admin/operador
+    // llegan a este resource, así que cualquiera de los dos puede ver/editar
+    // cualquier pedido.
+    public static function canView(Model $record): bool
+    {
+        return true;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return true;
     }
 
     private static function cambiarEstado(Pedido $record, string $estado, string $label): void
