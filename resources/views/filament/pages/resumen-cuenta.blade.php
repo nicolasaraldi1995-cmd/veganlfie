@@ -1,5 +1,43 @@
 <x-filament-panels::page>
-    <x-filament::section heading="Seleccionar cliente" description="Elegí un cliente para ver su resumen de cuenta.">
+    <x-filament::section heading="Clientes que deben" description="Todos los clientes con saldo pendiente, del más antiguo al más reciente.">
+        @if(count($clientesConSaldo) > 0)
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-medium text-gray-500">Cliente</th>
+                            <th class="px-3 py-2 text-left font-medium text-gray-500">Celular</th>
+                            <th class="px-3 py-2 text-left font-medium text-gray-500">Debe desde</th>
+                            <th class="px-3 py-2 text-right font-medium text-gray-500">Saldo</th>
+                            <th class="px-3 py-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @foreach($clientesConSaldo as $cliente)
+                            <tr>
+                                <td class="px-3 py-2">
+                                    <span class="font-medium">{{ $cliente['nombre'] }}</span>
+                                    @if($cliente['negocio'])<span class="text-gray-400"> ({{ $cliente['negocio'] }})</span>@endif
+                                </td>
+                                <td class="px-3 py-2 text-gray-400">{{ $cliente['celular'] ?? '—' }}</td>
+                                <td class="px-3 py-2 text-gray-400">{{ $cliente['desde'] }}</td>
+                                <td class="px-3 py-2 text-right font-bold text-red-500">${{ number_format($cliente['saldo'], 0, ',', '.') }}</td>
+                                <td class="px-3 py-2 text-right">
+                                    <x-filament::button size="xs" wire:click="verClienteConSaldo({{ $cliente['id'] }})" icon="heroicon-o-eye">
+                                        Ver
+                                    </x-filament::button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-center text-gray-400 py-8">Ningún cliente tiene saldo pendiente. 🎉</p>
+        @endif
+    </x-filament::section>
+
+    <x-filament::section heading="Buscar cliente" description="O elegí un cliente puntual para ver su historial completo, tenga saldo o no.">
         {{ $this->form }}
         <div class="mt-4">
             <x-filament::button wire:click="verResumen" icon="heroicon-o-eye">

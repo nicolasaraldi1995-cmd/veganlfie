@@ -31,6 +31,51 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
 
     public bool $showResumen = false;
 
+    public array $clientesConSaldo = [];
+
+    public function mount(): void
+    {
+        $this->cargarClientesConSaldo();
+    }
+
+    public function cargarClientesConSaldo(): void
+    {
+        $pedidosPorCliente = Pedido::where('estado', '!=', 'canceled')
+            ->whereNotNull('user_id')
+            ->with('pagos')
+            ->get()
+            ->filter(fn (Pedido $p) => $p->saldo > 0.009)
+            ->groupBy('user_id');
+
+        $this->clientesConSaldo = User::whereIn('id', $pedidosPorCliente->keys())
+            ->get()
+            ->map(function (User $user) use ($pedidosPorCliente) {
+                $pedidosConSaldo = $pedidosPorCliente->get($user->id) ?? collect();
+
+                return [
+                    'id' => $user->id,
+                    'nombre' => $user->name,
+                    'negocio' => $user->negocio,
+                    'celular' => $user->celular,
+                    'saldo' => $pedidosConSaldo->sum('saldo'),
+                    'desde' => $pedidosConSaldo->min('created_at'),
+                ];
+            })
+            ->sortBy('desde')
+            ->values()
+            ->map(fn (array $c) => [
+                ...$c,
+                'desde' => $c['desde']->format('d/m/Y'),
+            ])
+            ->toArray();
+    }
+
+    public function verClienteConSaldo(int $userId): void
+    {
+        $this->cliente_id = (string) $userId;
+        $this->verResumen();
+    }
+
     public function form(Form $form): Form
     {
         return $form->schema([
