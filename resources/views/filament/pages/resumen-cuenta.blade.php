@@ -75,6 +75,41 @@
             </div>
         </x-filament::section>
 
+        {{-- General payments, not tied to a specific order --}}
+        @if(count($resumen['pagosGenerales']) > 0)
+            <x-filament::section heading="Pagos generales" description="Pagos registrados a cuenta del cliente, sin ligar a un pedido puntual.">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                            <tr>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500">Fecha</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500">Método</th>
+                                <th class="px-3 py-2 text-right font-medium text-gray-500">Monto</th>
+                                <th class="px-3 py-2 text-left font-medium text-gray-500">Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach($resumen['pagosGenerales'] as $pago)
+                                <tr>
+                                    <td class="px-3 py-2">{{ $pago['fecha'] }}</td>
+                                    <td class="px-3 py-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                            {{ $pago['metodo'] === 'Efectivo' ? 'bg-green-100 text-green-700' :
+                                               ($pago['metodo'] === 'Transferencia' ? 'bg-blue-100 text-blue-700' :
+                                               'bg-gray-100 text-gray-700') }}">
+                                            {{ $pago['metodo'] }}
+                                        </span>
+                                    </td>
+                                    <td class="px-3 py-2 text-right font-semibold">${{ number_format($pago['monto'], 0, ',', '.') }}</td>
+                                    <td class="px-3 py-2 text-gray-400">{{ $pago['notas'] ?? '—' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </x-filament::section>
+        @endif
+
         {{-- Orders --}}
         @foreach($resumen['pedidos'] as $pedido)
             <x-filament::section :heading="'Pedido #' . $pedido['id'] . ' — ' . $pedido['fecha']" :collapsed="true" collapsible>

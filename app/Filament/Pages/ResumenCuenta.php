@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\User;
+use App\Services\CuentaClienteService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
@@ -40,27 +41,8 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
 
     public function cargarClientesConSaldo(): void
     {
-        $pedidosPorCliente = Pedido::where('estado', '!=', 'canceled')
-            ->whereNotNull('user_id')
-            ->with('pagos')
-            ->get()
-            ->filter(fn (Pedido $p) => $p->saldo > 0.009)
-            ->groupBy('user_id');
-
-        $this->clientesConSaldo = User::whereIn('id', $pedidosPorCliente->keys())
-            ->get()
-            ->map(function (User $user) use ($pedidosPorCliente) {
-                $pedidosConSaldo = $pedidosPorCliente->get($user->id) ?? collect();
-
-                return [
-                    'id' => $user->id,
-                    'nombre' => $user->name,
-                    'negocio' => $user->negocio,
-                    'celular' => $user->celular,
-                    'saldo' => $pedidosConSaldo->sum('saldo'),
-                    'desde' => $pedidosConSaldo->min('created_at'),
-                ];
-            })
+        $this->clientesConSaldo = app(CuentaClienteService::class)->resumenPorCliente()
+            ->filter(fn (array $c) => $c['saldo'] > 0.009)
             ->sortBy('desde')
             ->values()
             ->map(fn (array $c) => [
@@ -106,8 +88,13 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
             ->orderByDesc('created_at')
             ->get();
 
+        $pagosGenerales = Pago::where('user_id', $this->cliente_id)
+            ->whereNull('pedido_id')
+            ->orderByDesc('fecha')
+            ->get();
+
         $totalPedidos = $pedidos->sum('total');
-        $totalPagado = $pedidos->sum(fn ($p) => $p->pagos->sum('monto'));
+        $totalPagado = $pedidos->sum(fn ($p) => $p->pagos->sum('monto')) + $pagosGenerales->sum('monto');
         $saldoTotal = $totalPedidos - $totalPagado;
 
         $this->resumen = [
@@ -120,6 +107,12 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
             'totalPedidos' => $totalPedidos,
             'totalPagado' => $totalPagado,
             'saldoTotal' => $saldoTotal,
+            'pagosGenerales' => $pagosGenerales->map(fn ($pg) => [
+                'fecha' => $pg->fecha->format('d/m/Y'),
+                'monto' => (float) $pg->monto,
+                'metodo' => Pago::METODOS[$pg->metodo],
+                'notas' => $pg->notas,
+            ])->toArray(),
             'pedidos' => $pedidos->map(fn ($p) => [
                 'id' => $p->id,
                 'fecha' => $p->created_at->format('d/m/Y'),

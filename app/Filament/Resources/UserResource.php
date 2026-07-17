@@ -3,9 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
+use App\Models\Pago;
 use App\Models\User;
+use App\Services\CuentaClienteService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -76,11 +79,52 @@ class UserResource extends Resource
                         'operador' => 'warning',
                         default => 'gray',
                     }),
+                Tables\Columns\TextColumn::make('saldo')
+                    ->label('Saldo')
+                    ->state(fn (User $record) => app(CuentaClienteService::class)->saldoDe($record))
+                    ->formatStateUsing(fn (?float $state) => $state === null ? '—' : '$'.number_format($state, 0, ',', '.'))
+                    ->color(fn (?float $state) => $state !== null && $state > 0.009 ? 'danger' : 'success'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('d/m/Y')
                     ->sortable(),
             ])
             ->actions([
+                Tables\Actions\Action::make('registrar_pago')
+                    ->label('Registrar pago')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('success')
+                    ->visible(fn (User $record) => $record->role === 'cliente')
+                    ->form([
+                        Forms\Components\TextInput::make('monto')
+                            ->numeric()
+                            ->minValue(0)
+                            ->required()
+                            ->prefix('$')
+                            ->autofocus(),
+                        Forms\Components\Select::make('metodo')
+                            ->options(Pago::METODOS)
+                            ->required()
+                            ->default('efectivo'),
+                        Forms\Components\DatePicker::make('fecha')
+                            ->required()
+                            ->default(now()),
+                        Forms\Components\TextInput::make('notas')
+                            ->placeholder('Nota opcional'),
+                    ])
+                    ->action(function (User $record, array $data) {
+                        Pago::create([
+                            'user_id' => $record->id,
+                            'monto' => $data['monto'],
+                            'metodo' => $data['metodo'],
+                            'fecha' => $data['fecha'],
+                            'notas' => $data['notas'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->title('Pago de $'.number_format($data['monto'], 0, ',', '.').' registrado para '.$record->name)
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
