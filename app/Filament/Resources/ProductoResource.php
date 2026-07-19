@@ -77,7 +77,7 @@ class ProductoResource extends Resource
                                     ->required()
                                     ->default(0),
                             ]),
-                            Forms\Components\Grid::make(3)->schema([
+                            Forms\Components\Grid::make(4)->schema([
                                 Forms\Components\TextInput::make('precio_costo')
                                     ->label('Precio de costo')
                                     ->numeric()
@@ -104,6 +104,10 @@ class ProductoResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set))
                                     ->helperText('Completá costo y margen para calcular el precio de arriba solo.'),
+                                Forms\Components\Toggle::make('iva')
+                                    ->label('IVA (21%)')
+                                    ->live()
+                                    ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set)),
                             ])->visible(fn () => auth()->user()?->isAdmin()),
                             Forms\Components\Grid::make(4)->schema([
                                 Forms\Components\TextInput::make('oferta_porcentaje')
@@ -169,6 +173,10 @@ class ProductoResource extends Resource
         $descuento = (float) ($get('descuento_porcentaje') ?? 0);
 
         $precio = (float) $costo * (1 - $descuento / 100) * (1 + (float) $margen / 100);
+
+        if ($get('iva')) {
+            $precio *= 1.21;
+        }
 
         $set('precio', round($precio, 2));
     }
