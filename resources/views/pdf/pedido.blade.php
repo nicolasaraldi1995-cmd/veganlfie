@@ -19,9 +19,15 @@
         .total-row td { font-weight: bold; font-size: 13px; border-top: 2px solid #1a1d21; }
         .badge { display: inline-block; background: #2ab5a5; color: #fff; padding: 2px 10px; border-radius: 10px; font-size: 10px; }
         .footer { margin-top: 30px; text-align: center; color: #9a9da5; font-size: 10px; border-top: 1px solid #e6e4df; padding-top: 10px; }
+        .watermark { position: fixed; top: 320px; left: 0; width: 100%; text-align: center; }
+        .watermark img { width: 380px; opacity: 0.07; }
     </style>
 </head>
 <body>
+    <div class="watermark">
+        <img src="{{ public_path('images/logo.png') }}" alt="">
+    </div>
+
     <div class="header">
         <div>
             <div class="brand">VEGANLIFE<small>Distribuidora Vegana</small></div>
