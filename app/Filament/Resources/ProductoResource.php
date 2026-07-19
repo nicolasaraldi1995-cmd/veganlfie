@@ -115,7 +115,9 @@ class ProductoResource extends Resource
                                     ->minValue(1)
                                     ->maxValue(90)
                                     ->suffix('%')
-                                    ->label('Oferta %'),
+                                    ->label('Oferta %')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularOferta($get, $set)),
                                 Forms\Components\TextInput::make('oferta_precio')
                                     ->numeric()
                                     ->minValue(0)
@@ -179,6 +181,18 @@ class ProductoResource extends Resource
         }
 
         $set('precio', round($precio, 2));
+    }
+
+    private static function recalcularOferta(Forms\Get $get, Forms\Set $set): void
+    {
+        $porcentaje = $get('oferta_porcentaje');
+        $precio = (float) ($get('precio') ?? 0);
+
+        if ($porcentaje === null || $porcentaje === '' || $precio <= 0) {
+            return;
+        }
+
+        $set('oferta_precio', round($precio * (1 - (float) $porcentaje / 100), 2));
     }
 
     public static function table(Table $table): Table
