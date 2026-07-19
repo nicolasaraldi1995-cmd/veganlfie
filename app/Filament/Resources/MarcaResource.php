@@ -34,6 +34,22 @@ class MarcaResource extends Resource
                 ->visibility('public'),
             Forms\Components\Toggle::make('activo')
                 ->default(true),
+            Forms\Components\TextInput::make('descuento_porcentaje')
+                ->label('Descuento del proveedor')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(100)
+                ->suffix('%')
+                ->helperText('Valor por defecto al cargar precios de productos nuevos de esta marca. Se puede ajustar por producto.')
+                ->visible(fn () => auth()->user()?->isAdmin()),
+            Forms\Components\TextInput::make('margen_porcentaje')
+                ->label('Margen de ganancia')
+                ->numeric()
+                ->minValue(-99)
+                ->maxValue(500)
+                ->suffix('%')
+                ->helperText('Valor por defecto al cargar precios de productos nuevos de esta marca. Se puede ajustar por producto.')
+                ->visible(fn () => auth()->user()?->isAdmin()),
         ]);
     }
 

@@ -17,12 +17,16 @@ class Presentacion extends Model
     protected $fillable = [
         'producto_id', 'unidad', 'sku', 'imagen', 'precio', 'stock', 'activo',
         'oferta_porcentaje', 'oferta_precio', 'oferta_inicio', 'oferta_fin',
+        'precio_costo', 'descuento_porcentaje', 'margen_porcentaje',
     ];
 
     protected $appends = ['imagen_url'];
 
     protected $casts = [
         'precio' => 'decimal:2',
+        'precio_costo' => 'decimal:2',
+        'descuento_porcentaje' => 'decimal:2',
+        'margen_porcentaje' => 'decimal:2',
         'oferta_porcentaje' => 'decimal:2',
         'oferta_precio' => 'decimal:2',
         'oferta_inicio' => 'date',

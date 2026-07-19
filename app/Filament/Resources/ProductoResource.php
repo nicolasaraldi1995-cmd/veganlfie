@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductoResource\Pages;
+use App\Models\Marca;
 use App\Models\Producto;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -76,6 +77,34 @@ class ProductoResource extends Resource
                                     ->required()
                                     ->default(0),
                             ]),
+                            Forms\Components\Grid::make(3)->schema([
+                                Forms\Components\TextInput::make('precio_costo')
+                                    ->label('Precio de costo')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->prefix('$')
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set)),
+                                Forms\Components\TextInput::make('descuento_porcentaje')
+                                    ->label('Descuento proveedor')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->suffix('%')
+                                    ->afterStateHydrated(fn (Forms\Components\TextInput $component, Forms\Get $get) => self::heredarDeMarcaSiVacio($component, $get, 'descuento_porcentaje'))
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set)),
+                                Forms\Components\TextInput::make('margen_porcentaje')
+                                    ->label('Margen de ganancia')
+                                    ->numeric()
+                                    ->minValue(-99)
+                                    ->maxValue(500)
+                                    ->suffix('%')
+                                    ->afterStateHydrated(fn (Forms\Components\TextInput $component, Forms\Get $get) => self::heredarDeMarcaSiVacio($component, $get, 'margen_porcentaje'))
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set))
+                                    ->helperText('Completá costo y margen para calcular el precio de arriba solo.'),
+                            ])->visible(fn () => auth()->user()?->isAdmin()),
                             Forms\Components\Grid::make(4)->schema([
                                 Forms\Components\TextInput::make('oferta_porcentaje')
                                     ->numeric()
@@ -117,6 +146,31 @@ class ProductoResource extends Resource
                 ]),
             ])->columnSpanFull(),
         ]);
+    }
+
+    private static function heredarDeMarcaSiVacio(Forms\Components\TextInput $component, Forms\Get $get, string $campo): void
+    {
+        if (filled($component->getState())) {
+            return;
+        }
+
+        $component->state(Marca::find($get('../../marca_id'))?->{$campo});
+    }
+
+    private static function recalcularPrecio(Forms\Get $get, Forms\Set $set): void
+    {
+        $costo = $get('precio_costo');
+        $margen = $get('margen_porcentaje');
+
+        if ($costo === null || $costo === '' || $margen === null || $margen === '') {
+            return;
+        }
+
+        $descuento = (float) ($get('descuento_porcentaje') ?? 0);
+
+        $precio = (float) $costo * (1 - $descuento / 100) * (1 + (float) $margen / 100);
+
+        $set('precio', round($precio, 2));
     }
 
     public static function table(Table $table): Table
