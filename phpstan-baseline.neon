@@ -277,12 +277,6 @@ parameters:
 			path: app/Http/Controllers/MarcaController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nombre\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/OfertasController.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:activos\(\)\.$#'
 			identifier: method.notFound
 			count: 1

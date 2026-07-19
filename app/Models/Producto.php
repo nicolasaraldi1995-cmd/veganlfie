@@ -51,6 +51,9 @@ class Producto extends Model
         });
     }
 
+    /**
+     * @return BelongsTo<Marca, $this>
+     */
     public function marca(): BelongsTo
     {
         return $this->belongsTo(Marca::class);
