@@ -19,6 +19,12 @@ class ViewPedido extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('descargar_remito')
+                ->label('Descargar remito')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('gray')
+                ->visible(fn () => auth()->user()?->isAdmin() || auth()->user()?->isOperador())
+                ->url(fn () => route('pedido.pdf', $this->record), shouldOpenInNewTab: true),
             Actions\Action::make('registrar_pago')
                 ->label('Registrar pago')
                 ->icon('heroicon-o-banknotes')
