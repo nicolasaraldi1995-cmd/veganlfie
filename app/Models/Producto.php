@@ -33,7 +33,7 @@ class Producto extends Model
     {
         static::creating(function (Producto $producto) {
             if (empty($producto->slug)) {
-                $producto->slug = Str::slug($producto->nombre);
+                $producto->slug = static::generarSlugUnico(Str::slug($producto->nombre));
             }
         });
 
@@ -49,6 +49,26 @@ class Producto extends Model
         static::restoring(function (Producto $producto) {
             $producto->presentaciones()->onlyTrashed()->restore();
         });
+    }
+
+    /**
+     * "productos.slug" es único en base (ver migración): dos productos con el
+     * mismo nombre (o incluso marcas distintas) generaban el mismo slug, y el
+     * segundo quedaba inalcanzable porque {producto:slug} siempre resuelve al
+     * primero que matchea. withTrashed() porque un slug de un producto borrado
+     * sigue "ocupado" para el índice único.
+     */
+    protected static function generarSlugUnico(string $base): string
+    {
+        $slug = $base;
+        $sufijo = 2;
+
+        while (static::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$sufijo}";
+            $sufijo++;
+        }
+
+        return $slug;
     }
 
     /**
