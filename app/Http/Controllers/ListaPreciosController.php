@@ -51,6 +51,13 @@ class ListaPreciosController extends Controller
 
     public function pdf()
     {
+        // ponytail: ~2000 productos tarda ~28s y ~320MB en dompdf, por encima
+        // de los límites default de PHP. Techo: si el catálogo crece bastante
+        // más, esto deja de alcanzar y hay que sacar la generación del request
+        // (job en cola + aviso cuando esté listo).
+        ini_set('memory_limit', '512M');
+        set_time_limit(90);
+
         $categorias = Categoria::activos()
             ->has('productos')
             ->with(['productos' => fn ($q) => $q->activos()
