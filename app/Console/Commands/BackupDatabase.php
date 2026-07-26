@@ -60,18 +60,25 @@ class BackupDatabase extends Command
                 $config['database'],
             ]);
             $process->setTimeout(300);
-            $process->run();
+
+            // Se escribe el dump al .gz a medida que llega en vez de acumular
+            // todo en memoria con getOutput() -- una base grande podía duplicar
+            // su tamaño completo en RAM antes de comprimir una sola línea.
+            $gzip = gzopen($path, 'w9');
+            $process->run(function (string $type, string $buffer) use ($gzip) {
+                if ($type === Process::OUT) {
+                    gzwrite($gzip, $buffer);
+                }
+            });
+            gzclose($gzip);
 
             if (! $process->isSuccessful()) {
+                @unlink($path);
                 $this->error('mysqldump falló: '.$process->getErrorOutput());
                 Log::channel('single')->error('Backup de base de datos falló', ['error' => $process->getErrorOutput()]);
 
                 return self::FAILURE;
             }
-
-            $gzip = gzopen($path, 'w9');
-            gzwrite($gzip, $process->getOutput());
-            gzclose($gzip);
         } finally {
             @unlink($credentialsFile);
         }
