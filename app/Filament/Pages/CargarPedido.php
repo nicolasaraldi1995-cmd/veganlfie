@@ -91,8 +91,10 @@ class CargarPedido extends Page implements Forms\Contracts\HasForms
 
         $marcaIds = Marca::where('nombre', 'like', "%{$texto}%")->pluck('id');
         $productoIds = Producto::activos()
-            ->where('nombre', 'like', "%{$texto}%")
-            ->orWhereIn('marca_id', $marcaIds)
+            ->where(function ($q) use ($texto, $marcaIds) {
+                $q->where('nombre', 'like', "%{$texto}%")
+                    ->orWhereIn('marca_id', $marcaIds);
+            })
             ->pluck('id');
 
         $productos = [];
