@@ -183,6 +183,11 @@ class ProductoResource extends Resource
         }
 
         $set('precio', round($precio, 2));
+
+        // Si ya había una oferta % cargada, su precio de oferta quedaba con
+        // el valor viejo (calculado sobre el precio anterior) hasta que se
+        // volviera a tocar "Oferta %" a mano.
+        self::recalcularOferta($get, $set);
     }
 
     private static function recalcularOferta(Forms\Get $get, Forms\Set $set): void
