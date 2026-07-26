@@ -76,4 +76,28 @@ class PedidoResourceOperadorTest extends TestCase
         $this->assertEquals(750, $item->subtotal);
         $this->assertEquals(750, $pedido->fresh()->total);
     }
+
+    public function test_operador_no_ve_el_precio_en_el_selector_de_productos_del_pedido(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $operador = User::factory()->create(['role' => 'operador']);
+        $cliente = User::factory()->create(['role' => 'cliente']);
+        $presentacion = Presentacion::factory()->create(['precio' => 54321, 'stock' => 10]);
+        $pedido = Pedido::factory()->create(['user_id' => $cliente->id, 'estado' => 'pending']);
+        PedidoItem::create([
+            'pedido_id' => $pedido->id,
+            'presentacion_id' => $presentacion->id,
+            'cantidad' => 1,
+            'precio_unitario' => 54321,
+            'subtotal' => 54321,
+        ]);
+
+        // El repeater necesita al menos un item cargado para renderizar el
+        // Select de "presentacion_id" -- si no, no hay nada que ver para nadie.
+        Livewire::actingAs($admin)->test(EditPedido::class, ['record' => $pedido->id])
+            ->assertSee('54321');
+
+        Livewire::actingAs($operador)->test(EditPedido::class, ['record' => $pedido->id])
+            ->assertDontSee('54321');
+    }
 }

@@ -72,12 +72,14 @@ class PedidoResource extends Resource
                             Forms\Components\Select::make('presentacion_id')
                                 ->label('Producto')
                                 ->options(function () {
+                                    $mostrarPrecio = auth()->user()?->isAdmin();
+
                                     return Presentacion::with('producto.marca')
                                         ->activos()
                                         ->whereHas('producto')
                                         ->get()
                                         ->mapWithKeys(fn ($p) => [
-                                            $p->id => "{$p->producto->nombre} — {$p->unidad} (".($p->producto->marca->nombre ?? 'Sin marca').") \${$p->precio}",
+                                            $p->id => "{$p->producto->nombre} — {$p->unidad} (".($p->producto->marca->nombre ?? 'Sin marca').')'.($mostrarPrecio ? " \${$p->precio}" : ''),
                                         ]);
                                 })
                                 ->searchable()
