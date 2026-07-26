@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Green,
             ])
             ->sidebarCollapsibleOnDesktop()
+            ->databaseTransactions()
             ->navigationGroups([
                 'Ventas',
                 'Catálogo',

@@ -69,8 +69,10 @@ class ProductoResource extends Resource
                                     ->numeric()
                                     ->minValue(0)
                                     ->required()
+                                    ->default(0)
                                     ->prefix('$')
-                                    ->visible(fn () => auth()->user()?->isAdmin()),
+                                    ->visible(fn () => auth()->user()?->isAdmin())
+                                    ->dehydratedWhenHidden(),
                                 Forms\Components\TextInput::make('stock')
                                     ->numeric()
                                     ->minValue(0)

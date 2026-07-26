@@ -116,14 +116,16 @@ class PedidoResource extends Resource
                                     $set('subtotal', round((float) $state * $cantidad, 2));
                                 })
                                 ->columnSpan(1)
-                                ->visible(fn () => auth()->user()?->isAdmin()),
+                                ->visible(fn () => auth()->user()?->isAdmin())
+                                ->dehydratedWhenHidden(),
                             Forms\Components\TextInput::make('subtotal')
                                 ->numeric()
                                 ->prefix('$')
                                 ->disabled()
                                 ->dehydrated()
                                 ->columnSpan(1)
-                                ->visible(fn () => auth()->user()?->isAdmin()),
+                                ->visible(fn () => auth()->user()?->isAdmin())
+                                ->dehydratedWhenHidden(),
                         ])
                         ->columns(6)
                         ->addActionLabel('Agregar producto')
