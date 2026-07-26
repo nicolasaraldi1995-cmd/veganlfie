@@ -123,6 +123,8 @@ class ProductoResource extends Resource
                                 Forms\Components\TextInput::make('oferta_precio')
                                     ->numeric()
                                     ->minValue(0)
+                                    ->lt('precio')
+                                    ->validationMessages(['lt' => 'El precio de oferta tiene que ser menor al precio normal.'])
                                     ->prefix('$')
                                     ->label('Precio oferta'),
                                 Forms\Components\DatePicker::make('oferta_inicio')

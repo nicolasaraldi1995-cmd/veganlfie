@@ -51,4 +51,17 @@ class ProductoResourcePrecioTest extends TestCase
             ->assertSet('data.presentaciones.0.precio', 2500)
             ->assertSet('data.presentaciones.0.oferta_precio', 2250);
     }
+
+    public function test_no_se_puede_cargar_un_precio_de_oferta_mayor_o_igual_al_precio(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $producto = Producto::factory()->create(['marca_id' => Marca::factory()->create()->id]);
+        Presentacion::factory()->create(['producto_id' => $producto->id, 'precio' => 1000]);
+
+        Livewire::actingAs($admin)
+            ->test(EditProducto::class, ['record' => $producto->id])
+            ->set('data.presentaciones.0.oferta_precio', 1000)
+            ->call('save')
+            ->assertHasErrors(['data.presentaciones.0.oferta_precio']);
+    }
 }
