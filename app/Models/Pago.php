@@ -34,6 +34,22 @@ class Pago extends Model
         });
     }
 
+    /**
+     * Excluye pagos atados a un pedido que después se canceló (si no tienen
+     * pedido_id, son pagos generales del cliente y siempre cuentan para el
+     * saldo, sin importar qué pasó con ningún pedido puntual).
+     */
+    public function scopeVigentes($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('pedido_id')
+                ->orWhereHas('pedido', fn ($p) => $p->where('estado', '!=', 'canceled'));
+        });
+    }
+
+    /**
+     * @return BelongsTo<Pedido, $this>
+     */
     public function pedido(): BelongsTo
     {
         return $this->belongsTo(Pedido::class);

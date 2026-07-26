@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CuentaClienteService
 {
@@ -14,16 +16,22 @@ class CuentaClienteService
      * total pagado (pedidos + pagos generales) y saldo. El saldo de un
      * pedido puntual nunca se ve afectado por un pago general: eso es a
      * propósito, para no marcar como "pagado" un pedido específico sin que
-     * el usuario lo indique a mano.
+     * el usuario lo indique a mano. Un pago SÍ se descuenta del pago general
+     * cuando está atado a un pedido puntual que se cancela -- ver
+     * Pago::scopeVigentes().
      */
     public function resumenPorCliente(): Collection
     {
-        $pedidosPorCliente = Pedido::where('estado', '!=', 'canceled')
+        $pedidosPorCliente = DB::table('pedidos')
+            ->whereNull('deleted_at')
+            ->where('estado', '!=', 'canceled')
             ->whereNotNull('user_id')
+            ->selectRaw('user_id, SUM(total) as total, MIN(created_at) as desde')
+            ->groupBy('user_id')
             ->get()
-            ->groupBy('user_id');
+            ->keyBy('user_id');
 
-        $pagadoPorCliente = Pago::whereNotNull('user_id')
+        $pagadoPorCliente = Pago::whereNotNull('user_id')->vigentes()
             ->selectRaw('user_id, SUM(monto) as total')
             ->groupBy('user_id')
             ->pluck('total', 'user_id');
@@ -31,8 +39,8 @@ class CuentaClienteService
         return User::whereIn('id', $pedidosPorCliente->keys())
             ->get()
             ->map(function (User $user) use ($pedidosPorCliente, $pagadoPorCliente) {
-                $pedidos = $pedidosPorCliente->get($user->id) ?? collect();
-                $totalPedidos = (float) $pedidos->sum('total');
+                $fila = $pedidosPorCliente->get($user->id);
+                $totalPedidos = (float) ($fila->total ?? 0);
                 $totalPagado = (float) ($pagadoPorCliente->get($user->id) ?? 0);
 
                 return [
@@ -45,7 +53,7 @@ class CuentaClienteService
                     'total' => $totalPedidos,
                     'pagado' => $totalPagado,
                     'saldo' => $totalPedidos - $totalPagado,
-                    'desde' => $pedidos->min('created_at'),
+                    'desde' => Carbon::parse($fila->desde),
                 ];
             })
             ->values();
@@ -67,7 +75,7 @@ class CuentaClienteService
             return null;
         }
 
-        $totalPagado = (float) Pago::where('user_id', $user->id)->sum('monto');
+        $totalPagado = (float) Pago::where('user_id', $user->id)->vigentes()->sum('monto');
 
         return $totalPedidos - $totalPagado;
     }
