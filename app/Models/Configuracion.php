@@ -15,8 +15,22 @@ class Configuracion extends Model
         'controlar_stock' => 'boolean',
     ];
 
+    /**
+     * Memoizado en el contenedor (una vez por request/app lifetime): se llama
+     * una vez por ítem de pedido al descontar stock, y no cambia dentro de un
+     * mismo request. Usar el contenedor en vez de una propiedad estática
+     * evita que el valor quede pegado entre tests, que corren en un solo
+     * proceso PHP largo.
+     */
     public static function actual(): self
     {
-        return static::firstOrCreate(['id' => 1], ['envio_gratis_desde' => 600000, 'controlar_stock' => true]);
+        if (! app()->bound(static::class.'@actual')) {
+            app()->instance(
+                static::class.'@actual',
+                static::firstOrCreate(['id' => 1], ['envio_gratis_desde' => 600000, 'controlar_stock' => true])
+            );
+        }
+
+        return app(static::class.'@actual');
     }
 }
