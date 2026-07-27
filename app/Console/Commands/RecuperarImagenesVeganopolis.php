@@ -7,12 +7,14 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-#[Signature('productos:recuperar-imagenes-veganopolis {--umbral=82} {--limite=} {--dry-run}')]
+#[Signature('productos:recuperar-imagenes-veganopolis {--umbral=82} {--limite=} {--tanda=10} {--dry-run}')]
 #[Description('Busca en veganopolis.com.ar (la web anterior) la foto de cada producto activo sin imagen real y la sube al bucket S3')]
 class RecuperarImagenesVeganopolis extends Command
 {
@@ -22,6 +24,7 @@ class RecuperarImagenesVeganopolis extends Command
     {
         $umbral = (float) $this->option('umbral');
         $limite = $this->option('limite');
+        $tanda = max(1, (int) $this->option('tanda'));
         $dryRun = (bool) $this->option('dry-run');
 
         // El campo "imagen" puede tener una ruta cargada y aun así no haber
@@ -47,21 +50,30 @@ class RecuperarImagenesVeganopolis extends Command
         $aplicados = 0;
         $revisar = [];
 
-        foreach ($productos as $producto) {
-            $candidato = $this->mejorCandidato($producto->nombre);
+        // La web vieja es lenta (hosting legado): buscar de a uno tardaba ~6s
+        // por producto (horas para todo el catálogo). Se busca en tandas
+        // concurrentes -- moderado a propósito para no tumbar un hosting
+        // viejo -- y solo la descarga+subida de cada match queda secuencial.
+        foreach ($productos->chunk($tanda) as $grupo) {
+            $candidatosPorId = $this->mejoresCandidatos($grupo);
 
-            if ($candidato && $candidato['score'] >= $umbral) {
-                if ($dryRun || $this->aplicar($producto, $candidato)) {
-                    $aplicados++;
+            foreach ($grupo as $producto) {
+                $candidato = $candidatosPorId[$producto->id] ?? null;
+
+                if ($candidato && $candidato['score'] >= $umbral) {
+                    if ($dryRun || $this->aplicar($producto, $candidato)) {
+                        $aplicados++;
+                    } else {
+                        $revisar[] = [$producto, $candidato];
+                    }
                 } else {
                     $revisar[] = [$producto, $candidato];
                 }
-            } else {
-                $revisar[] = [$producto, $candidato];
+
+                $bar->advance();
             }
 
-            $bar->advance();
-            usleep(150_000);
+            usleep(200_000);
         }
 
         $bar->finish();
@@ -101,38 +113,71 @@ class RecuperarImagenesVeganopolis extends Command
     }
 
     /**
-     * @return array{id: string, archivo: string, nombre: string, score: float}|null
+     * Busca los productos de un grupo en paralelo (una consulta por producto)
+     * y, para los que no trajeron ningún candidato, reintenta en paralelo con
+     * un nombre más corto. Devuelve el mejor candidato puntuado por id.
+     *
+     * @param  Collection<int, Producto>  $productos
+     * @return array<int, array{id: string, archivo: string, nombre: string, score: float}|null>
      */
-    private function mejorCandidato(string $nombre): ?array
+    private function mejoresCandidatos(Collection $productos): array
     {
-        $candidatos = $this->buscar($nombre);
+        $candidatosPorId = $this->buscarEnParalelo($productos->pluck('nombre', 'id'));
 
-        if ($candidatos->isEmpty()) {
-            // El nombre completo suele traer calificadores (tamaño, sabor, marca)
-            // que no están en la web vieja: reintentamos con solo las primeras
-            // palabras para tener al menos algún candidato para puntuar.
-            $palabras = explode(' ', $nombre);
-            $candidatos = $this->buscar(implode(' ', array_slice($palabras, 0, 2)));
+        $sinResultado = $productos->filter(fn (Producto $p) => $candidatosPorId[$p->id]->isEmpty());
+
+        if ($sinResultado->isNotEmpty()) {
+            // El nombre completo suele traer calificadores (tamaño, sabor,
+            // marca) que no están en la web vieja: reintentamos con solo las
+            // primeras palabras para tener al menos algún candidato.
+            $consultasCortas = $sinResultado->mapWithKeys(fn (Producto $p) => [$p->id => $this->primerasPalabras($p->nombre)]);
+
+            foreach ($this->buscarEnParalelo($consultasCortas) as $id => $candidatos) {
+                $candidatosPorId[$id] = $candidatos;
+            }
         }
 
-        /** @var array{id: string, archivo: string, nombre: string, score: float}|null $mejor */
-        $mejor = $candidatos
-            ->map(fn (array $c) => [...$c, 'score' => $this->similitud($nombre, $c['nombre'])])
-            ->sortByDesc('score')
-            ->first();
+        return $productos->mapWithKeys(function (Producto $p) use ($candidatosPorId) {
+            $mejor = $candidatosPorId[$p->id]
+                ->map(fn (array $c) => [...$c, 'score' => $this->similitud($p->nombre, $c['nombre'])])
+                ->sortByDesc('score')
+                ->first();
 
-        return $mejor;
+            return [$p->id => $mejor];
+        })->all();
+    }
+
+    private function primerasPalabras(string $nombre, int $cantidad = 2): string
+    {
+        return implode(' ', array_slice(explode(' ', $nombre), 0, $cantidad));
+    }
+
+    /**
+     * @param  Collection<int, string>  $consultasPorId
+     * @return Collection<int, Collection<int, array{id: string, archivo: string, nombre: string}>>
+     */
+    private function buscarEnParalelo(Collection $consultasPorId): Collection
+    {
+        $respuestas = Http::pool(fn (Pool $pool) => $consultasPorId->map(
+            fn (string $query, int $id) => $pool->as((string) $id)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                ->withOptions(['verify' => resource_path('certs/veganopolis-chain.pem')])
+                ->get(self::BASE_URL.'/index.php', ['buscar' => $query])
+        )->all());
+
+        return $consultasPorId->keys()->mapWithKeys(function (int $id) use ($respuestas) {
+            $respuesta = $respuestas[(string) $id];
+            $html = $respuesta instanceof Response ? (string) $respuesta->body() : '';
+
+            return [$id => $this->parsearCandidatos($html)];
+        });
     }
 
     /**
      * @return Collection<int, array{id: string, archivo: string, nombre: string}>
      */
-    private function buscar(string $query): Collection
+    private function parsearCandidatos(string $html): Collection
     {
-        $html = (string) $this->cliente()
-            ->get(self::BASE_URL.'/index.php', ['buscar' => $query])
-            ->body();
-
         preg_match_all(
             '/<a href="producto\.php\?id=(\d+)">\s*<img class="card-img-top" src="([^"]+?)\s*">\s*<\/a>\s*<div class="card-body">\s*<a href="producto\.php\?id=\d+" style="text-decoration: none;">\s*<h6 class="card-title[^"]*"[^>]*>([^<]*)<\/h6>/s',
             $html,
