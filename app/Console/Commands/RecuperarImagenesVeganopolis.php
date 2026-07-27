@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-#[Signature('productos:recuperar-imagenes-veganopolis {--umbral=82} {--dry-run}')]
-#[Description('Busca en veganopolis.com.ar (la web anterior) la foto de cada producto activo sin imagen y la sube al bucket S3')]
+#[Signature('productos:recuperar-imagenes-veganopolis {--umbral=82} {--limite=} {--dry-run}')]
+#[Description('Busca en veganopolis.com.ar (la web anterior) la foto de cada producto activo sin imagen real y la sube al bucket S3')]
 class RecuperarImagenesVeganopolis extends Command
 {
     private const BASE_URL = 'https://veganopolis.com.ar';
@@ -20,16 +20,24 @@ class RecuperarImagenesVeganopolis extends Command
     public function handle(): int
     {
         $umbral = (float) $this->option('umbral');
+        $limite = $this->option('limite');
         $dryRun = (bool) $this->option('dry-run');
 
+        // El campo "imagen" puede tener una ruta cargada y aun así no haber
+        // foto real: el disco local de producción se borra en cada deploy,
+        // así que la mayoría de esas rutas ya apuntan a un archivo que no
+        // existe más. Por eso no alcanza con mirar si el campo está vacío.
         $productos = Producto::activos()
-            ->where(function ($q) {
-                $q->whereNull('imagen')->orWhere('imagen', '');
-            })
             ->orderBy('id')
-            ->get(['id', 'nombre']);
+            ->get(['id', 'nombre', 'imagen'])
+            ->filter(fn (Producto $p) => blank($p->imagen) || ! Storage::disk('public')->exists($p->imagen))
+            ->values();
 
-        $this->info('Productos sin imagen: '.$productos->count().($dryRun ? ' (dry-run: no se sube ni guarda nada)' : ''));
+        if ($limite !== null) {
+            $productos = $productos->take((int) $limite);
+        }
+
+        $this->info('Productos sin foto real: '.$productos->count().($dryRun ? ' (dry-run: no se sube ni guarda nada)' : ''));
 
         $bar = $this->output->createProgressBar($productos->count());
         $aplicados = 0;

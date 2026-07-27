@@ -74,6 +74,66 @@ class RecuperarImagenesVeganopolisTest extends TestCase
         $this->assertNull($producto->refresh()->imagen);
     }
 
+    public function test_reprocesa_un_producto_cuya_ruta_guardada_ya_no_existe_en_el_disco(): void
+    {
+        // El campo "imagen" tiene una ruta cargada, pero el archivo no está en
+        // el disco 'public' (fake, sin ese archivo): así quedan la mayoría de
+        // los productos en producción después de que un deploy borra el disco
+        // local. Tiene que reprocesarse igual que uno con imagen null.
+        Storage::fake('public');
+        Storage::fake('s3');
+        Http::fake([
+            'veganopolis.com.ar/index.php*' => Http::response($this->fakeBusqueda('99', 'abc123.jpeg', 'Not milk original')),
+            'veganopolis.com.ar/imagenes/*' => Http::response('contenido-fake-de-imagen', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
+        $marca = Marca::factory()->create();
+        $producto = Producto::factory()->create([
+            'marca_id' => $marca->id,
+            'nombre' => 'Not milk original',
+            'imagen' => 'productos/ya-no-existe.jpg',
+        ]);
+
+        $this->artisan('productos:recuperar-imagenes-veganopolis')->assertSuccessful();
+
+        $this->assertNotEquals('productos/ya-no-existe.jpg', $producto->refresh()->imagen);
+        Storage::disk('s3')->assertExists($producto->imagen);
+    }
+
+    public function test_no_toca_un_producto_cuyo_archivo_todavia_existe(): void
+    {
+        Storage::fake('public');
+        Storage::fake('s3');
+        Storage::disk('public')->put('productos/existe.jpg', 'contenido real');
+
+        $marca = Marca::factory()->create();
+        $producto = Producto::factory()->create([
+            'marca_id' => $marca->id,
+            'nombre' => 'Not milk original',
+            'imagen' => 'productos/existe.jpg',
+        ]);
+
+        $this->artisan('productos:recuperar-imagenes-veganopolis')->assertSuccessful();
+
+        $this->assertEquals('productos/existe.jpg', $producto->refresh()->imagen);
+    }
+
+    public function test_limite_corta_la_tanda_a_ese_numero_de_productos(): void
+    {
+        Storage::fake('s3');
+        Http::fake([
+            'veganopolis.com.ar/index.php*' => Http::response($this->fakeBusqueda('99', 'abc123.jpeg', 'Not milk original')),
+            'veganopolis.com.ar/imagenes/*' => Http::response('contenido-fake-de-imagen', 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+
+        $marca = Marca::factory()->create();
+        Producto::factory()->count(3)->create(['marca_id' => $marca->id, 'nombre' => 'Not milk original', 'imagen' => null]);
+
+        $this->artisan('productos:recuperar-imagenes-veganopolis', ['--limite' => 1])->assertSuccessful();
+
+        $this->assertCount(1, Producto::whereNotNull('imagen')->get());
+    }
+
     public function test_dry_run_no_escribe_nada(): void
     {
         Storage::fake('s3');
