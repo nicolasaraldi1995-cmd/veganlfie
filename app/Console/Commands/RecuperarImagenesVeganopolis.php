@@ -24,13 +24,16 @@ class RecuperarImagenesVeganopolis extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         // El campo "imagen" puede tener una ruta cargada y aun así no haber
-        // foto real: el disco local de producción se borra en cada deploy,
-        // así que la mayoría de esas rutas ya apuntan a un archivo que no
-        // existe más. Por eso no alcanza con mirar si el campo está vacío.
+        // foto real: el disco local de producción se borra en cada deploy, así
+        // que la mayoría de esas rutas ya apuntan a un archivo que no existe
+        // más. Se chequea contra 's3' (no 'public') porque ese es el disco al
+        // que este comando sube todo, y el destino final una vez activado
+        // FILAMENT_FILESYSTEM_DISK=s3 -- así una segunda corrida no vuelve a
+        // reprocesar lo que ya se recuperó en una tanda anterior.
         $productos = Producto::activos()
             ->orderBy('id')
             ->get(['id', 'nombre', 'imagen'])
-            ->filter(fn (Producto $p) => blank($p->imagen) || ! Storage::disk('public')->exists($p->imagen))
+            ->filter(fn (Producto $p) => blank($p->imagen) || ! Storage::disk('s3')->exists($p->imagen))
             ->values();
 
         if ($limite !== null) {

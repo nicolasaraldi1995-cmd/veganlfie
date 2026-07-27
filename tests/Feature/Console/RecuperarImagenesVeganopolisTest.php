@@ -77,10 +77,10 @@ class RecuperarImagenesVeganopolisTest extends TestCase
     public function test_reprocesa_un_producto_cuya_ruta_guardada_ya_no_existe_en_el_disco(): void
     {
         // El campo "imagen" tiene una ruta cargada, pero el archivo no está en
-        // el disco 'public' (fake, sin ese archivo): así quedan la mayoría de
-        // los productos en producción después de que un deploy borra el disco
-        // local. Tiene que reprocesarse igual que uno con imagen null.
-        Storage::fake('public');
+        // el disco 's3' (fake, sin ese archivo): así quedan la mayoría de los
+        // productos en producción después de que un deploy borra el disco
+        // local (y esa ruta nunca se subió a s3). Tiene que reprocesarse
+        // igual que uno con imagen null.
         Storage::fake('s3');
         Http::fake([
             'veganopolis.com.ar/index.php*' => Http::response($this->fakeBusqueda('99', 'abc123.jpeg', 'Not milk original')),
@@ -102,9 +102,8 @@ class RecuperarImagenesVeganopolisTest extends TestCase
 
     public function test_no_toca_un_producto_cuyo_archivo_todavia_existe(): void
     {
-        Storage::fake('public');
         Storage::fake('s3');
-        Storage::disk('public')->put('productos/existe.jpg', 'contenido real');
+        Storage::disk('s3')->put('productos/existe.jpg', 'contenido real');
 
         $marca = Marca::factory()->create();
         $producto = Producto::factory()->create([
