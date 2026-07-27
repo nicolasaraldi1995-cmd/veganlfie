@@ -6,6 +6,7 @@ use App\Models\Producto;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -86,8 +87,7 @@ class RecuperarImagenesVeganopolis extends Command
      */
     private function aplicar(Producto $producto, array $candidato): bool
     {
-        $respuesta = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
-            ->get(self::BASE_URL.'/imagenes/'.$candidato['archivo']);
+        $respuesta = $this->cliente()->get(self::BASE_URL.'/imagenes/'.$candidato['archivo']);
 
         if (! $respuesta->successful() || ! str_starts_with((string) $respuesta->header('Content-Type'), 'image/')) {
             return false;
@@ -129,7 +129,7 @@ class RecuperarImagenesVeganopolis extends Command
      */
     private function buscar(string $query): Collection
     {
-        $html = (string) Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
+        $html = (string) $this->cliente()
             ->get(self::BASE_URL.'/index.php', ['buscar' => $query])
             ->body();
 
@@ -145,6 +145,19 @@ class RecuperarImagenesVeganopolis extends Command
             'archivo' => basename(trim($m[2])),
             'nombre' => trim(html_entity_decode($m[3])),
         ]);
+    }
+
+    /**
+     * La web vieja usa una raíz de Let's Encrypt (ISRG Root YR) tan nueva que
+     * todavía no está en el bundle de CAs del servidor de producción, y
+     * además no manda la cadena intermedia -- el navegador la resuelve solo,
+     * cURL no. Se arma un bundle propio con esa raíz + la intermedia
+     * faltante + las raíces estándar, en vez de desactivar la verificación.
+     */
+    private function cliente(): PendingRequest
+    {
+        return Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
+            ->withOptions(['verify' => resource_path('certs/veganopolis-chain.pem')]);
     }
 
     private function similitud(string $a, string $b): float
