@@ -6,6 +6,7 @@ use App\Models\Producto;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
@@ -99,7 +100,14 @@ class RecuperarImagenesVeganopolis extends Command
      */
     private function aplicar(Producto $producto, array $candidato): bool
     {
-        $respuesta = $this->cliente()->get(self::BASE_URL.'/imagenes/'.$candidato['archivo']);
+        // El hosting de la web vieja es lento e inestable: un timeout acá no
+        // puede tirar abajo la corrida entera, tiene que contar como "no se
+        // pudo" y seguir con el siguiente producto.
+        try {
+            $respuesta = $this->cliente()->get(self::BASE_URL.'/imagenes/'.$candidato['archivo']);
+        } catch (ConnectionException) {
+            return false;
+        }
 
         if (! $respuesta->successful() || ! str_starts_with((string) $respuesta->header('Content-Type'), 'image/')) {
             return false;
@@ -162,6 +170,8 @@ class RecuperarImagenesVeganopolis extends Command
             fn (string $query, int $id) => $pool->as((string) $id)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
                 ->withOptions(['verify' => resource_path('certs/veganopolis-chain.pem')])
+                ->timeout(15)
+                ->connectTimeout(5)
                 ->get(self::BASE_URL.'/index.php', ['buscar' => $query])
         )->all());
 
@@ -202,7 +212,9 @@ class RecuperarImagenesVeganopolis extends Command
     private function cliente(): PendingRequest
     {
         return Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
-            ->withOptions(['verify' => resource_path('certs/veganopolis-chain.pem')]);
+            ->withOptions(['verify' => resource_path('certs/veganopolis-chain.pem')])
+            ->timeout(15)
+            ->connectTimeout(5);
     }
 
     private function similitud(string $a, string $b): float

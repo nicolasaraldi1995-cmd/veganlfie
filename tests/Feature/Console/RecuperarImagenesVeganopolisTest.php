@@ -5,6 +5,7 @@ namespace Tests\Feature\Console;
 use App\Models\Marca;
 use App\Models\Producto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -42,6 +43,27 @@ class RecuperarImagenesVeganopolisTest extends TestCase
         $this->assertNotNull($producto->imagen);
         Storage::disk('s3')->assertExists($producto->imagen);
         $this->assertEquals('contenido-fake-de-imagen', Storage::disk('s3')->get($producto->imagen));
+    }
+
+    public function test_un_timeout_al_descargar_una_imagen_no_hace_fallar_todo_el_comando(): void
+    {
+        // El hosting de la web vieja es lento e inestable: si un timeout
+        // puntual tirara una excepción sin atajar, el comando entero se
+        // caería sin terminar de procesar el resto de la tanda.
+        Storage::fake('s3');
+        Http::fake([
+            'veganopolis.com.ar/index.php*' => Http::response($this->fakeBusqueda('99', 'abc123.jpeg', 'Not milk original')),
+            'veganopolis.com.ar/imagenes/*' => function () {
+                throw new ConnectionException('Operation timed out after 30000 milliseconds');
+            },
+        ]);
+
+        $marca = Marca::factory()->create();
+        $producto = Producto::factory()->create(['marca_id' => $marca->id, 'nombre' => 'Not milk original', 'imagen' => null]);
+
+        $this->artisan('productos:recuperar-imagenes-veganopolis')->assertSuccessful();
+
+        $this->assertNull($producto->refresh()->imagen);
     }
 
     public function test_no_toca_el_producto_si_no_hay_ninguna_coincidencia(): void
