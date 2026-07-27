@@ -2,16 +2,20 @@
 
 namespace App\Concerns;
 
-use Illuminate\Support\Facades\Storage;
-
 trait HasMediaUrl
 {
+    /**
+     * Sirve todo a través de /media/{path} (ver MediaController) en vez de
+     * la URL pública del disco directamente -- el dominio del bucket S3
+     * devuelve 503 en el embed cruzado de <img>, aunque el archivo esté
+     * perfecto (confirmado con curl y navegación directa).
+     */
     protected function resolveMediaUrl(?string $path): ?string
     {
         if (! $path) {
             return null;
         }
 
-        return Storage::disk(config('filament.default_filesystem_disk'))->url($path);
+        return url('/media/'.$path);
     }
 }
