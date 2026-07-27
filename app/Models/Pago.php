@@ -55,6 +55,9 @@ class Pago extends Model
         return $this->belongsTo(Pedido::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
