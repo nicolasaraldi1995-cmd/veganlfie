@@ -210,6 +210,16 @@ class ProductoResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('imagen')
                     ->circular(),
+                // Marca visual para encontrar de un vistazo los productos que
+                // quedaron sin foto (hay ~189 tras perderse el disco viejo).
+                Tables\Columns\IconColumn::make('sin_imagen')
+                    ->label('')
+                    ->getStateUsing(fn (Producto $record) => blank($record->imagen))
+                    ->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->trueColor('warning')
+                    ->falseIcon('')
+                    ->tooltip(fn (Producto $record) => blank($record->imagen) ? 'Sin foto' : null),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable()
@@ -243,6 +253,10 @@ class ProductoResource extends Resource
                     ->searchable()
                     ->preload()
                     ->label('Categoría'),
+                Tables\Filters\Filter::make('sin_imagen')
+                    ->label('Sin foto')
+                    ->query(fn ($query) => $query->where(fn ($q) => $q->whereNull('imagen')->orWhere('imagen', '')))
+                    ->toggle(),
                 Tables\Filters\TernaryFilter::make('sin_tacc')->label('Sin TACC'),
                 Tables\Filters\TernaryFilter::make('frio')->label('Frío'),
                 Tables\Filters\TernaryFilter::make('congelado'),
