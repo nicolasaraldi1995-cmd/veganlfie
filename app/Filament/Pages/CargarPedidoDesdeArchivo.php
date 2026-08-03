@@ -11,7 +11,6 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -37,8 +36,12 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
 
     public ?string $cliente_id = null;
 
-    /** @var array<int, mixed> */
-    public array $archivo = [];
+    /**
+     * El contenido del .json, leído en el navegador. Se manda el texto (unos
+     * cientos de bytes) en vez de subir el archivo: la subida de archivos de
+     * Livewire viene dando problemas en este proyecto y acá no hace falta.
+     */
+    public string $contenido = '';
 
     public array $vistaPrevia = [];
 
@@ -64,12 +67,6 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
                     ]))
                 ->searchable()
                 ->required(),
-            Forms\Components\FileUpload::make('archivo')
-                ->label('Archivo del pedido')
-                ->acceptedFileTypes(['application/json', 'text/plain'])
-                ->helperText('El .json que te mandó el cliente por WhatsApp desde la lista de precios.')
-                ->required()
-                ->storeFiles(false),
         ]);
     }
 
@@ -143,7 +140,7 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
             return;
         }
 
-        $this->reset(['cliente_id', 'archivo', 'vistaPrevia', 'mostrarPrevia']);
+        $this->reset(['cliente_id', 'contenido', 'vistaPrevia', 'mostrarPrevia']);
 
         Notification::make()
             ->title("Pedido #{$pedido->id} creado para {$cliente->name}")
@@ -158,21 +155,15 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
      */
     private function leerArchivo(): array
     {
-        $subido = collect($this->archivo)->first();
-
-        if (! $subido) {
-            throw ValidationException::withMessages(['archivo' => 'Subí el archivo del pedido.']);
+        if (trim($this->contenido) === '') {
+            throw ValidationException::withMessages(['contenido' => 'Elegí el archivo del pedido.']);
         }
 
-        $contenido = $subido instanceof \Illuminate\Http\UploadedFile
-            ? file_get_contents($subido->getRealPath())
-            : Storage::get($subido);
-
-        $datos = json_decode((string) $contenido, true);
+        $datos = json_decode($this->contenido, true);
 
         if (! is_array($datos) || ! isset($datos['items']) || ! is_array($datos['items'])) {
             throw ValidationException::withMessages([
-                'archivo' => 'El archivo no tiene el formato esperado. Tiene que ser el .json que genera la lista de precios.',
+                'contenido' => 'El archivo no tiene el formato esperado. Tiene que ser el .json que genera la lista de precios.',
             ]);
         }
 
@@ -210,7 +201,7 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
 
         if (! $items) {
             throw ValidationException::withMessages([
-                'archivo' => 'El archivo no tiene productos que sigan disponibles.',
+                'contenido' => 'El archivo no tiene productos que sigan disponibles.',
             ]);
         }
 

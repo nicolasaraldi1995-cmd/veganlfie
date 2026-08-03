@@ -7,7 +7,6 @@ use App\Models\Pedido;
 use App\Models\Presentacion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -20,16 +19,18 @@ class CargarPedidoDesdeArchivoTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function archivo(array $items, string $negocio = 'Kiosco El Sol'): UploadedFile
+    /**
+     * El contenido del .json tal cual lo lee el navegador y lo manda a la
+     * página (no se sube el archivo, ver CargarPedidoDesdeArchivo::$contenido).
+     */
+    private function archivo(array $items, string $negocio = 'Kiosco El Sol'): string
     {
-        $json = json_encode([
+        return (string) json_encode([
             'veganlife_pedido' => 1,
             'negocio' => $negocio,
             'fecha' => '2026-08-03',
             'items' => $items,
         ]);
-
-        return UploadedFile::fake()->createWithContent('pedido.json', (string) $json);
     }
 
     public function test_crea_el_pedido_con_lo_que_cargo_el_cliente(): void
@@ -42,10 +43,10 @@ class CargarPedidoDesdeArchivoTest extends TestCase
         Livewire::actingAs($admin)
             ->test(CargarPedidoDesdeArchivo::class)
             ->set('cliente_id', (string) $cliente->id)
-            ->set('archivo', [$this->archivo([
+            ->set('contenido', $this->archivo([
                 ['id' => $a->id, 'cantidad' => 3],
                 ['id' => $b->id, 'cantidad' => 2],
-            ])])
+            ]))
             ->call('confirmar');
 
         $pedido = Pedido::where('user_id', $cliente->id)->first();
@@ -67,9 +68,9 @@ class CargarPedidoDesdeArchivoTest extends TestCase
             ->test(CargarPedidoDesdeArchivo::class)
             ->set('cliente_id', (string) $cliente->id)
             // El archivo dice otro precio: el que vale es el de la base.
-            ->set('archivo', [$this->archivo([
+            ->set('contenido', $this->archivo([
                 ['id' => $pres->id, 'cantidad' => 2, 'precio' => 99],
-            ])])
+            ]))
             ->call('confirmar');
 
         $pedido = Pedido::where('user_id', $cliente->id)->first();
@@ -87,10 +88,10 @@ class CargarPedidoDesdeArchivoTest extends TestCase
         Livewire::actingAs($admin)
             ->test(CargarPedidoDesdeArchivo::class)
             ->set('cliente_id', (string) $cliente->id)
-            ->set('archivo', [$this->archivo([
+            ->set('contenido', $this->archivo([
                 ['id' => $pres->id, 'cantidad' => 1],
                 ['id' => 999999, 'cantidad' => 5],
-            ])])
+            ]))
             ->call('confirmar');
 
         $pedido = Pedido::where('user_id', $cliente->id)->first();
@@ -106,7 +107,7 @@ class CargarPedidoDesdeArchivoTest extends TestCase
         Livewire::actingAs($admin)
             ->test(CargarPedidoDesdeArchivo::class)
             ->set('cliente_id', (string) $cliente->id)
-            ->set('archivo', [UploadedFile::fake()->createWithContent('cualquiera.json', 'esto no es json')])
+            ->set('contenido', 'esto no es json')
             ->call('confirmar');
 
         $this->assertEquals(0, Pedido::count());
