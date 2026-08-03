@@ -128,6 +128,13 @@ function searchSubmit() {
             </div>
         </nav>
 
+        <!-- Espacio de ancho completo, arriba del panel de navegación: el
+             banner va acá para ocupar toda la pantalla y no sólo la columna de
+             contenido. Debajo la página sigue igual, con el menú a la izquierda. -->
+        <div v-if="$slots.encabezado" class="px-3 sm:px-4 pt-3 sm:pt-4">
+            <slot name="encabezado" />
+        </div>
+
         <div class="flex max-w-[1440px] mx-auto">
             <!-- Sidebar -->
             <aside class="hidden lg:block w-[240px] shrink-0 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto border-r border-border px-4 py-6">

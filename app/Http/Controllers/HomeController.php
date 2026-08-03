@@ -17,7 +17,7 @@ class HomeController extends Controller
             'id' => $b->id,
             'imagen' => $b->imagen_url,
             'posicion' => $b->posicion ?? 'center',
-            'ajuste' => $b->ajuste ?? 'cover',
+            'ajuste' => $b->ajuste ?? 'contain',
             'url' => $b->url,
             'destino_tipo' => $b->destino_tipo,
         ]);

@@ -44,7 +44,9 @@ class BannerResource extends Resource
             Forms\Components\Select::make('ajuste')
                 ->label('Cómo entra la imagen')
                 ->options(Banner::AJUSTES)
-                ->default('cover')
+                // Por defecto no se recorta: el hueco lo cubre el fondo
+                // desenfocado, así que recortar ya no hace falta.
+                ->default('contain')
                 ->required()
                 ->native(false)
                 ->live()

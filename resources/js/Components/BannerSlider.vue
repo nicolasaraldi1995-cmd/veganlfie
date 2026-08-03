@@ -29,7 +29,14 @@ onUnmounted(() => clearInterval(timer));
              (1600x640). Nada se recorta: la imagen entra entera y el hueco que
              sobre lo tapa el fondo desenfocado de más abajo, así la tira siempre
              se ve llena de punta a punta, suba la medida que suba. -->
-        <div class="relative overflow-hidden bg-surface-2 aspect-[5/2]">
+        <!-- max-h para que en pantallas anchas no se vuelva altísimo: a 5:2, el
+             ancho completo de un monitor daría más de 700px de alto. Al topearlo
+             la imagen se sigue viendo entera y el sobrante lo cubre el fondo
+             desenfocado. -->
+        <!-- w-full es necesario: con aspect-ratio y max-height juntos, el
+             navegador achica el ancho para respetar la proporción en vez de
+             estirarse. Fijando el ancho, lo que cede es el alto. -->
+        <div class="relative w-full overflow-hidden bg-surface-2 aspect-[5/2] max-h-[460px] rounded-2xl border border-border shadow-sm">
             <!-- Fundido con opacidad, sin TransitionGroup: combinado con v-show
                  las clases de la animación quedaban pegadas y varias diapositivas
                  se quedaban en opacidad 0 para siempre, o sea el banner en blanco.

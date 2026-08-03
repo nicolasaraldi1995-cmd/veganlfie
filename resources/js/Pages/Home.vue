@@ -29,8 +29,11 @@ function scrollTo(id) {
         <meta property="og:type" content="website" />
     </Head>
     <PublicLayout>
+        <template #encabezado>
+            <BannerSlider :banners="banners" />
+        </template>
+
         <WelcomeGuideModal v-if="mostrarGuia" @close="mostrarGuia = false" />
-        <BannerSlider :banners="banners" />
 
         <div class="px-6 py-5">
             <!-- Más vendidos -->
