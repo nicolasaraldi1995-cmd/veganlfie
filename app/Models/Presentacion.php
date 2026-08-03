@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * El producto usa borrado lógico, así que la relación puede venir en null
+ * aunque la columna sea obligatoria: por eso el código la lee con ?->.
+ *
+ * @property-read Producto|null $producto
+ */
 class Presentacion extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
@@ -66,6 +72,9 @@ class Presentacion extends Model
         return $data;
     }
 
+    /**
+     * @return BelongsTo<Producto, $this>
+     */
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);

@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
+/**
+ * Marca y categoría usan borrado lógico, así que la relación puede venir en
+ * null aunque la columna sea obligatoria: por eso el código las lee con ?->.
+ *
+ * @property-read Categoria|null $categoria
+ * @property-read Marca|null $marca
+ */
 class Producto extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
@@ -79,6 +86,9 @@ class Producto extends Model
         return $this->belongsTo(Marca::class);
     }
 
+    /**
+     * @return BelongsTo<Categoria, $this>
+     */
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(Categoria::class);

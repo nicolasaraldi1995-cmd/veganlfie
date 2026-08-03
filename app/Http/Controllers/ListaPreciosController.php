@@ -62,7 +62,7 @@ class ListaPreciosController extends Controller
         $marcas = Marca::activos()
             ->has('productos')
             ->with(['productos' => fn ($q) => $q->activos()
-                ->with(['presentaciones' => fn ($p) => $p->activos()->orderBy('precio')])
+                ->with(['categoria', 'presentaciones' => fn ($p) => $p->activos()->orderBy('precio')])
                 ->orderBy('nombre'),
             ])
             ->orderBy('nombre')
@@ -75,10 +75,14 @@ class ListaPreciosController extends Controller
                     ->filter(fn ($p) => $p->presentaciones->isNotEmpty())
                     ->map(fn ($p) => [
                         'nombre' => $p->nombre,
+                        'categoria' => $p->categoria?->nombre ?? 'Sin categoría',
                         'sin_tacc' => (bool) $p->sin_tacc,
                         'frio' => (bool) $p->frio,
                         'congelado' => (bool) $p->congelado,
                         'presentaciones' => $p->presentaciones->map(fn ($pr) => [
+                            // El id viaja en el archivo del pedido para que al
+                            // cargarlo el cruce sea exacto y no por nombre.
+                            'id' => $pr->id,
                             'unidad' => $pr->unidad,
                             'precio' => (float) $pr->precio,
                             'precio_final' => $pr->precio_final,

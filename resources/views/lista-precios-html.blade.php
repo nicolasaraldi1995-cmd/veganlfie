@@ -1,6 +1,11 @@
 @php
     // Iniciales presentes, para armar el índice alfabético lateral.
     $iniciales = $marcas->pluck('inicial')->unique()->values();
+
+    // Categorías presentes, para el filtro (el listado se agrupa por marca).
+    $categorias = $marcas
+        ->flatMap(fn ($m) => collect($m['productos'])->pluck('categoria'))
+        ->unique()->sort()->values();
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -54,6 +59,13 @@
     .contador{font-size:11px;color:var(--grafito);white-space:nowrap;font-variant-numeric:tabular-nums}
     .contador b{color:var(--azul);font-weight:700}
 
+    .filtro-cat{padding:0 16px 9px}
+    .filtro-cat select{width:100%;padding:9px 12px;font-size:13.5px;font-family:inherit;color:var(--tinta);
+        background:var(--blanco);border:1px solid var(--linea);border-radius:10px;-webkit-appearance:none;appearance:none;
+        background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%238b968f' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat:no-repeat;background-position:right 11px center;background-size:15px;padding-right:34px}
+    .filtro-cat select:focus{outline:none;border-color:var(--azul-claro)}
+
     .indice{display:flex;gap:2px;overflow-x:auto;padding:0 12px 9px;scrollbar-width:none}
     .indice::-webkit-scrollbar{display:none}
     .indice button{
@@ -88,12 +100,38 @@
     .t-frio{background:#dceefb;color:#1d6a96}
     .t-cong{background:#dbe3fb;color:#2b4796}
 
-    .pres{display:flex;align-items:baseline;gap:8px;padding:4px 0 2px}
-    .unidad{font-size:12.5px;color:var(--grafito);min-width:62px}
-    .guia{flex:1;border-bottom:1px dotted rgba(0,0,0,.18);transform:translateY(-3px)}
-    .precio{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+    .pres{display:flex;align-items:center;gap:8px;padding:5px 0 3px}
+    .unidad{font-size:12.5px;color:var(--grafito);min-width:56px}
+    .guia{flex:1;border-bottom:1px dotted rgba(0,0,0,.18)}
+    .precio{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
     .precio.hay-oferta{color:var(--oferta)}
     .antes{font-size:11.5px;color:var(--tenue);text-decoration:line-through;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+    /* ---------- Planilla: cantidad e importe ---------- */
+    .cant{width:52px;flex-shrink:0;text-align:center;font-size:14px;font-family:inherit;font-weight:700;
+        color:var(--tinta);background:var(--blanco);border:1px solid var(--linea);border-radius:8px;padding:6px 2px;
+        -webkit-appearance:none;appearance:none;-moz-appearance:textfield}
+    .cant::-webkit-outer-spin-button,.cant::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+    .cant:focus{outline:none;border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(92,168,204,.2)}
+    .cant.cargado{border-color:var(--azul);background:rgba(49,121,155,.08)}
+    .importe{min-width:74px;text-align:right;font-size:13.5px;font-weight:800;font-variant-numeric:tabular-nums;
+        color:var(--azul);white-space:nowrap}
+    .importe.vacio{color:rgba(0,0,0,.15)}
+
+    /* ---------- Barra del pedido ---------- */
+    .pedido{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--blanco);
+        border-top:1px solid var(--linea);box-shadow:0 -4px 20px -8px rgba(0,0,0,.3);
+        transform:translateY(110%);transition:transform .25s ease;padding-bottom:env(safe-area-inset-bottom)}
+    .pedido.ver{transform:translateY(0)}
+    .pedido-in{max-width:760px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:12px}
+    .pedido-tot{line-height:1.15}
+    .pedido-tot b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+    .pedido-tot span{font-size:11px;color:var(--grafito)}
+    .pedido-btn{margin-left:auto;display:flex;gap:7px}
+    .bt{border:0;border-radius:10px;padding:11px 16px;font:800 13px inherit;font-family:inherit;cursor:pointer;transition:.15s}
+    .bt-w{background:#25D366;color:#fff}
+    .bt-w:active{background:#1da851}
+    .bt-x{background:#eef0ed;color:var(--grafito)}
 
     /* ---------- Otros ---------- */
     .vacio{display:none;padding:56px 20px;text-align:center;color:var(--grafito);font-size:14px}
@@ -134,6 +172,14 @@
             </div>
             <span class="contador"><b id="n">{{ number_format($totalProductos, 0, ',', '.') }}</b> productos</span>
         </div>
+        <div class="filtro-cat">
+            <select id="cat">
+                <option value="">Todas las categorías</option>
+                @foreach ($categorias as $categoria)
+                    <option value="{{ $categoria }}">{{ $categoria }}</option>
+                @endforeach
+            </select>
+        </div>
         <nav class="indice" aria-label="Ir a marcas por inicial">
             @foreach ($iniciales as $inicial)
                 <button type="button" data-inicial="{{ $inicial }}">{{ $inicial }}</button>
@@ -151,7 +197,7 @@
                 </button>
                 <div class="cuerpo">
                     @foreach ($marca['productos'] as $p)
-                        <div class="prod" data-prod="{{ mb_strtolower($p['nombre']) }}">
+                        <div class="prod" data-prod="{{ mb_strtolower($p['nombre']) }}" data-cat="{{ $p['categoria'] }}">
                             <div class="prod-nom">{{ $p['nombre'] }}@if ($p['sin_tacc'] || $p['frio'] || $p['congelado'])<span class="tags">@if ($p['sin_tacc'])<span class="tag t-tacc">sin tacc</span>@endif @if ($p['frio'])<span class="tag t-frio">frío</span>@endif @if ($p['congelado'])<span class="tag t-cong">congelado</span>@endif</span>@endif</div>
                             @foreach ($p['presentaciones'] as $pr)
                                 <div class="pres">
@@ -163,6 +209,11 @@
                                     @else
                                         <span class="precio">${{ number_format($pr['precio'], 0, ',', '.') }}</span>
                                     @endif
+                                    <input class="cant" type="number" min="0" inputmode="numeric" placeholder="0"
+                                        data-id="{{ $pr['id'] }}"
+                                        data-precio="{{ $pr['precio_final'] }}"
+                                        data-nombre="{{ $p['nombre'] }} {{ $pr['unidad'] }}">
+                                    <span class="importe vacio">—</span>
                                 </div>
                             @endforeach
                         </div>
@@ -178,6 +229,19 @@
         Precios sujetos a modificación · Consultá disponibilidad por zona<br>
         <a href="https://wa.me/5492477504048">WhatsApp 2477 50-4048</a> · Pergamino, Buenos Aires
     </footer>
+</div>
+
+<div class="pedido" id="pedido">
+    <div class="pedido-in">
+        <div class="pedido-tot">
+            <b id="ped-total">$0</b>
+            <span id="ped-items">0 productos</span>
+        </div>
+        <div class="pedido-btn">
+            <button class="bt bt-x" id="ped-borrar" type="button">Borrar</button>
+            <button class="bt bt-w" id="ped-enviar" type="button">Enviar pedido</button>
+        </div>
+    </div>
 </div>
 
 <button class="arriba" id="arriba" type="button" aria-label="Volver arriba">
@@ -227,8 +291,12 @@
         timer = setTimeout(filtrar, 120);
     });
 
+    var selectCat = document.getElementById('cat');
+    selectCat.addEventListener('change', filtrar);
+
     function filtrar() {
         var termino = input.value.toLowerCase().trim();
+        var categoria = selectCat.value;
         var visibles = 0;
 
         secciones.forEach(function (seccion) {
@@ -236,23 +304,136 @@
             var enSeccion = 0;
 
             seccion.querySelectorAll('.prod').forEach(function (prod) {
-                var mostrar = !termino || coincideMarca || prod.dataset.prod.indexOf(termino) !== -1;
+                var porTexto = !termino || coincideMarca || prod.dataset.prod.indexOf(termino) !== -1;
+                var porCategoria = !categoria || prod.dataset.cat === categoria;
+                var mostrar = porTexto && porCategoria;
                 prod.style.display = mostrar ? '' : 'none';
                 if (mostrar) enSeccion++;
             });
 
             seccion.style.display = enSeccion ? '' : 'none';
             seccion.querySelector('.cuenta').textContent = enSeccion;
-            // Buscando conviene ver los resultados sin tener que abrir cada marca.
-            if (termino) abrir(seccion, enSeccion > 0);
+            // Filtrando conviene ver los resultados sin abrir cada marca a mano.
+            if (termino || categoria) abrir(seccion, enSeccion > 0);
             visibles += enSeccion;
         });
 
-        if (!termino) secciones.forEach(function (s) { abrir(s, false); });
+        if (!termino && !categoria) secciones.forEach(function (s) { abrir(s, false); });
 
         contador.textContent = formatear(visibles);
         vacio.classList.toggle('ver', visibles === 0);
     }
+
+    // ---------- Planilla del pedido ----------
+    var campos = Array.prototype.slice.call(document.querySelectorAll('.cant'));
+    var barra = document.getElementById('pedido');
+    var totalEl = document.getElementById('ped-total');
+    var itemsEl = document.getElementById('ped-items');
+    var GUARDADO = 'veganlife-pedido';
+
+    // Las cantidades sobreviven a cerrar el archivo: el cliente puede armar el
+    // pedido en varios ratos sin perder lo cargado.
+    function guardar() {
+        var datos = {};
+        campos.forEach(function (c) { if (+c.value > 0) datos[c.dataset.id] = +c.value; });
+        try { localStorage.setItem(GUARDADO, JSON.stringify(datos)); } catch (e) {}
+    }
+
+    function restaurar() {
+        try {
+            var datos = JSON.parse(localStorage.getItem(GUARDADO) || '{}');
+            campos.forEach(function (c) { if (datos[c.dataset.id]) c.value = datos[c.dataset.id]; });
+        } catch (e) {}
+    }
+
+    function lineas() {
+        return campos.filter(function (c) { return +c.value > 0; }).map(function (c) {
+            return {
+                id: +c.dataset.id,
+                cantidad: +c.value,
+                nombre: c.dataset.nombre,
+                precio: +c.dataset.precio,
+            };
+        });
+    }
+
+    function recalcular() {
+        var total = 0;
+        campos.forEach(function (c) {
+            var cant = +c.value;
+            var imp = c.parentNode.querySelector('.importe');
+            c.classList.toggle('cargado', cant > 0);
+            if (cant > 0) {
+                var sub = cant * (+c.dataset.precio);
+                total += sub;
+                imp.textContent = '$' + formatear(Math.round(sub));
+                imp.classList.remove('vacio');
+            } else {
+                imp.textContent = '—';
+                imp.classList.add('vacio');
+            }
+        });
+
+        var cant = lineas().length;
+        totalEl.textContent = '$' + formatear(Math.round(total));
+        itemsEl.textContent = cant + (cant === 1 ? ' producto' : ' productos');
+        barra.classList.toggle('ver', cant > 0);
+        guardar();
+    }
+
+    campos.forEach(function (c) { c.addEventListener('input', recalcular); });
+
+    document.getElementById('ped-borrar').addEventListener('click', function () {
+        if (!confirm('¿Borrar todo el pedido?')) return;
+        campos.forEach(function (c) { c.value = ''; });
+        recalcular();
+    });
+
+    document.getElementById('ped-enviar').addEventListener('click', enviar);
+
+    function enviar() {
+        var items = lineas();
+        if (!items.length) return;
+
+        var nombre = (prompt('¿A nombre de qué negocio es el pedido?') || '').trim();
+        if (!nombre) return;
+
+        var total = items.reduce(function (s, i) { return s + i.cantidad * i.precio; }, 0);
+        var pedido = {
+            veganlife_pedido: 1,
+            negocio: nombre,
+            fecha: new Date().toISOString().slice(0, 10),
+            total: Math.round(total),
+            items: items.map(function (i) { return { id: i.id, cantidad: i.cantidad }; }),
+        };
+
+        var texto = JSON.stringify(pedido, null, 1);
+        var archivo = new File([texto], 'pedido-' + nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json',
+            { type: 'application/json' });
+
+        // Compartir el archivo directo (abre WhatsApp entre las opciones). Si el
+        // navegador no lo soporta, se descarga para adjuntarlo a mano.
+        if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+            navigator.share({
+                files: [archivo],
+                title: 'Pedido ' + nombre,
+                text: 'Pedido de ' + nombre + ' — $' + formatear(Math.round(total)),
+            }).catch(function () {});
+        } else {
+            var url = URL.createObjectURL(archivo);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = archivo.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            alert('Se descargó el pedido. Adjuntalo por WhatsApp para enviarlo.');
+        }
+    }
+
+    restaurar();
+    recalcular();
 
     window.addEventListener('scroll', function () {
         arriba.classList.toggle('ver', window.scrollY > 700);
