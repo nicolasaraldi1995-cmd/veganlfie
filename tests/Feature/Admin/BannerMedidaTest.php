@@ -92,8 +92,10 @@ class BannerMedidaTest extends TestCase
 
         $banner = $this->crearBanner($ruta);
 
-        $this->assertSame('banners/pesada.jpg', $banner->imagen);
-        $this->assertFalse(Storage::disk('public')->exists($ruta), 'El archivo original quedó ocupando lugar.');
+        // El archivo se sobreescribe en su mismo nombre: renombrarlo dejaba a
+        // la base apuntando a un archivo que ya no existía.
+        $this->assertSame($ruta, $banner->imagen);
+        $this->assertTrue(Storage::disk('public')->exists($banner->imagen));
         $this->assertLessThan($pesoOriginal, strlen(Storage::disk('public')->get($banner->imagen)));
     }
 

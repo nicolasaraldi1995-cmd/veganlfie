@@ -41,22 +41,25 @@ class MediaController extends Controller
     }
 
     /**
-     * La lista de extensiones nunca va a cubrir todo lo que sube un cliente,
-     * así que cuando la extensión no figura se mira el contenido del archivo.
-     * Servir una imagen como octet-stream hace que el navegador no la muestre.
+     * Manda el contenido, no el nombre: el servidor reprocesa las imágenes de
+     * banners y marcas y las deja en JPEG sin renombrar el archivo, así que un
+     * ".png" puede tener un JPEG adentro. La extensión queda de respaldo para
+     * lo que finfo no reconoce, como los SVG.
      */
     private function tipoDe(string $path, string $contenido): string
     {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        if (isset(self::TIPOS[$extension])) {
-            return self::TIPOS[$extension];
+        if ($extension === 'svg') {
+            return self::TIPOS['svg'];
         }
 
         $detectado = (new \finfo(FILEINFO_MIME_TYPE))->buffer($contenido);
 
-        return is_string($detectado) && str_starts_with($detectado, 'image/')
-            ? $detectado
-            : 'application/octet-stream';
+        if (is_string($detectado) && str_starts_with($detectado, 'image/')) {
+            return $detectado;
+        }
+
+        return self::TIPOS[$extension] ?? 'application/octet-stream';
     }
 }

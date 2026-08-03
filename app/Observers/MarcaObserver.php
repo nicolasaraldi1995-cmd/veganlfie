@@ -47,17 +47,11 @@ class MarcaObserver
             return;
         }
 
-        // Sale en JPEG, así que cambia la extensión: dejar la vieja haría que
-        // el navegador reciba un tipo equivocado.
-        $destino = preg_replace('/\.[^.]+$/', '', $origen).'.jpg';
-
-        $disco->put($destino, $cuadrada, 'public');
-
-        if ($destino !== $origen) {
-            $disco->delete($origen);
-        }
-
-        $marca->logo = $destino;
+        // Se sobreescribe el mismo archivo, sin renombrar: renombrar dejaba a
+        // la base apuntando a un archivo borrado si algún guardado posterior
+        // reponía la ruta vieja. MediaController mira el contenido, así que no
+        // importa que el nombre diga .png y adentro haya un JPEG.
+        $disco->put($origen, $cuadrada, 'public');
     }
 
     private function encuadrar(string $contenido, int $anchoOriginal, int $altoOriginal): ?string

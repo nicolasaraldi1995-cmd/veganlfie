@@ -56,17 +56,13 @@ class BannerObserver
 
         $this->anotarMedida($banner, $liviana);
 
-        // Sale siempre en JPEG, así que el archivo cambia de nombre: dejar la
-        // extensión vieja haría que el navegador reciba un tipo equivocado.
-        $destino = preg_replace('/\.[^.]+$/', '', $origen).'.jpg';
-
-        $disco->put($destino, $liviana, 'public');
-
-        if ($destino !== $origen) {
-            $disco->delete($origen);
-        }
-
-        $banner->imagen = $destino;
+        // Se sobreescribe el mismo archivo, sin renombrar. Antes se guardaba
+        // como .jpg y se borraba el original: si algún guardado posterior
+        // reponía la ruta vieja, la base quedaba apuntando a un archivo que ya
+        // no existía y el banner desaparecía. Como el contenido sale en JPEG y
+        // el nombre puede decir .png, MediaController mira el contenido del
+        // archivo para saber qué tipo servir.
+        $disco->put($origen, $liviana, 'public');
     }
 
     /**
