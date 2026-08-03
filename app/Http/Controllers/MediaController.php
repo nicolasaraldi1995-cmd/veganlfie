@@ -14,6 +14,10 @@ class MediaController extends Controller
         'webp' => 'image/webp',
         'gif' => 'image/gif',
         'svg' => 'image/svg+xml',
+        // Windows guarda los JPEG como .jfif y los celulares sacan .avif.
+        // Sin estas dos el navegador recibía octet-stream y no mostraba nada.
+        'jfif' => 'image/jpeg',
+        'avif' => 'image/avif',
     ];
 
     /**
@@ -29,10 +33,30 @@ class MediaController extends Controller
 
         abort_unless($disk->exists($path), 404);
 
+        $contenido = $disk->get($path) ?? '';
+
+        return response($contenido)
+            ->header('Content-Type', $this->tipoDe($path, $contenido))
+            ->header('Cache-Control', 'public, max-age=604800');
+    }
+
+    /**
+     * La lista de extensiones nunca va a cubrir todo lo que sube un cliente,
+     * así que cuando la extensión no figura se mira el contenido del archivo.
+     * Servir una imagen como octet-stream hace que el navegador no la muestre.
+     */
+    private function tipoDe(string $path, string $contenido): string
+    {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 
-        return response($disk->get($path))
-            ->header('Content-Type', self::TIPOS[$extension] ?? 'application/octet-stream')
-            ->header('Cache-Control', 'public, max-age=604800');
+        if (isset(self::TIPOS[$extension])) {
+            return self::TIPOS[$extension];
+        }
+
+        $detectado = (new \finfo(FILEINFO_MIME_TYPE))->buffer($contenido);
+
+        return is_string($detectado) && str_starts_with($detectado, 'image/')
+            ? $detectado
+            : 'application/octet-stream';
     }
 }
