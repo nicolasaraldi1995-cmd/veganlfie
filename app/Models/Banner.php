@@ -14,7 +14,7 @@ class Banner extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
 
-    protected $fillable = ['imagen', 'posicion', 'ajuste', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
+    protected $fillable = ['imagen', 'ancho', 'alto', 'posicion', 'ajuste', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
 
     /**
      * Cómo entra la imagen en la franja del banner.

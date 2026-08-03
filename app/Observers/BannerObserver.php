@@ -43,6 +43,8 @@ class BannerObserver
         // Se mira el archivo y no si cambió: así un banner viejo y pesado se
         // aliviana con solo abrirlo y guardarlo, sin volver a subirlo.
         if ($this->estaBien($contenido)) {
+            $this->anotarMedida($banner, $contenido);
+
             return;
         }
 
@@ -51,6 +53,8 @@ class BannerObserver
         if ($liviana === null) {
             return;
         }
+
+        $this->anotarMedida($banner, $liviana);
 
         // Sale siempre en JPEG, así que el archivo cambia de nombre: dejar la
         // extensión vieja haría que el navegador reciba un tipo equivocado.
@@ -63,6 +67,22 @@ class BannerObserver
         }
 
         $banner->imagen = $destino;
+    }
+
+    /**
+     * La franja del inicio usa esta medida para tomar la forma de la imagen,
+     * en vez de obligar a que la imagen tenga una forma determinada.
+     */
+    private function anotarMedida(Banner $banner, string $contenido): void
+    {
+        $medidas = @getimagesizefromstring($contenido);
+
+        if ($medidas === false) {
+            return;
+        }
+
+        $banner->ancho = $medidas[0];
+        $banner->alto = $medidas[1];
     }
 
     private function estaBien(string $contenido): bool
