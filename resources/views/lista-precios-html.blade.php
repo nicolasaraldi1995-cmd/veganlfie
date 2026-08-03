@@ -123,7 +123,11 @@
         border-top:1px solid var(--linea);box-shadow:0 -4px 20px -8px rgba(0,0,0,.3);
         transform:translateY(110%);transition:transform .25s ease;padding-bottom:env(safe-area-inset-bottom)}
     .pedido.ver{transform:translateY(0)}
-    .pedido-in{max-width:760px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:12px}
+    .pedido-in{max-width:760px;margin:0 auto;padding:11px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .pedido-negocio{width:100%;order:-1;padding:9px 12px;font-size:15px;font-family:inherit;color:var(--tinta);
+        background:var(--papel);border:1px solid var(--linea);border-radius:9px;-webkit-appearance:none;appearance:none}
+    .pedido-negocio:focus{outline:none;border-color:var(--azul-claro);box-shadow:0 0 0 3px rgba(92,168,204,.18)}
+    .pedido-negocio.falta{border-color:var(--oferta);box-shadow:0 0 0 3px rgba(192,57,47,.15)}
     .pedido-tot{line-height:1.15}
     .pedido-tot b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
     .pedido-tot span{font-size:11px;color:var(--grafito)}
@@ -233,6 +237,8 @@
 
 <div class="pedido" id="pedido">
     <div class="pedido-in">
+        <input class="pedido-negocio" id="ped-negocio" type="text" autocomplete="organization"
+               placeholder="Nombre de tu negocio">
         <div class="pedido-tot">
             <b id="ped-total">$0</b>
             <span id="ped-items">0 productos</span>
@@ -329,7 +335,19 @@
     var barra = document.getElementById('pedido');
     var totalEl = document.getElementById('ped-total');
     var itemsEl = document.getElementById('ped-items');
+    var campoNegocio = document.getElementById('ped-negocio');
     var GUARDADO = 'veganlife-pedido';
+    var GUARDADO_NEGOCIO = 'veganlife-negocio';
+
+    // El nombre del negocio se escribe una sola vez y queda recordado.
+    try {
+        campoNegocio.value = localStorage.getItem(GUARDADO_NEGOCIO) || '';
+    } catch (e) {}
+
+    campoNegocio.addEventListener('input', function () {
+        campoNegocio.classList.remove('falta');
+        try { localStorage.setItem(GUARDADO_NEGOCIO, campoNegocio.value.trim()); } catch (e) {}
+    });
 
     // Las cantidades sobreviven a cerrar el archivo: el cliente puede armar el
     // pedido en varios ratos sin perder lo cargado.
@@ -391,12 +409,32 @@
 
     document.getElementById('ped-enviar').addEventListener('click', enviar);
 
+    function descargar(archivo) {
+        var url = URL.createObjectURL(archivo);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = archivo.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        alert('Se guardó el pedido en tu teléfono como "' + archivo.name + '".\n\nAdjuntalo en WhatsApp para enviarlo.');
+    }
+
     function enviar() {
         var items = lineas();
         if (!items.length) return;
 
-        var nombre = (prompt('¿A nombre de qué negocio es el pedido?') || '').trim();
-        if (!nombre) return;
+        // El nombre se pide en la barra y no con un prompt: un cuadro de diálogo
+        // consume el gesto del usuario que el navegador exige para compartir, y
+        // el envío quedaba fallando en silencio.
+        var nombre = campoNegocio.value.trim();
+        if (!nombre) {
+            campoNegocio.classList.add('falta');
+            campoNegocio.focus();
+            return;
+        }
+        campoNegocio.classList.remove('falta');
 
         var total = items.reduce(function (s, i) { return s + i.cantidad * i.precio; }, 0);
         var pedido = {
@@ -407,29 +445,37 @@
             items: items.map(function (i) { return { id: i.id, cantidad: i.cantidad }; }),
         };
 
-        var texto = JSON.stringify(pedido, null, 1);
-        var archivo = new File([texto], 'pedido-' + nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json',
-            { type: 'application/json' });
+        var archivo = new File(
+            [JSON.stringify(pedido, null, 1)],
+            'pedido-' + nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json',
+            { type: 'application/json' }
+        );
 
-        // Compartir el archivo directo (abre WhatsApp entre las opciones). Si el
-        // navegador no lo soporta, se descarga para adjuntarlo a mano.
-        if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-            navigator.share({
-                files: [archivo],
-                title: 'Pedido ' + nombre,
-                text: 'Pedido de ' + nombre + ' — $' + formatear(Math.round(total)),
-            }).catch(function () {});
-        } else {
-            var url = URL.createObjectURL(archivo);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = archivo.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-            alert('Se descargó el pedido. Adjuntalo por WhatsApp para enviarlo.');
+        // Compartir directo (WhatsApp aparece entre las opciones). Si el celular
+        // no lo soporta o el usuario cancela a mitad, se descarga para adjuntar
+        // a mano: nunca se queda sin hacer nada.
+        var puedeCompartir = false;
+        try {
+            puedeCompartir = !!(navigator.canShare && navigator.canShare({ files: [archivo] }) && navigator.share);
+        } catch (e) {
+            puedeCompartir = false;
         }
+
+        if (!puedeCompartir) {
+            descargar(archivo);
+
+            return;
+        }
+
+        navigator.share({
+            files: [archivo],
+            title: 'Pedido ' + nombre,
+            text: 'Pedido de ' + nombre + ' — $' + formatear(Math.round(total)),
+        }).catch(function (error) {
+            // AbortError = el usuario cerró el menú a propósito, no hay que insistir.
+            if (error && error.name === 'AbortError') return;
+            descargar(archivo);
+        });
     }
 
     restaurar();
