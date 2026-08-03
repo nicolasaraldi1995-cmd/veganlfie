@@ -32,6 +32,26 @@ class Marca extends Model
         });
     }
 
+    /**
+     * Descuento y margen por marca son los valores internos que usa el panel
+     * para calcular precios: no tienen por qué salir al sitio público, donde
+     * el listado de marcas se manda entero al navegador.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $data = parent::toArray();
+
+        if (auth()->user()?->isAdmin() ?? false) {
+            return $data;
+        }
+
+        unset($data['descuento_porcentaje'], $data['margen_porcentaje']);
+
+        return $data;
+    }
+
     public function productos(): HasMany
     {
         return $this->hasMany(Producto::class);

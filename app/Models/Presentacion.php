@@ -36,6 +36,36 @@ class Presentacion extends Model
         'stock' => 'integer',
     ];
 
+    /**
+     * Recorta lo que sale del modelo al serializarse (Inertia manda estos datos
+     * al navegador, donde cualquiera los puede leer: esconderlos solo en el
+     * diseño no alcanza).
+     *
+     * - costo/descuento/margen son datos internos del negocio y nunca deberían
+     *   llegar al sitio público (antes viajaban a cualquier visitante).
+     * - los precios solo se muestran a clientes registrados.
+     *
+     * El panel admin queda intacto: sus formularios necesitan estos campos.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $data = parent::toArray();
+
+        if (auth()->user()?->isAdmin() ?? false) {
+            return $data;
+        }
+
+        unset($data['precio_costo'], $data['descuento_porcentaje'], $data['margen_porcentaje']);
+
+        if (auth()->guest()) {
+            unset($data['precio'], $data['oferta_precio'], $data['oferta_porcentaje']);
+        }
+
+        return $data;
+    }
+
     public function producto(): BelongsTo
     {
         return $this->belongsTo(Producto::class);

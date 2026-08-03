@@ -34,6 +34,7 @@ const imageSrc = computed(() => {
     if (props.producto.imagen_url) return props.producto.imagen_url;
     return null;
 });
+const logueado = computed(() => !!page.props.auth?.user);
 const stock = computed(() => selected.value?.stock ?? 0);
 const controlarStock = computed(() => page.props.controlarStock);
 const sinStock = computed(() => controlarStock.value && stock.value <= 0);
@@ -44,7 +45,8 @@ const jsonLd = computed(() => JSON.stringify({
     name: props.producto.nombre,
     ...(props.producto.marca ? { brand: { '@type': 'Brand', name: props.producto.marca.nombre } } : {}),
     ...(imageSrc.value ? { image: [window.location.origin + imageSrc.value] } : {}),
-    ...(selected.value ? {
+    // Sin sesión no hay precio: se omite la oferta en vez de publicar un precio en cero.
+    ...(logueado.value && selected.value ? {
         offers: {
             '@type': 'Offer',
             priceCurrency: 'ARS',
@@ -112,14 +114,27 @@ function addToCart() {
                         </div>
                     </div>
 
-                    <div v-if="selected" class="mt-6">
+                    <!-- Sin sesión no se muestra precio ni compra: el backend tampoco manda el precio -->
+                    <div v-if="!logueado" class="mt-6 bg-surface-2 border border-border rounded-2xl p-5">
+                        <div class="flex items-center gap-2 mb-1">
+                            <svg class="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+                            <p class="text-[14px] font-semibold text-text">Precios para clientes registrados</p>
+                        </div>
+                        <p class="text-[12px] text-text-muted mb-4">Creá tu cuenta o iniciá sesión para ver los precios y hacer tu pedido.</p>
+                        <div class="flex gap-2">
+                            <a :href="route('login')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white text-[13px] font-semibold py-2.5 rounded-xl transition">Iniciar sesión</a>
+                            <a :href="route('register')" class="flex-1 text-center bg-surface-3 hover:bg-surface-4 text-text text-[13px] font-semibold py-2.5 rounded-xl transition">Crear cuenta</a>
+                        </div>
+                    </div>
+
+                    <div v-if="logueado && selected" class="mt-6">
                         <div class="flex items-baseline gap-3">
                             <del v-if="enOferta" class="text-lg text-text-muted">${{ parseFloat(selected.precio).toLocaleString('es-AR') }}</del>
                             <span class="text-3xl price-display" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR') }}</span>
                         </div>
                     </div>
 
-                    <div v-if="selected" class="mt-3">
+                    <div v-if="logueado && selected" class="mt-3">
                         <p v-if="controlarStock" class="text-[11px] mb-3" :class="sinStock ? 'text-red-400' : 'text-text-muted'">{{ sinStock ? 'Sin stock' : `Stock: ${stock}` }}</p>
                         <div class="flex items-center gap-4">
                             <div class="flex items-center bg-surface-2 rounded-xl border border-border">

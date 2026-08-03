@@ -13,9 +13,13 @@ class ComboController extends Controller
             ->with(['items.presentacion.producto.marca'])
             ->paginate(12);
 
-        $combos->getCollection()->transform(function ($combo) {
-            $combo->precio_final = $combo->precio;
-            $combo->precio_sin_descuento = $combo->precio_calculado;
+        // Los precios de combo se arman a mano acá, así que necesitan su propio
+        // corte para invitados (igual criterio que Presentacion::toArray).
+        $mostrarPrecios = auth()->check();
+
+        $combos->getCollection()->transform(function ($combo) use ($mostrarPrecios) {
+            $combo->precio_final = $mostrarPrecios ? $combo->precio : null;
+            $combo->precio_sin_descuento = $mostrarPrecios ? $combo->precio_calculado : null;
 
             return $combo;
         });

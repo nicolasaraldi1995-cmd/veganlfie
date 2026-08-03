@@ -44,12 +44,16 @@ class HomeController extends Controller
             ->filter(fn ($p) => $p['productos']->isNotEmpty())
             ->values();
 
+        // Precios de combo armados a mano: mismo corte para invitados que en
+        // Presentacion::toArray.
+        $mostrarPrecios = auth()->check();
+
         $combos = Combo::activos()
             ->with(['items.presentacion.producto.marca'])
             ->take(6)->get()
-            ->each(function ($combo) {
-                $combo->precio_final = $combo->precio;
-                $combo->precio_sin_descuento = $combo->precio_calculado;
+            ->each(function ($combo) use ($mostrarPrecios) {
+                $combo->precio_final = $mostrarPrecios ? $combo->precio : null;
+                $combo->precio_sin_descuento = $mostrarPrecios ? $combo->precio_calculado : null;
             });
 
         $topProductoIds = PedidoItem::join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')

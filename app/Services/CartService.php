@@ -21,6 +21,10 @@ class CartService
             return [];
         }
 
+        // El carrito arma los precios a mano (no pasa por Presentacion::toArray),
+        // así que necesita su propio corte para no filtrarlos a un invitado.
+        $mostrarPrecios = auth()->check();
+
         // whereHas('producto') descarta presentaciones huérfanas (su producto fue
         // borrado): mejor que desaparezcan silenciosamente del carrito a que rompan
         // la página, ya que este resolver corre en cada request (ver HandleInertiaRequests).
@@ -29,7 +33,7 @@ class CartService
             ->whereHas('producto')
             ->get();
 
-        return $presentaciones->map(function (Presentacion $p) use ($cart) {
+        return $presentaciones->map(function (Presentacion $p) use ($cart, $mostrarPrecios) {
             $cantidad = $cart[(string) $p->id];
             $precio = $p->precio_final;
 
@@ -43,11 +47,11 @@ class CartService
                 'categoria' => $p->producto->categoria?->nombre ?? 'Sin categoría',
                 'imagen' => $imagen,
                 'unidad' => $p->unidad,
-                'precio' => $precio,
-                'precio_original' => (float) $p->precio,
+                'precio' => $mostrarPrecios ? $precio : null,
+                'precio_original' => $mostrarPrecios ? (float) $p->precio : null,
                 'en_oferta' => $p->estaEnOferta(),
                 'cantidad' => $cantidad,
-                'subtotal' => round($precio * $cantidad, 2),
+                'subtotal' => $mostrarPrecios ? round($precio * $cantidad, 2) : null,
                 'stock' => $p->stock,
                 'frio' => (bool) $p->producto->frio,
                 'congelado' => (bool) $p->producto->congelado,
