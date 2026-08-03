@@ -29,7 +29,7 @@ class MarcaResource extends Resource
                 ->maxLength(255),
             Forms\Components\FileUpload::make('logo')
                 ->image()
-                ->maxSize(2048)
+                ->maxSize(5120)
                 ->directory('marcas')
                 ->visibility('public'),
             Forms\Components\Toggle::make('activo')

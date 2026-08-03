@@ -29,7 +29,7 @@ class CategoriaResource extends Resource
                 ->maxLength(255),
             Forms\Components\FileUpload::make('imagen')
                 ->image()
-                ->maxSize(2048)
+                ->maxSize(5120)
                 ->directory('categorias')
                 ->visibility('public'),
             Forms\Components\TextInput::make('orden')

@@ -32,7 +32,7 @@ class ComboResource extends Resource
                     ->rows(3),
                 Forms\Components\FileUpload::make('imagen')
                     ->image()
-                    ->maxSize(2048)
+                    ->maxSize(5120)
                     ->directory('combos')
                     ->visibility('public'),
                 Forms\Components\Toggle::make('activo')->default(true),

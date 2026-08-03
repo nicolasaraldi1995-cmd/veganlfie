@@ -134,7 +134,7 @@ class ProductoResource extends Resource
                             ])->visible(fn () => auth()->user()?->isAdmin()),
                             Forms\Components\FileUpload::make('imagen')
                                 ->image()
-                                ->maxSize(2048)
+                                ->maxSize(5120)
                                 ->directory('presentaciones')
                                 ->visibility('public')
                                 ->imagePreviewHeight('100')
@@ -149,7 +149,7 @@ class ProductoResource extends Resource
                 Forms\Components\Tabs\Tab::make('Imagen')->schema([
                     Forms\Components\FileUpload::make('imagen')
                         ->image()
-                        ->maxSize(2048)
+                        ->maxSize(5120)
                         ->directory('productos')
                         ->visibility('public')
                         ->imagePreviewHeight('200'),

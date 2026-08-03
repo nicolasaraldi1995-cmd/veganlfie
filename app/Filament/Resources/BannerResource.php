@@ -28,10 +28,17 @@ class BannerResource extends Resource
             Forms\Components\FileUpload::make('imagen')
                 ->image()
                 ->required()
-                ->maxSize(2048)
+                // 2 MB no alcanzaba para una imagen de banner en buena calidad.
+                ->maxSize(8192)
                 ->directory('banners')
                 ->visibility('public')
                 ->imagePreviewHeight('200')
+                // El editor deja recortar y mover la imagen al subirla, con la
+                // proporción de la franja: así se elige qué se ve, en vez de
+                // depender de cómo la recorte el navegador después.
+                ->imageEditor()
+                ->imageEditorAspectRatios(['4:1', '16:9', null])
+                ->helperText('Medida ideal: 1600 x 400 px (hasta 8 MB). Con el lápiz podés recortarla y acomodarla antes de guardar.')
                 ->columnSpanFull(),
             Forms\Components\Select::make('ajuste')
                 ->label('Cómo entra la imagen')
