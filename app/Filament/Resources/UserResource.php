@@ -25,22 +25,6 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 12;
 
-    /**
-     * Cuentas nuevas esperando alta: si no se ven en el menú, un cliente puede
-     * quedar días sin poder comprar sin que nadie se entere.
-     */
-    public static function getNavigationBadge(): ?string
-    {
-        $pendientes = User::where('aprobado', false)->count();
-
-        return $pendientes > 0 ? (string) $pendientes : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
-
     public static function canAccess(): bool
     {
         return auth()->user()?->isAdmin() ?? false;
@@ -71,9 +55,6 @@ class UserResource extends Resource
                 ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
                 ->dehydrated(fn ($state) => filled($state))
                 ->required(fn (string $operation) => $operation === 'create'),
-            Forms\Components\Toggle::make('aprobado')
-                ->label('Cuenta aprobada')
-                ->helperText('Mientras esté apagado, el cliente no ve precios ni puede hacer pedidos. Las cuentas nuevas entran así hasta que las revises.'),
             Forms\Components\Toggle::make('recibe_frio_congelado')
                 ->label('Puede recibir fríos/congelados')
                 ->helperText('Si lo activás, a este cliente no le va a aparecer el aviso de "consultar disponibilidad de fríos/congelados" en el carrito.'),
@@ -98,14 +79,6 @@ class UserResource extends Resource
                         'operador' => 'warning',
                         default => 'gray',
                     }),
-                Tables\Columns\IconColumn::make('aprobado')
-                    ->label('Alta')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->trueColor('success')
-                    ->falseIcon('heroicon-o-clock')
-                    ->falseColor('warning')
-                    ->tooltip(fn (User $record) => $record->aprobado ? 'Cuenta activa' : 'Esperando aprobación'),
                 Tables\Columns\TextColumn::make('saldo')
                     ->label('Saldo')
                     ->state(fn (User $record) => app(CuentaClienteService::class)->saldoDe($record))
@@ -115,25 +88,7 @@ class UserResource extends Resource
                     ->dateTime('d/m/Y')
                     ->sortable(),
             ])
-            ->filters([
-                Tables\Filters\Filter::make('sin_aprobar')
-                    ->label('Esperando aprobación')
-                    ->query(fn ($query) => $query->where('aprobado', false))
-                    ->toggle(),
-            ])
             ->actions([
-                Tables\Actions\Action::make('aprobar')
-                    ->label('Aprobar')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('¿Dar de alta esta cuenta?')
-                    ->modalDescription('El cliente va a poder ver precios y hacer pedidos.')
-                    ->visible(fn (User $record) => ! $record->aprobado)
-                    ->action(function (User $record) {
-                        $record->update(['aprobado' => true]);
-                        Notification::make()->title("{$record->name} ya puede comprar")->success()->send();
-                    }),
                 Tables\Actions\Action::make('registrar_pago')
                     ->label('Registrar pago')
                     ->icon('heroicon-o-banknotes')

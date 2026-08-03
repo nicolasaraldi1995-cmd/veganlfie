@@ -30,20 +30,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            // Un usuario de fábrica representa una cuenta ya dada de alta; los
-            // tests sobre la aprobación piden aprobado=false explícitamente.
-            'aprobado' => true,
         ];
-    }
-
-    /**
-     * Cuenta recién registrada, todavía sin revisar por la distribuidora.
-     */
-    public function sinAprobar(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'aprobado' => false,
-        ]);
     }
 
     /**

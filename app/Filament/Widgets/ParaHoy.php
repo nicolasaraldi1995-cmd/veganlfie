@@ -3,7 +3,6 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Pedido;
-use App\Models\User;
 use App\Services\CuentaClienteService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -58,15 +57,8 @@ class ParaHoy extends StatsOverviewWidget
         ];
 
         if ($esAdmin) {
-            $sinAprobar = User::where('aprobado', false)->count();
             $deudores = app(CuentaClienteService::class)->resumenPorCliente()
                 ->filter(fn (array $c) => $c['saldo'] > 0.009);
-
-            $stats[] = Stat::make('Cuentas nuevas', $sinAprobar)
-                ->description($sinAprobar ? 'Esperando alta' : 'Ninguna pendiente')
-                ->icon('heroicon-o-user-plus')
-                ->color($sinAprobar ? 'warning' : 'success')
-                ->url(\App\Filament\Resources\UserResource::getUrl('index'));
 
             $stats[] = Stat::make('Clientes con saldo', $deudores->count())
                 ->description($deudores->isNotEmpty()

@@ -43,8 +43,7 @@ class Presentacion extends Model
      *
      * - costo/descuento/margen son datos internos del negocio y nunca deberían
      *   llegar al sitio público (antes viajaban a cualquier visitante).
-     * - los precios solo se muestran a clientes aprobados (ver
-     *   User::puedeVerPrecios).
+     * - los precios solo se muestran a clientes con cuenta.
      *
      * El panel admin queda intacto: sus formularios necesitan estos campos.
      *
@@ -60,7 +59,7 @@ class Presentacion extends Model
 
         unset($data['precio_costo'], $data['descuento_porcentaje'], $data['margen_porcentaje']);
 
-        if (! (auth()->user()?->puedeVerPrecios() ?? false)) {
+        if (auth()->guest()) {
             unset($data['precio'], $data['oferta_precio'], $data['oferta_porcentaje']);
         }
 

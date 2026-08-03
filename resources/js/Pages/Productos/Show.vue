@@ -35,7 +35,6 @@ const imageSrc = computed(() => {
     return null;
 });
 const puedeVerPrecios = computed(() => !!page.props.auth?.puedeVerPrecios);
-const enRevision = computed(() => !!page.props.auth?.user && !puedeVerPrecios.value);
 const stock = computed(() => selected.value?.stock ?? 0);
 const controlarStock = computed(() => page.props.controlarStock);
 const sinStock = computed(() => controlarStock.value && stock.value <= 0);
@@ -115,19 +114,8 @@ function addToCart() {
                         </div>
                     </div>
 
-                    <!-- El backend tampoco manda el precio en estos dos casos -->
-                    <div v-if="enRevision" class="mt-6 bg-amber-500/5 border border-amber-500/25 rounded-2xl p-5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            <p class="text-[14px] font-semibold text-text">Tu cuenta está en revisión</p>
-                        </div>
-                        <p class="text-[12px] text-text-muted">Damos de alta las cuentas a mano para atender bien a cada negocio. Te avisamos apenas esté lista y vas a poder ver precios y pedir.</p>
-                        <a href="https://wa.me/5492477504048" target="_blank" class="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold text-accent hover:text-accent-bright transition">
-                            Apurar por WhatsApp →
-                        </a>
-                    </div>
-
-                    <div v-else-if="!puedeVerPrecios" class="mt-6 bg-surface-2 border border-border rounded-2xl p-5">
+                    <!-- Sin cuenta no se muestra precio ni compra: el backend tampoco manda el precio -->
+                    <div v-if="!puedeVerPrecios" class="mt-6 bg-surface-2 border border-border rounded-2xl p-5">
                         <div class="flex items-center gap-2 mb-1">
                             <svg class="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
                             <p class="text-[14px] font-semibold text-text">Precios para clientes registrados</p>

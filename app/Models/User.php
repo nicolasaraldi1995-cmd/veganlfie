@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'negocio', 'tipo_cliente', 'email', 'celular', 'direccion', 'ciudad', 'provincia', 'password', 'role', 'recibe_frio_congelado', 'aprobado'])]
+#[Fillable(['name', 'negocio', 'tipo_cliente', 'email', 'celular', 'direccion', 'ciudad', 'provincia', 'password', 'role', 'recibe_frio_congelado'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -26,19 +26,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'recibe_frio_congelado' => 'boolean',
-            'aprobado' => 'boolean',
         ];
-    }
-
-    /**
-     * Único lugar que decide quién ve los precios mayoristas. Un cliente recién
-     * registrado no los ve hasta que la distribuidora lo aprueba: sin esto,
-     * cualquiera (incluida la competencia) se creaba una cuenta y se llevaba
-     * toda la lista de precios.
-     */
-    public function puedeVerPrecios(): bool
-    {
-        return $this->isAdmin() || $this->isOperador() || $this->aprobado;
     }
 
     public function pedidos(): HasMany

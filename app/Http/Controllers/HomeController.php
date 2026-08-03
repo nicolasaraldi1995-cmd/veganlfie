@@ -46,7 +46,7 @@ class HomeController extends Controller
 
         // Precios de combo armados a mano: mismo corte para invitados que en
         // Presentacion::toArray.
-        $mostrarPrecios = auth()->user()?->puedeVerPrecios() ?? false;
+        $mostrarPrecios = auth()->check();
 
         $combos = Combo::activos()
             ->with(['items.presentacion.producto.marca'])
