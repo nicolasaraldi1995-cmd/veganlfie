@@ -31,6 +31,10 @@ class CartService
         $presentaciones = Presentacion::with(['producto.marca', 'producto.categoria'])
             ->whereIn('id', array_keys($cart))
             ->whereHas('producto')
+            // Igual criterio que con las huérfanas: una presentación dada de baja
+            // desaparece del carrito en vez de dejar que se pida algo que ya no
+            // se vende.
+            ->activos()
             ->get();
 
         return $presentaciones->map(function (Presentacion $p) use ($cart, $mostrarPrecios) {

@@ -10,7 +10,9 @@ class AddToCartRequest extends FormRequest
     {
         return [
             'presentacion_id' => ['required', 'integer', 'exists:presentaciones,id'],
-            'cantidad' => ['required', 'integer', 'min:1'],
+            // Con el control de stock apagado nada acotaba la cantidad: un tope
+            // alto pero sensato evita pedidos absurdos por un cero de más.
+            'cantidad' => ['required', 'integer', 'min:1', 'max:9999'],
         ];
     }
 }

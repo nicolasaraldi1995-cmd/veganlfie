@@ -20,6 +20,17 @@ class PedidoItemObserver
 
     public function updating(PedidoItem $item): void
     {
+        // Cambiar el producto de un renglón ya cargado (se puede desde el panel)
+        // mueve la reserva entera: se le devuelve al producto anterior y se le
+        // descuenta al nuevo. Sin esto, el stock viejo quedaba reservado para
+        // siempre y al nuevo no se le descontaba nada.
+        if ($item->isDirty('presentacion_id')) {
+            $this->ajustar((int) $item->getOriginal('presentacion_id'), -((int) $item->getOriginal('cantidad')));
+            $this->ajustar($item->presentacion_id, $item->cantidad);
+
+            return;
+        }
+
         if (! $item->isDirty('cantidad')) {
             return;
         }
