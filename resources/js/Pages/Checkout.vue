@@ -16,6 +16,16 @@ function removeItem(id) { router.delete(route('cart.remove'), { data: { presenta
     <PublicLayout>
         <div class="max-w-5xl mx-auto px-6 py-8">
             <h1 class="text-xl font-semibold text-text mb-6">Revisá tu pedido</h1>
+
+            <!-- Aviso comisionistas / fríos y congelados (movido desde el inicio) -->
+            <div class="mb-6 bg-sky-500/5 border border-sky-500/15 rounded-xl px-5 py-3.5 flex items-start gap-3">
+                <svg class="w-5 h-5 text-sky-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+                <div>
+                    <p class="text-[13px] text-text leading-relaxed">Trabajamos con <span class="font-medium text-sky-400">comisionistas</span> en distintas zonas. Los productos <span class="font-medium text-sky-400">fríos y congelados</span> pueden no estar disponibles en todas las localidades.</p>
+                    <p class="text-[11px] text-text-muted mt-1">Consultá disponibilidad para tu zona por WhatsApp antes de confirmar tu pedido.</p>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 <div class="lg:col-span-3 space-y-6">
                     <div class="bg-surface-1 rounded-2xl border border-border">

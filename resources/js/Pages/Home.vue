@@ -33,15 +33,6 @@ function scrollTo(id) {
         <BannerSlider :banners="banners" />
 
         <div class="px-6 py-5">
-            <!-- Info banner -->
-            <div class="mb-6 bg-sky-500/5 border border-sky-500/15 rounded-xl px-5 py-3.5 flex items-start gap-3">
-                <svg class="w-5 h-5 text-sky-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
-                <div>
-                    <p class="text-[13px] text-text leading-relaxed">Trabajamos con <span class="font-medium text-sky-400">comisionistas</span> en distintas zonas. Los productos <span class="font-medium text-sky-400">fríos y congelados</span> pueden no estar disponibles en todas las localidades.</p>
-                    <p class="text-[11px] text-text-muted mt-1">Consultá disponibilidad para tu zona por WhatsApp antes de confirmar tu pedido.</p>
-                </div>
-            </div>
-
             <!-- Más vendidos -->
             <div v-if="masVendidos.length" class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
