@@ -39,9 +39,11 @@ const descuento = computed(() => {
     return 0;
 });
 
-// Los precios solo se muestran a clientes registrados (el backend directamente
-// no los manda si no hay sesión — ver Presentacion::toArray).
-const logueado = computed(() => !!page.props.auth?.user);
+// Los precios solo se muestran a clientes aprobados (el backend directamente no
+// los manda — ver Presentacion::toArray). Una cuenta recién creada queda en
+// revisión, y ese caso se avisa distinto que el de un visitante sin cuenta.
+const puedeVerPrecios = computed(() => !!page.props.auth?.puedeVerPrecios);
+const enRevision = computed(() => !!page.props.auth?.user && !puedeVerPrecios.value);
 
 const stock = computed(() => selected.value?.stock ?? 0);
 const controlarStock = computed(() => page.props.controlarStock);
@@ -133,15 +135,15 @@ const imageSrc = computed(() => {
             <div class="mt-auto">
                 <div class="border-t border-[rgba(0,0,0,0.08)] pt-2.5">
                     <!-- Sin sesión no hay precio que mostrar: el backend no lo manda -->
-                    <div v-if="!logueado" class="flex items-center gap-1.5 py-0.5">
+                    <div v-if="!puedeVerPrecios" class="flex items-center gap-1.5 py-0.5">
                         <svg class="w-3.5 h-3.5 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
-                        <span class="text-[12px] font-semibold text-text-secondary">Precio para clientes</span>
+                        <span class="text-[12px] font-semibold text-text-secondary">{{ enRevision ? 'Cuenta en revisión' : 'Precio para clientes' }}</span>
                     </div>
                     <div v-else-if="selected" class="flex items-baseline gap-2">
                         <span class="text-2xl price-display truncate" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</span>
                         <del v-if="enOferta" class="text-[11px] text-text-muted shrink-0">${{ precioOriginal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</del>
                     </div>
-                    <div v-if="logueado && (precioUnidad || stockBajo)" class="flex items-center gap-1.5 mt-1.5">
+                    <div v-if="puedeVerPrecios && (precioUnidad || stockBajo)" class="flex items-center gap-1.5 mt-1.5">
                         <p v-if="precioUnidad" class="text-[9.5px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</p>
                         <span v-if="precioUnidad && stockBajo" class="text-text-muted/50 text-[9px]">·</span>
                         <p v-if="stockBajo" class="text-[10px] font-semibold text-amber-600">¡Últimas {{ stock }}!</p>
@@ -151,7 +153,12 @@ const imageSrc = computed(() => {
                 <!-- Add to cart: mutable button -->
                 <div class="pt-3">
                     <Transition name="fade" mode="out-in">
-                        <a v-if="!logueado" key="login" :href="route('login')"
+                        <div v-if="enRevision" key="revision"
+                            class="w-full text-center text-[12px] font-semibold py-2.5 rounded-lg bg-amber-500/10 text-amber-700">
+                            Te avisamos al aprobarte
+                        </div>
+
+                        <a v-else-if="!puedeVerPrecios" key="login" :href="route('login')"
                             class="w-full flex items-center justify-center gap-1.5 text-[13px] font-bold py-2.5 rounded-lg transition-all duration-200 bg-surface-3 text-text hover:bg-surface-4 active:scale-[0.98]">
                             Iniciá sesión para comprar
                         </a>

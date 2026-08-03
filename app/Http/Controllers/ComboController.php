@@ -15,7 +15,7 @@ class ComboController extends Controller
 
         // Los precios de combo se arman a mano acá, así que necesitan su propio
         // corte para invitados (igual criterio que Presentacion::toArray).
-        $mostrarPrecios = auth()->check();
+        $mostrarPrecios = auth()->user()?->puedeVerPrecios() ?? false;
 
         $combos->getCollection()->transform(function ($combo) use ($mostrarPrecios) {
             $combo->precio_final = $mostrarPrecios ? $combo->precio : null;

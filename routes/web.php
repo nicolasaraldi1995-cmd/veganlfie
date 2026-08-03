@@ -30,7 +30,7 @@ Route::get('/marcas/{marca:slug}', [MarcaController::class, 'show'])->name('marc
 Route::get('/categorias/{categoria:slug}', [CategoriaController::class, 'show'])->name('categorias.show');
 
 Route::get('/combos', [ComboController::class, 'index'])->name('combos.index');
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'aprobado'])->group(function () {
     Route::get('/lista-de-precios', [ListaPreciosController::class, 'index'])->name('lista-precios');
     Route::get('/lista-de-precios/pdf', [ListaPreciosController::class, 'pdf'])->name('lista-precios.pdf');
     Route::get('/lista-de-precios/html', [ListaPreciosController::class, 'html'])->name('lista-precios.html');
@@ -48,7 +48,7 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::delete('/carrito/remove-frio-congelado', [CartController::class, 'removeFrioCongelado'])->name('cart.remove-frio-congelado');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'aprobado'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
     Route::get('/checkout/confirmacion/{pedido}', [CheckoutController::class, 'confirmacion'])->name('checkout.confirmacion');

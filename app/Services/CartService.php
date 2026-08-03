@@ -22,8 +22,8 @@ class CartService
         }
 
         // El carrito arma los precios a mano (no pasa por Presentacion::toArray),
-        // así que necesita su propio corte para no filtrarlos a un invitado.
-        $mostrarPrecios = auth()->check();
+        // así que necesita su propio corte.
+        $mostrarPrecios = auth()->user()?->puedeVerPrecios() ?? false;
 
         // whereHas('producto') descarta presentaciones huérfanas (su producto fue
         // borrado): mejor que desaparezcan silenciosamente del carrito a que rompan

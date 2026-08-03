@@ -24,6 +24,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                // Un cliente puede estar logueado y todavía no ver precios
+                // (cuenta en revisión), así que no alcanza con mirar si hay
+                // sesión para decidir qué muestra la interfaz.
+                'puedeVerPrecios' => $request->user()?->puedeVerPrecios() ?? false,
             ],
             // Liviano a propósito (nada de DB): el carrito completo con imagen/marca/
             // categoría se resuelve una sola vez, en CartController::index (/carrito).
