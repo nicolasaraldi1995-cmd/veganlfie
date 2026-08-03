@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Banner;
 use App\Models\Categoria;
 use App\Models\Combo;
-use App\Models\Configuracion;
 use App\Models\PedidoItem;
 use App\Models\Producto;
 use Inertia\Inertia;
@@ -76,12 +75,6 @@ class HomeController extends Controller
             : collect();
 
         return Inertia::render('Home', [
-            // Para la franja que va debajo del banner: son datos públicos, no
-            // precios, así que se muestran también a quien no tiene cuenta.
-            'datos' => [
-                'envioGratisDesde' => (float) Configuracion::actual()->envio_gratis_desde,
-                'totalProductos' => Producto::activos()->count(),
-            ],
             'banners' => $banners,
             'pasillos' => $pasillos,
             'combos' => $combos,
