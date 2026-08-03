@@ -11,7 +11,19 @@ class Banner extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
 
-    protected $fillable = ['imagen', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
+    protected $fillable = ['imagen', 'posicion', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
+
+    /**
+     * Qué parte de la imagen se conserva cuando se recorta para llenar la
+     * franja del banner (valores de object-position de CSS).
+     */
+    public const POSICIONES = [
+        'center' => 'Centro',
+        'top' => 'Arriba',
+        'bottom' => 'Abajo',
+        'left' => 'Izquierda',
+        'right' => 'Derecha',
+    ];
 
     protected $appends = ['imagen_url'];
 
