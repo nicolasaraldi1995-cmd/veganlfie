@@ -62,13 +62,18 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <template v-else-if="modo === 'marcas_en_categoria'">
                 <h1 class="text-xl font-semibold text-text mb-1">{{ categoriaActual?.nombre }}</h1>
                 <p class="text-[13px] text-text-muted mb-6">{{ items.length }} marcas</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'categorias', categoria: categoriaActual.id, marca: m.id })"
-                        class="bg-surface-2 rounded-2xl border border-border p-6 flex flex-col items-center justify-center hover:border-border-hover hover:bg-surface-3 transition-all duration-300 min-h-[140px]">
-                        <img v-if="m.logo_url" :src="m.logo_url" class="max-h-10 object-contain opacity-60 mb-3" />
-                        <span v-else class="text-lg font-bold text-surface-4 mb-3">{{ m.nombre.charAt(0) }}</span>
-                        <span class="text-[13px] text-text-secondary font-medium">{{ m.nombre }}</span>
-                        <span class="text-[10px] text-text-muted mt-1">{{ m.productos_count }} prod.</span>
+                        class="group flex flex-col items-center">
+                        <div class="relative">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300 flex items-center justify-center p-5">
+                                <img v-if="m.logo_url" :src="m.logo_url" :alt="m.nombre"
+                                    class="max-w-full max-h-full object-contain group-hover:scale-[1.06] transition-transform duration-500" />
+                                <span v-else class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                            </div>
+                            <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ m.productos_count }}</span>
+                        </div>
+                        <p class="text-[15px] font-semibold text-text mt-3 text-center leading-snug group-hover:text-accent transition">{{ m.nombre }}</p>
                     </Link>
                 </div>
             </template>
@@ -76,13 +81,20 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <!-- Marcas grid -->
             <template v-else-if="modo === 'marcas'">
                 <h1 class="text-xl font-semibold text-text mb-6">Marcas</h1>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Mismo círculo que categorías, pero el logo entra entero
+                     (object-contain): recortarlo se comería parte de la marca -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'marcas', marca: m.id })"
-                        class="bg-surface-2 rounded-2xl border border-border p-6 flex flex-col items-center justify-center hover:border-border-hover hover:bg-surface-3 transition-all duration-300 min-h-[140px]">
-                        <img v-if="m.logo_url" :src="m.logo_url" class="max-h-10 object-contain opacity-60 mb-3" />
-                        <span v-else class="text-lg font-bold text-surface-4 mb-3">{{ m.nombre.charAt(0) }}</span>
-                        <span class="text-[13px] text-text-secondary font-medium">{{ m.nombre }}</span>
-                        <span class="text-[10px] text-text-muted mt-1">{{ m.productos_count }} prod.</span>
+                        class="group flex flex-col items-center">
+                        <div class="relative">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300 flex items-center justify-center p-5">
+                                <img v-if="m.logo_url" :src="m.logo_url" :alt="m.nombre"
+                                    class="max-w-full max-h-full object-contain group-hover:scale-[1.06] transition-transform duration-500" />
+                                <span v-else class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                            </div>
+                            <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ m.productos_count }}</span>
+                        </div>
+                        <p class="text-[15px] font-semibold text-text mt-3 text-center leading-snug group-hover:text-accent transition">{{ m.nombre }}</p>
                     </Link>
                 </div>
             </template>
@@ -90,20 +102,26 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <!-- Categories in brand -->
             <template v-else-if="modo === 'categorias_en_marca'">
                 <div class="flex items-center gap-4 mb-1">
-                    <img v-if="marcaActual?.logo_url" :src="marcaActual.logo_url" class="h-10 object-contain opacity-60" />
+                    <div v-if="marcaActual?.logo_url" class="w-14 h-14 rounded-full bg-surface-1 ring-1 ring-border flex items-center justify-center p-2 shrink-0">
+                        <img :src="marcaActual.logo_url" :alt="marcaActual.nombre" class="max-w-full max-h-full object-contain" />
+                    </div>
                     <h1 class="text-xl font-semibold text-text">{{ marcaActual?.nombre }}</h1>
                 </div>
                 <p class="text-[13px] text-text-muted mb-6">{{ items.length }} categorías</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'marcas', marca: marcaActual.id, categoria: cat.id })" class="group">
-                        <div class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
-                            <div class="aspect-[4/3] bg-surface-3 relative">
-                                <img v-if="cat.imagen_url" :src="cat.imagen_url" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
-                                <div v-else class="w-full h-full flex items-center justify-center"><span class="text-2xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span></div>
-                                <span class="absolute bottom-2.5 right-2.5 bg-surface/80 backdrop-blur-sm text-text text-[10px] font-medium px-2 py-0.5 rounded-lg">{{ cat.productos_count }}</span>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                    <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'marcas', marca: marcaActual.id, categoria: cat.id })"
+                        class="group flex flex-col items-center">
+                        <div class="relative">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-3 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300">
+                                <img v-if="cat.imagen_url" :src="cat.imagen_url" :alt="cat.nombre"
+                                    class="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" />
+                                <div v-else class="w-full h-full flex items-center justify-center">
+                                    <span class="text-4xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span>
+                                </div>
                             </div>
+                            <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ cat.productos_count }}</span>
                         </div>
-                        <p class="text-[13px] font-medium text-text-secondary mt-2.5 text-center group-hover:text-text transition">{{ cat.nombre }}</p>
+                        <p class="text-[15px] font-semibold text-text mt-3 text-center leading-snug group-hover:text-accent transition">{{ cat.nombre }}</p>
                     </Link>
                 </div>
             </template>
