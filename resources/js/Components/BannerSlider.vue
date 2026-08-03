@@ -32,12 +32,12 @@ onUnmounted(() => clearInterval(timer));
                     class="absolute inset-0">
                     <a v-if="b.url" :href="b.url" class="block w-full h-full">
                         <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                            class="w-full h-full object-cover" :style="{ objectPosition: b.posicion || 'center' }" />
+                            class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
                         <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                     </a>
                     <div v-else class="w-full h-full">
                         <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                            class="w-full h-full object-cover" :style="{ objectPosition: b.posicion || 'center' }" />
+                            class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
                     </div>
                 </div>
             </TransitionGroup>

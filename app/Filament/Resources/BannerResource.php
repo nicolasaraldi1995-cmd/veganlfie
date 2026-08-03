@@ -33,13 +33,24 @@ class BannerResource extends Resource
                 ->visibility('public')
                 ->imagePreviewHeight('200')
                 ->columnSpanFull(),
+            Forms\Components\Select::make('ajuste')
+                ->label('Cómo entra la imagen')
+                ->options(Banner::AJUSTES)
+                ->default('cover')
+                ->required()
+                ->native(false)
+                ->live()
+                ->helperText('Si tu imagen se ve cortada, elegí "Mostrar la imagen completa": entra entera, sin recortar nada. Medida ideal para que llene sin cortarse: 1600 x 400 px.'),
             Forms\Components\Select::make('posicion')
                 ->label('Parte de la imagen que se ve')
                 ->options(Banner::POSICIONES)
                 ->default('center')
                 ->required()
                 ->native(false)
-                ->helperText('El banner es una franja ancha y baja, así que recorta la imagen. Elegí qué parte conservar si te queda cortada.'),
+                // Solo tiene sentido al recortar: si la imagen se muestra
+                // entera no hay nada que elegir.
+                ->visible(fn (Forms\Get $get) => $get('ajuste') !== 'contain')
+                ->helperText('Qué parte conservar cuando se recorta.'),
             Forms\Components\Select::make('destino_tipo')
                 ->options([
                     'seccion' => 'Sección',

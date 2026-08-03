@@ -11,7 +11,15 @@ class Banner extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
 
-    protected $fillable = ['imagen', 'posicion', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
+    protected $fillable = ['imagen', 'posicion', 'ajuste', 'destino_tipo', 'destino_valor', 'orden', 'activo'];
+
+    /**
+     * Cómo entra la imagen en la franja del banner.
+     */
+    public const AJUSTES = [
+        'cover' => 'Recortar para llenar el banner',
+        'contain' => 'Mostrar la imagen completa (sin recortar)',
+    ];
 
     /**
      * Qué parte de la imagen se conserva cuando se recorta para llenar la

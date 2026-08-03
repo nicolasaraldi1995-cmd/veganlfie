@@ -39,16 +39,21 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <!-- Categorias grid -->
             <template v-if="modo === 'categorias'">
                 <h1 class="text-xl font-semibold text-text mb-6">Categorías</h1>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'categorias', categoria: cat.id })" class="group">
-                        <div class="bg-surface-2 rounded-2xl border border-border overflow-hidden hover:border-border-hover transition-all duration-300">
-                            <div class="aspect-[4/3] bg-surface-3 relative">
-                                <img v-if="cat.imagen_url" :src="cat.imagen_url" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
-                                <div v-else class="w-full h-full flex items-center justify-center"><span class="text-2xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span></div>
-                                <span class="absolute bottom-2.5 right-2.5 bg-surface/80 backdrop-blur-sm text-text text-[10px] font-medium px-2 py-0.5 rounded-lg">{{ cat.productos_count }}</span>
+                <!-- Círculos grandes: la foto se recorta al centro, así entra cuadrada o no -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                    <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'categorias', categoria: cat.id })"
+                        class="group flex flex-col items-center">
+                        <div class="relative">
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-3 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300">
+                                <img v-if="cat.imagen_url" :src="cat.imagen_url" :alt="cat.nombre"
+                                    class="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" />
+                                <div v-else class="w-full h-full flex items-center justify-center">
+                                    <span class="text-4xl font-bold text-surface-4">{{ cat.nombre.charAt(0) }}</span>
+                                </div>
                             </div>
+                            <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ cat.productos_count }}</span>
                         </div>
-                        <p class="text-[13px] font-medium text-text-secondary mt-2.5 text-center group-hover:text-text transition">{{ cat.nombre }}</p>
+                        <p class="text-[15px] font-semibold text-text mt-3 text-center leading-snug group-hover:text-accent transition">{{ cat.nombre }}</p>
                     </Link>
                 </div>
             </template>
