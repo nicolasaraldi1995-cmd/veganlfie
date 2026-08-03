@@ -29,21 +29,24 @@ onUnmounted(() => clearInterval(timer));
              fijo el ancho de la pantalla no daba esa proporción y sobraban
              franjas a los costados. -->
         <div class="relative overflow-hidden bg-surface-2 aspect-[4/1]">
-            <TransitionGroup name="slide">
-                <div v-for="(b, i) in banners" :key="b.id"
-                    v-show="i === current"
-                    class="absolute inset-0">
-                    <a v-if="b.url" :href="b.url" class="block w-full h-full">
-                        <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                            class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-                    </a>
-                    <div v-else class="w-full h-full">
-                        <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                            class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
-                    </div>
+            <!-- Fundido con opacidad, sin TransitionGroup: combinado con v-show
+                 las clases de la animación quedaban pegadas y varias diapositivas
+                 se quedaban en opacidad 0 para siempre, o sea el banner en blanco.
+                 Así la que está activa vale 1 y el resto 0, sin estados a medias. -->
+            <div v-for="(b, i) in banners" :key="b.id"
+                class="absolute inset-0 transition-opacity duration-500 ease-out"
+                :class="i === current ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+                :aria-hidden="i !== current">
+                <a v-if="b.url" :href="b.url" class="block w-full h-full">
+                    <img :src="b.imagen" :alt="`Banner ${i + 1}`"
+                        class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                </a>
+                <div v-else class="w-full h-full">
+                    <img :src="b.imagen" :alt="`Banner ${i + 1}`"
+                        class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
                 </div>
-            </TransitionGroup>
+            </div>
         </div>
 
         <!-- Arrows -->
@@ -75,10 +78,3 @@ onUnmounted(() => clearInterval(timer));
         </template>
     </div>
 </template>
-
-<style scoped>
-.slide-enter-active { transition: opacity 0.6s ease, transform 0.6s ease; }
-.slide-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
-.slide-enter-from { opacity: 0; transform: translateX(30px); }
-.slide-leave-to { opacity: 0; transform: translateX(-30px); }
-</style>
