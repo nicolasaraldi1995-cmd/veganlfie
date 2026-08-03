@@ -30,7 +30,9 @@ Route::get('/marcas/{marca:slug}', [MarcaController::class, 'show'])->name('marc
 Route::get('/categorias/{categoria:slug}', [CategoriaController::class, 'show'])->name('categorias.show');
 
 Route::get('/combos', [ComboController::class, 'index'])->name('combos.index');
-Route::middleware('auth')->group(function () {
+// La lista de precios (con la planilla para tomar pedidos informales) es una
+// herramienta interna, no algo que el cliente deba ver.
+Route::middleware(['auth', 'staff'])->group(function () {
     Route::get('/lista-de-precios', [ListaPreciosController::class, 'index'])->name('lista-precios');
     Route::get('/lista-de-precios/pdf', [ListaPreciosController::class, 'pdf'])->name('lista-precios.pdf');
     Route::get('/lista-de-precios/html', [ListaPreciosController::class, 'html'])->name('lista-precios.html');

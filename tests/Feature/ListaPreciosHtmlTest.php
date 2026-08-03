@@ -39,7 +39,7 @@ class ListaPreciosHtmlTest extends TestCase
     {
         $this->catalogo();
 
-        $response = $this->actingAs(User::factory()->create(['role' => 'cliente']))
+        $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
             ->get('/lista-de-precios/html');
 
         $response->assertOk();
@@ -76,7 +76,7 @@ class ListaPreciosHtmlTest extends TestCase
         ]);
         Presentacion::factory()->create(['producto_id' => $productoInactivo->id, 'activo' => true]);
 
-        $html = $this->actingAs(User::factory()->create(['role' => 'cliente']))
+        $html = $this->actingAs(User::factory()->create(['role' => 'admin']))
             ->get('/lista-de-precios/html')
             ->streamedContent();
 

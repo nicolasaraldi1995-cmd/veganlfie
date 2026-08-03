@@ -18,7 +18,7 @@ class ListaPreciosTest extends TestCase
         $producto = Producto::factory()->create(['categoria_id' => Categoria::factory()->create()->id]);
         Presentacion::factory()->create(['producto_id' => $producto->id]);
 
-        $response = $this->actingAs(User::factory()->create())->get('/lista-de-precios/pdf');
+        $response = $this->actingAs(User::factory()->create(['role' => 'admin']))->get('/lista-de-precios/pdf');
 
         $response->assertOk();
         $this->assertStringContainsString('application/pdf', $response->headers->get('Content-Type'));

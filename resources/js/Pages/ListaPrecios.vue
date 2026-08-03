@@ -9,6 +9,61 @@ const buscar = ref('');
 const marcaFiltro = ref('');
 const expandidas = ref({});
 
+// Planilla informal: cantidades sueltas para sacar un total rápido, sin tocar
+// el carrito ni generar un pedido. La clave es producto+unidad, que es lo único
+// que identifica a una presentación en esta vista.
+const cantidades = ref({});
+
+function claveDe(producto, pres) {
+    return `${producto.id}|${pres.unidad}`;
+}
+
+// Índice plano para no recorrer todo el catálogo en cada tecleo.
+const presentacionPorClave = computed(() => {
+    const mapa = {};
+    props.categorias.forEach(cat => cat.productos.forEach(p => p.presentaciones.forEach(pres => {
+        mapa[claveDe(p, pres)] = {
+            producto: p.nombre,
+            marca: p.marca,
+            unidad: pres.unidad,
+            precio_final: pres.precio_final,
+        };
+    })));
+    return mapa;
+});
+
+const totalPlanilla = computed(() =>
+    Object.entries(cantidades.value).reduce((suma, [clave, cant]) => {
+        const n = parseFloat(cant);
+        if (!n || n <= 0) return suma;
+        const pres = presentacionPorClave.value[clave];
+        return pres ? suma + pres.precio_final * n : suma;
+    }, 0)
+);
+
+const lineasCargadas = computed(() =>
+    Object.entries(cantidades.value)
+        .filter(([, c]) => parseFloat(c) > 0)
+        .map(([clave, c]) => ({
+            clave,
+            cantidad: parseFloat(c),
+            ...presentacionPorClave.value[clave],
+        }))
+        .filter(l => l.precio_final !== undefined)
+);
+
+function limpiarPlanilla() {
+    cantidades.value = {};
+}
+
+function copiarPlanilla() {
+    const lineas = lineasCargadas.value.map(l =>
+        `${l.cantidad} x ${l.producto} (${l.unidad}) — $${Math.round(l.precio_final * l.cantidad).toLocaleString('es-AR')}`
+    );
+    lineas.push(`TOTAL: $${Math.round(totalPlanilla.value).toLocaleString('es-AR')}`);
+    navigator.clipboard?.writeText(lineas.join('\n'));
+}
+
 function toggleCat(id) {
     expandidas.value[id] = !expandidas.value[id];
 }
@@ -126,6 +181,8 @@ watch([buscar, marcaFiltro], () => {
                                     <th class="px-3 py-2 text-right font-medium text-text-muted">Precio</th>
                                     <th class="px-3 py-2 text-right font-medium text-text-muted">Oferta</th>
                                     <th class="px-5 py-2 text-right font-medium text-text-muted">Stock</th>
+                                    <th class="px-3 py-2 text-center font-medium text-accent">Cant.</th>
+                                    <th class="px-3 py-2 text-right font-medium text-accent">Importe</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border">
@@ -150,6 +207,18 @@ watch([buscar, marcaFiltro], () => {
                                             <span v-if="pres.stock > 0" class="text-text-muted">{{ pres.stock }}</span>
                                             <span v-else class="text-red-400 text-[10px]">Sin stock</span>
                                         </td>
+                                        <!-- Planilla: se escribe la cantidad y suma sola, sin tocar el carrito -->
+                                        <td class="px-3 py-1.5 text-center">
+                                            <input v-model="cantidades[claveDe(producto, pres)]" type="number" min="0" inputmode="numeric" placeholder="—"
+                                                class="w-16 text-center text-[12px] py-1 px-1 rounded-lg border transition"
+                                                :class="cantidades[claveDe(producto, pres)] > 0 ? 'border-accent bg-accent/10 text-text font-semibold' : 'border-border bg-surface-1 text-text-muted'" />
+                                        </td>
+                                        <td class="px-3 py-2 text-right font-semibold tabular-nums"
+                                            :class="cantidades[claveDe(producto, pres)] > 0 ? 'text-accent' : 'text-text-muted/40'">
+                                            {{ cantidades[claveDe(producto, pres)] > 0
+                                                ? '$' + Math.round(pres.precio_final * cantidades[claveDe(producto, pres)]).toLocaleString('es-AR')
+                                                : '—' }}
+                                        </td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -159,6 +228,39 @@ watch([buscar, marcaFiltro], () => {
             </div>
 
             <div v-else class="text-center py-20 text-text-muted">No se encontraron productos.</div>
+
+            <!-- Espacio para que la barra no tape la última fila -->
+            <div v-if="lineasCargadas.length" class="h-24"></div>
         </div>
+
+        <!-- Planilla informal: aparece sola al cargar la primera cantidad -->
+        <Transition name="slide-up">
+            <div v-if="lineasCargadas.length" class="fixed bottom-0 left-0 right-0 z-40 bg-surface-1 border-t border-border shadow-[0_-4px_20px_-8px_rgba(0,0,0,0.25)]">
+                <div class="max-w-6xl mx-auto px-6 py-3.5 flex items-center gap-4 flex-wrap">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-[11px] text-text-muted uppercase tracking-wider font-semibold">Total</span>
+                        <span class="text-2xl font-bold text-text tabular-nums">${{ Math.round(totalPlanilla).toLocaleString('es-AR') }}</span>
+                    </div>
+                    <span class="text-[12px] text-text-muted">{{ lineasCargadas.length }} {{ lineasCargadas.length === 1 ? 'producto' : 'productos' }}</span>
+
+                    <div class="flex gap-2 ml-auto">
+                        <button @click="copiarPlanilla" class="text-[12px] font-semibold px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-text-secondary border border-border transition">
+                            Copiar
+                        </button>
+                        <button @click="limpiarPlanilla" class="text-[12px] font-semibold px-4 py-2 rounded-xl bg-surface-2 hover:bg-surface-3 text-text-muted border border-border transition">
+                            Borrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
     </PublicLayout>
 </template>
+
+<style scoped>
+.slide-up-enter-active, .slide-up-leave-active { transition: transform .25s ease, opacity .25s ease; }
+.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+    .slide-up-enter-active, .slide-up-leave-active { transition: none; }
+}
+</style>

@@ -27,6 +27,8 @@ class HandleInertiaRequests extends Middleware
                 // Los precios son solo para clientes con cuenta: la interfaz
                 // necesita saberlo para mostrar el aviso en vez del precio.
                 'puedeVerPrecios' => $request->user() !== null,
+                // Para esconder los accesos internos (lista de precios) al cliente.
+                'esStaff' => (bool) ($request->user()?->isAdmin() || $request->user()?->isOperador()),
             ],
             // Liviano a propósito (nada de DB): el carrito completo con imagen/marca/
             // categoría se resuelve una sola vez, en CartController::index (/carrito).

@@ -91,7 +91,8 @@ function searchSubmit() {
 
                 <div class="flex items-center gap-1.5">
                     <template v-if="page.props.auth.user">
-                        <Link :href="route('lista-precios')" class="hidden sm:flex items-center gap-2 text-[13px] text-text-secondary hover:text-text px-3 py-2 rounded-xl hover:bg-surface-2 transition-all">
+                        <!-- Herramienta interna: solo la ve el personal -->
+                        <Link v-if="page.props.auth.esStaff" :href="route('lista-precios')" class="hidden sm:flex items-center gap-2 text-[13px] text-text-secondary hover:text-text px-3 py-2 rounded-xl hover:bg-surface-2 transition-all">
                             Precios
                         </Link>
                         <Link :href="route('mis-pedidos')" class="hidden sm:flex items-center gap-2 text-[13px] text-text-secondary hover:text-text px-3 py-2 rounded-xl hover:bg-surface-2 transition-all">
@@ -219,7 +220,7 @@ function searchSubmit() {
                             <Link :href="route('productos.index')" class="block text-sm text-text-muted hover:text-accent transition">Catálogo</Link>
                             <Link :href="route('productos.index', { vista: 'categorias' })" class="block text-sm text-text-muted hover:text-accent transition">Categorías</Link>
                             <Link :href="route('productos.index', { vista: 'marcas' })" class="block text-sm text-text-muted hover:text-accent transition">Marcas</Link>
-                            <Link :href="route('lista-precios')" class="block text-sm text-text-muted hover:text-accent transition">Lista de precios</Link>
+                            <Link v-if="page.props.auth.esStaff" :href="route('lista-precios')" class="block text-sm text-text-muted hover:text-accent transition">Lista de precios</Link>
                         </div>
                     </div>
                     <div>
