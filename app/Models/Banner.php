@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Concerns\HasMediaUrl;
+use App\Observers\BannerObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+#[ObservedBy(BannerObserver::class)]
 class Banner extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;

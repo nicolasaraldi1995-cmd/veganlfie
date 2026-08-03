@@ -33,14 +33,14 @@ class BannerResource extends Resource
                 ->directory('banners')
                 ->visibility('public')
                 ->imagePreviewHeight('200')
-                // El editor deja recortar y mover la imagen al subirla. La
-                // proporción queda fija en 4:1 (1600x400): así el archivo
-                // guardado entra exacto en la franja y nunca sobran espacios.
+                // El recorte a 1600x400 lo hace el servidor al guardar (ver
+                // BannerObserver), no el navegador: subir cualquier imagen
+                // tiene que alcanzar. El lápiz queda por si se quiere elegir
+                // a mano qué parte entra.
                 ->imageEditor()
-                ->imageCropAspectRatio('4:1')
                 ->imageEditorViewportWidth(800)
                 ->imageEditorViewportHeight(200)
-                ->helperText('Medida: 1600 x 400 px (hasta 8 MB). Si subís otra, tocá el lápiz y elegí qué parte entra en la franja.')
+                ->helperText('Subí la imagen que quieras: se acomoda sola a 1600 x 400 px, la medida de la franja.')
                 ->columnSpanFull(),
             Forms\Components\Select::make('ajuste')
                 ->label('Cómo entra la imagen')
