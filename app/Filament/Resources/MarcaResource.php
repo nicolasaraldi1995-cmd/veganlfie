@@ -29,6 +29,10 @@ class MarcaResource extends Resource
                 ->maxLength(255),
             Forms\Components\FileUpload::make('logo')
                 ->image()
+                // Sin SVG: el servidor no lo puede encuadrar (ver MarcaObserver)
+                // y en la web, que muestra el logo llenando un círculo, un SVG
+                // alargado se vería recortado.
+                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/avif'])
                 ->maxSize(5120)
                 ->directory('marcas')
                 ->visibility('public')
