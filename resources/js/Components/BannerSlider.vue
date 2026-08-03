@@ -6,29 +6,6 @@ const props = defineProps({ banners: { type: Array, default: () => [] } });
 const current = ref(0);
 const total = computed(() => props.banners.length);
 
-// Alto máximo de la franja: sin tope, a lo ancho de un monitor una imagen
-// apaisada daría cientos de píxeles de alto y se comería la pantalla.
-const ALTO_MAXIMO = 460;
-
-/**
- * La franja toma la forma de la imagen, no al revés: así entra perfecta
- * cualquier medida que se suba, sin proporción que recordar. Con varios
- * banners de formas distintas se usa la más alta, para que ninguno se corte.
- */
-const forma = computed(() => {
-    const proporciones = props.banners
-        .filter((b) => b.ancho > 0 && b.alto > 0)
-        .map((b) => b.ancho / b.alto);
-
-    return proporciones.length ? Math.min(...proporciones) : 2.5;
-});
-
-// El ancho tope hace de tope de alto: con la proporción fija, limitar el ancho
-// limita el alto. Así la franja se angosta en vez de rellenar con desenfoque.
-const estiloFranja = computed(() => ({
-    aspectRatio: String(forma.value),
-    maxWidth: Math.round(ALTO_MAXIMO * forma.value) + 'px',
-}));
 let timer = null;
 let touchStart = 0;
 
@@ -48,12 +25,14 @@ onUnmounted(() => clearInterval(timer));
 
 <template>
     <div v-if="banners.length" class="relative group" @touchstart="onTouchStart" @touchend="onTouchEnd">
-        <!-- La forma sale de la imagen (ver "forma" arriba), no está fija acá:
-             la imagen llena la franja exacta, sin recortarse ni dejar huecos,
-             suba la medida que suba. Si no llega al ancho de la pantalla, la
-             franja se angosta y queda centrada. -->
-        <div :style="estiloFranja"
-            class="relative w-full mx-auto overflow-hidden bg-surface-2 rounded-2xl border border-border shadow-sm">
+        <!-- Ancho completo de la pantalla, siempre. La proporción 5:2 define el
+             alto, con tope de 460px para que en un monitor no se coma media
+             pantalla. La imagen nunca se recorta (object-contain) y lo que
+             sobre lo cubre el fondo desenfocado.
+             w-full es necesario: con aspect-ratio y max-height juntos, el
+             navegador achica el ancho para respetar la proporción en vez de
+             estirarse. Fijando el ancho, lo que cede es el alto. -->
+        <div class="relative w-full overflow-hidden bg-surface-2 aspect-[5/2] max-h-[460px] rounded-2xl border border-border shadow-sm">
             <!-- Fundido con opacidad, sin TransitionGroup: combinado con v-show
                  las clases de la animación quedaban pegadas y varias diapositivas
                  se quedaban en opacidad 0 para siempre, o sea el banner en blanco.
