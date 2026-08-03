@@ -40,7 +40,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <template v-if="modo === 'categorias'">
                 <h1 class="text-xl font-semibold text-text mb-6">Categorías</h1>
                 <!-- Círculos grandes: la foto se recorta al centro, así entra cuadrada o no -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-4 gap-y-7">
                     <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'categorias', categoria: cat.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
@@ -62,7 +62,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
             <template v-else-if="modo === 'marcas_en_categoria'">
                 <h1 class="text-xl font-semibold text-text mb-1">{{ categoriaActual?.nombre }}</h1>
                 <p class="text-[13px] text-text-muted mb-6">{{ items.length }} marcas</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-4 gap-y-7">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'categorias', categoria: categoriaActual.id, marca: m.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
@@ -90,7 +90,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                 <h1 class="text-xl font-semibold text-text mb-6">Marcas</h1>
                 <!-- Mismo círculo que categorías, pero el logo entra entero
                      (object-contain): recortarlo se comería parte de la marca -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-4 gap-y-7">
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'marcas', marca: m.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
@@ -122,7 +122,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                     <h1 class="text-xl font-semibold text-text">{{ marcaActual?.nombre }}</h1>
                 </div>
                 <p class="text-[13px] text-text-muted mb-6">{{ items.length }} categorías</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-x-4 gap-y-7">
                     <Link v-for="cat in items" :key="cat.id" :href="route('productos.index', { vista: 'marcas', marca: marcaActual.id, categoria: cat.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
@@ -149,7 +149,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                         <h2 class="text-[15px] font-semibold text-text">{{ g.nombre }}</h2>
                         <span class="text-[11px] text-accent bg-accent/10 px-2 py-0.5 rounded-lg">{{ g.productos.length }}</span>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                         <ProductCard v-for="p in g.productos" :key="p.id" :producto="p" @image-click="modalImage = $event" />
                     </div>
                 </div>
@@ -157,7 +157,7 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
 
             <!-- Products flat -->
             <template v-else-if="modo === 'productos' && productos">
-                <div v-if="productos.data.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div v-if="productos.data.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                     <ProductCard v-for="p in productos.data" :key="p.id" :producto="p" @image-click="modalImage = $event" />
                 </div>
                 <div v-else class="text-center py-20 text-text-muted">Sin resultados.</div>

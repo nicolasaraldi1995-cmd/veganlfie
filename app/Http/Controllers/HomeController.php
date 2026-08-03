@@ -16,8 +16,6 @@ class HomeController extends Controller
         $banners = Banner::activos()->get()->map(fn ($b) => [
             'id' => $b->id,
             'imagen' => $b->imagen_url,
-            'posicion' => $b->posicion ?? 'center',
-            'ajuste' => $b->ajuste ?? 'contain',
             'url' => $b->url,
             'destino_tipo' => $b->destino_tipo,
         ]);

@@ -156,7 +156,7 @@ function addToCart() {
 
             <div v-if="relacionados.length" class="mt-16">
                 <h2 class="text-lg font-semibold text-text mb-6">Productos relacionados</h2>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                     <ProductCard v-for="p in relacionados" :key="p.id" :producto="p" @image-click="modalImage = $event" />
                 </div>
             </div>

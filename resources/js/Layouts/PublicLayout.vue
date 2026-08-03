@@ -46,7 +46,9 @@ function searchSubmit() {
     <div class="min-h-screen bg-surface text-text font-sans">
         <!-- Topbar -->
         <nav class="bg-surface-1/80 backdrop-blur-2xl border-b border-border sticky top-0 z-50">
-            <div class="max-w-[1440px] mx-auto px-6 flex items-center justify-between h-16">
+            <!-- Sin tope de ancho, igual que el resto: así el logo queda a la
+                 misma altura que el panel de la izquierda. -->
+            <div class="px-6 flex items-center justify-between h-16">
                 <button @click="sidebarOpen = !sidebarOpen" aria-label="Menú" class="lg:hidden p-2 -ml-2 text-text-muted hover:text-text transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
@@ -135,7 +137,9 @@ function searchSubmit() {
             <slot name="encabezado" />
         </div>
 
-        <div class="flex max-w-[1440px] mx-auto">
+        <!-- Ancho completo: el panel va pegado al borde izquierdo y el contenido
+             se queda con todo lo que sobra. -->
+        <div class="flex">
             <!-- Sidebar -->
             <aside class="hidden lg:block w-[240px] shrink-0 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto border-r border-border px-4 py-6">
                 <div class="space-y-0.5">
@@ -203,7 +207,7 @@ function searchSubmit() {
 
         <!-- Footer -->
         <footer class="bg-surface-1 border-t border-border mt-16">
-            <div class="max-w-[1440px] mx-auto px-6 py-12">
+            <div class="px-6 py-12">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
                     <div class="md:col-span-2">
                         <img src="/images/logo.png" alt="VEGANLIFE" class="h-10 mb-4 opacity-60" />

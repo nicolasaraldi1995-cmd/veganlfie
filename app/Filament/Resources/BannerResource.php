@@ -41,26 +41,11 @@ class BannerResource extends Resource
                 ->imageEditorViewportHeight(320)
                 ->helperText('Subí la imagen que tengas, de la medida que sea: entra entera, sin recortarse. Si querés que llene la tira justo, hacela de 1600 x 640 px.')
                 ->columnSpanFull(),
-            Forms\Components\Select::make('ajuste')
-                ->label('Cómo entra la imagen')
-                ->options(Banner::AJUSTES)
-                // Por defecto no se recorta: el hueco lo cubre el fondo
-                // desenfocado, así que recortar ya no hace falta.
-                ->default('contain')
-                ->required()
-                ->native(false)
-                ->live()
-                ->helperText('Si tu imagen se ve cortada, elegí "Mostrar la imagen completa": entra entera, sin recortar nada. Medida ideal para que llene sin cortarse: 1600 x 400 px.'),
-            Forms\Components\Select::make('posicion')
-                ->label('Parte de la imagen que se ve')
-                ->options(Banner::POSICIONES)
-                ->default('center')
-                ->required()
-                ->native(false)
-                // Solo tiene sentido al recortar: si la imagen se muestra
-                // entera no hay nada que elegir.
-                ->visible(fn (Forms\Get $get) => $get('ajuste') !== 'contain')
-                ->helperText('Qué parte conservar cuando se recorta.'),
+            // Sin selectores de ajuste ni de posición: la imagen del inicio no
+            // se recorta nunca, así que no hay nada que elegir. Mientras
+            // existieron, alcanzaba con dejar uno en "recortar" para que el
+            // diseño apareciera cortado en la página. Las columnas siguen en la
+            // base por si hiciera falta volver atrás.
             Forms\Components\Select::make('destino_tipo')
                 ->options([
                     'seccion' => 'Sección',

@@ -26,9 +26,9 @@ onUnmounted(() => clearInterval(timer));
     <div v-if="banners.length" class="relative group" @touchstart="onTouchStart" @touchend="onTouchEnd">
         <!-- Slides -->
         <!-- La franja mide 5:2, la forma de las piezas de diseño que se usan
-             (1600x640). Nada se recorta: la imagen entra entera y el hueco que
-             sobre lo tapa el fondo desenfocado de más abajo, así la tira siempre
-             se ve llena de punta a punta, suba la medida que suba. -->
+             (1600x640). La imagen NUNCA se recorta -- object-contain fijo, sin
+             opción: recortar le comía partes al diseño y ese fue el problema
+             una y otra vez. El hueco que sobre lo tapa el fondo desenfocado. -->
         <!-- max-h para que en pantallas anchas no se vuelva altísimo: a 5:2, el
              ancho completo de un monitor daría más de 700px de alto. Al topearlo
              la imagen se sigue viendo entera y el sobrante lo cubre el fondo
@@ -52,12 +52,12 @@ onUnmounted(() => clearInterval(timer));
                     class="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-70" />
                 <a v-if="b.url" :href="b.url" class="relative block w-full h-full">
                     <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                        class="w-full h-full" :class="b.ajuste === 'cover' ? 'object-cover' : 'object-contain'" :style="{ objectPosition: b.posicion || 'center' }" />
+                        class="w-full h-full object-contain" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                 </a>
                 <div v-else class="relative w-full h-full">
                     <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                        class="w-full h-full" :class="b.ajuste === 'cover' ? 'object-cover' : 'object-contain'" :style="{ objectPosition: b.posicion || 'center' }" />
+                        class="w-full h-full object-contain" />
                 </div>
             </div>
         </div>

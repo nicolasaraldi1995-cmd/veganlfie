@@ -18,7 +18,7 @@ const modalImage = ref(null);
                 <h1 class="text-xl font-semibold text-text">{{ marca.nombre }}</h1>
                 <span class="text-[13px] text-text-muted ml-auto">{{ productos.total }} productos</span>
             </div>
-            <div v-if="productos.data.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"><ProductCard v-for="p in productos.data" :key="p.id" :producto="p" @image-click="modalImage = $event" /></div>
+            <div v-if="productos.data.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"><ProductCard v-for="p in productos.data" :key="p.id" :producto="p" @image-click="modalImage = $event" /></div>
             <div v-else class="text-center py-20 text-text-muted">Sin productos.</div>
             <Pagination :links="productos.links" />
         </div>
