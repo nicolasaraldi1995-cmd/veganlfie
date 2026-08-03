@@ -6,16 +6,24 @@ use App\Models\Banner;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Deja toda imagen de banner en 1600 x 400, la medida de la franja del
- * inicio. Se hace acá, en el servidor, y no en el navegador: así no importa
- * qué medida ni qué formato suba el usuario, la franja siempre queda llena
- * y sin espacios a los costados.
+ * Aliviana la imagen del banner sin tocar lo que se ve: la achica para que
+ * entre en 1600 x 640 y la guarda en JPEG.
+ *
+ * No recorta nada. Antes sí lo hacía, y una pieza de diseño más alta que la
+ * tira perdía la parte de arriba y la de abajo. El hueco que quede lo tapa el
+ * fondo desenfocado del slider, así que la imagen puede tener cualquier forma.
  */
 class BannerObserver
 {
-    private const ANCHO = 1600;
+    private const MAX_ANCHO = 1600;
 
-    private const ALTO = 400;
+    private const MAX_ALTO = 640;
+
+    /**
+     * Un banner arriba de este peso hace lenta la portada, sobre todo en el
+     * celular: los PNG que salen de los editores de diseño pesan 2 o 3 MB.
+     */
+    private const MAX_PESO = 500 * 1024;
 
     public function saving(Banner $banner): void
     {
@@ -32,15 +40,15 @@ class BannerObserver
 
         $contenido = $disco->get($origen) ?? '';
 
-        // Se mira la medida en vez de si cambió el archivo: así un banner
-        // viejo se acomoda con solo abrirlo y guardarlo, sin volver a subirlo.
-        if ($this->yaMide($contenido)) {
+        // Se mira el archivo y no si cambió: así un banner viejo y pesado se
+        // aliviana con solo abrirlo y guardarlo, sin volver a subirlo.
+        if ($this->estaBien($contenido)) {
             return;
         }
 
-        $recortada = $this->recortar($contenido);
+        $liviana = $this->alivianar($contenido);
 
-        if ($recortada === null) {
+        if ($liviana === null) {
             return;
         }
 
@@ -48,7 +56,7 @@ class BannerObserver
         // extensión vieja haría que el navegador reciba un tipo equivocado.
         $destino = preg_replace('/\.[^.]+$/', '', $origen).'.jpg';
 
-        $disco->put($destino, $recortada, 'public');
+        $disco->put($destino, $liviana, 'public');
 
         if ($destino !== $origen) {
             $disco->delete($origen);
@@ -57,19 +65,21 @@ class BannerObserver
         $banner->imagen = $destino;
     }
 
-    private function yaMide(string $contenido): bool
+    private function estaBien(string $contenido): bool
     {
         $medidas = @getimagesizefromstring($contenido);
 
         return $medidas !== false
-            && $medidas[0] === self::ANCHO
-            && $medidas[1] === self::ALTO;
+            && $medidas[0] <= self::MAX_ANCHO
+            && $medidas[1] <= self::MAX_ALTO
+            && strlen($contenido) <= self::MAX_PESO;
     }
 
     /**
-     * Recorta al centro para llenar 1600 x 400 sin deformar la imagen.
+     * Achica la imagen hasta que entre en 1600 x 640, respetando su forma.
+     * Si ya entra, solo la vuelve a guardar en JPEG para bajarle el peso.
      */
-    private function recortar(string $contenido): ?string
+    private function alivianar(string $contenido): ?string
     {
         $original = @imagecreatefromstring($contenido);
 
@@ -80,30 +90,20 @@ class BannerObserver
         $anchoOriginal = imagesx($original);
         $altoOriginal = imagesy($original);
 
-        // Escala para que el lado más "chico" cubra la franja, y del resto se
-        // toma la parte del medio.
-        $escala = max(self::ANCHO / $anchoOriginal, self::ALTO / $altoOriginal);
-        $anchoTomado = (int) round(self::ANCHO / $escala);
-        $altoTomado = (int) round(self::ALTO / $escala);
+        // min() para que entre entera; nunca se agranda una imagen chica.
+        $escala = min(self::MAX_ANCHO / $anchoOriginal, self::MAX_ALTO / $altoOriginal, 1);
+        $ancho = max(1, (int) round($anchoOriginal * $escala));
+        $alto = max(1, (int) round($altoOriginal * $escala));
 
-        $destino = imagecreatetruecolor(self::ANCHO, self::ALTO);
+        $destino = imagecreatetruecolor($ancho, $alto);
+        // Las imágenes con transparencia quedan sobre blanco: el JPEG no la
+        // soporta y sin esto el fondo saldría negro.
         imagefill($destino, 0, 0, imagecolorallocate($destino, 255, 255, 255));
 
-        imagecopyresampled(
-            $destino,
-            $original,
-            0,
-            0,
-            (int) round(($anchoOriginal - $anchoTomado) / 2),
-            (int) round(($altoOriginal - $altoTomado) / 2),
-            self::ANCHO,
-            self::ALTO,
-            $anchoTomado,
-            $altoTomado
-        );
+        imagecopyresampled($destino, $original, 0, 0, 0, 0, $ancho, $alto, $anchoOriginal, $altoOriginal);
 
         ob_start();
-        imagejpeg($destino, null, 88);
+        imagejpeg($destino, null, 86);
         $salida = (string) ob_get_clean();
 
         imagedestroy($original);

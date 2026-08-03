@@ -33,14 +33,13 @@ class BannerResource extends Resource
                 ->directory('banners')
                 ->visibility('public')
                 ->imagePreviewHeight('200')
-                // El recorte a 1600x400 lo hace el servidor al guardar (ver
-                // BannerObserver), no el navegador: subir cualquier imagen
-                // tiene que alcanzar. El lápiz queda por si se quiere elegir
-                // a mano qué parte entra.
+                // El servidor solo la aliviana (ver BannerObserver); no recorta
+                // nada, porque recortar le comía la parte de arriba y la de
+                // abajo a las piezas más altas que la tira.
                 ->imageEditor()
                 ->imageEditorViewportWidth(800)
-                ->imageEditorViewportHeight(200)
-                ->helperText('Subí la imagen que quieras: se acomoda sola a 1600 x 400 px, la medida de la franja.')
+                ->imageEditorViewportHeight(320)
+                ->helperText('Subí la imagen que tengas, de la medida que sea: entra entera, sin recortarse. Si querés que llene la tira justo, hacela de 1600 x 640 px.')
                 ->columnSpanFull(),
             Forms\Components\Select::make('ajuste')
                 ->label('Cómo entra la imagen')

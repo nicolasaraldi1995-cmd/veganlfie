@@ -25,10 +25,11 @@ onUnmounted(() => clearInterval(timer));
 <template>
     <div v-if="banners.length" class="relative group" @touchstart="onTouchStart" @touchend="onTouchEnd">
         <!-- Slides -->
-        <!-- La franja mide 4:1 (la medida de las imágenes: 1600x400). Con alto
-             fijo el ancho de la pantalla no daba esa proporción y sobraban
-             franjas a los costados. -->
-        <div class="relative overflow-hidden bg-surface-2 aspect-[4/1]">
+        <!-- La franja mide 5:2, la forma de las piezas de diseño que se usan
+             (1600x640). Nada se recorta: la imagen entra entera y el hueco que
+             sobre lo tapa el fondo desenfocado de más abajo, así la tira siempre
+             se ve llena de punta a punta, suba la medida que suba. -->
+        <div class="relative overflow-hidden bg-surface-2 aspect-[5/2]">
             <!-- Fundido con opacidad, sin TransitionGroup: combinado con v-show
                  las clases de la animación quedaban pegadas y varias diapositivas
                  se quedaban en opacidad 0 para siempre, o sea el banner en blanco.
@@ -37,14 +38,19 @@ onUnmounted(() => clearInterval(timer));
                 class="absolute inset-0 transition-opacity duration-500 ease-out"
                 :class="i === current ? 'opacity-100' : 'opacity-0 pointer-events-none'"
                 :aria-hidden="i !== current">
-                <a v-if="b.url" :href="b.url" class="block w-full h-full">
+                <!-- Relleno: la misma imagen agrandada y desenfocada. Tapa el
+                     hueco cuando la foto no tiene la forma exacta de la tira,
+                     en vez de dejar franjas grises a los costados. -->
+                <img :src="b.imagen" alt="" aria-hidden="true"
+                    class="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-70" />
+                <a v-if="b.url" :href="b.url" class="relative block w-full h-full">
                     <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                        class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
+                        class="w-full h-full" :class="b.ajuste === 'cover' ? 'object-cover' : 'object-contain'" :style="{ objectPosition: b.posicion || 'center' }" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                 </a>
-                <div v-else class="w-full h-full">
+                <div v-else class="relative w-full h-full">
                     <img :src="b.imagen" :alt="`Banner ${i + 1}`"
-                        class="w-full h-full" :class="b.ajuste === 'contain' ? 'object-contain' : 'object-cover'" :style="{ objectPosition: b.posicion || 'center' }" />
+                        class="w-full h-full" :class="b.ajuste === 'cover' ? 'object-cover' : 'object-contain'" :style="{ objectPosition: b.posicion || 'center' }" />
                 </div>
             </div>
         </div>

@@ -11,10 +11,24 @@ class BannerMedidaTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Un degradé suave, que es como se comporta una foto de verdad: el PNG lo
+     * guarda mal y el JPEG lo guarda bien. Con un color plano la prueba de peso
+     * no significaría nada, porque ahí el PNG siempre gana.
+     */
     private function guardarImagen(string $nombre, int $ancho, int $alto): string
     {
         $imagen = imagecreatetruecolor($ancho, $alto);
-        imagefill($imagen, 0, 0, imagecolorallocate($imagen, 40, 120, 155));
+        for ($x = 0; $x < $ancho; $x++) {
+            for ($y = 0; $y < $alto; $y++) {
+                imagesetpixel($imagen, $x, $y, imagecolorallocate(
+                    $imagen,
+                    (int) (255 * $x / $ancho),
+                    (int) (255 * $y / $alto),
+                    (int) (255 * ($x + $y) / ($ancho + $alto))
+                ));
+            }
+        }
         ob_start();
         imagepng($imagen);
         $contenido = (string) ob_get_clean();
@@ -25,92 +39,74 @@ class BannerMedidaTest extends TestCase
         return "banners/{$nombre}";
     }
 
-    /**
-     * @return array<string, array{int, int, bool}>
-     */
-    public static function medidas(): array
+    private function crearBanner(string $ruta): Banner
     {
-        return [
-            'más alta que la franja' => [1983, 793, true],
-            'casi cuadrada' => [740, 493, true],
-            'más chica que la franja' => [600, 200, true],
-            // La que ya viene en medida no se toca: no hay nada que recortar.
-            'ya en 1600x400' => [1600, 400, false],
-        ];
-    }
-
-    #[\PHPUnit\Framework\Attributes\DataProvider('medidas')]
-    public function test_la_imagen_queda_en_1600x400_sea_cual_sea_la_que_suban(int $ancho, int $alto, bool $seRecorta): void
-    {
-        config(['filament.default_filesystem_disk' => 'public']);
-        Storage::fake('public');
-
-        $ruta = $this->guardarImagen('subida.png', $ancho, $alto);
-
-        $banner = Banner::create([
+        return Banner::create([
             'imagen' => $ruta,
             'destino_tipo' => 'url',
             'destino_valor' => 'https://example.com',
             'orden' => 0,
             'activo' => true,
         ]);
-
-        // Al recortar sale en JPEG, así que el archivo cambia de extensión.
-        $this->assertSame($seRecorta ? 'banners/subida.jpg' : $ruta, $banner->imagen);
-
-        if ($seRecorta) {
-            $this->assertFalse(Storage::disk('public')->exists($ruta), 'El archivo original quedó ocupando lugar.');
-        }
-
-        [$anchoFinal, $altoFinal] = getimagesizefromstring(Storage::disk('public')->get($banner->imagen));
-
-        $this->assertSame(1600, $anchoFinal);
-        $this->assertSame(400, $altoFinal);
     }
 
-    public function test_no_vuelve_a_procesar_una_imagen_que_ya_esta_en_medida(): void
+    /**
+     * @return array<string, array{int, int, float}>
+     */
+    public static function medidas(): array
+    {
+        return [
+            // La pieza de las mermeladas: más alta que la tira. Antes se le
+            // recortaba el 37% (se perdían el título y la fila de abajo).
+            'más alta que la tira' => [1983, 793, 2.50],
+            'casi cuadrada' => [740, 493, 1.50],
+            'bien alargada' => [1983, 496, 4.00],
+            'ya en medida' => [1600, 640, 2.50],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('medidas')]
+    public function test_la_imagen_nunca_se_recorta(int $ancho, int $alto, float $proporcion): void
     {
         config(['filament.default_filesystem_disk' => 'public']);
         Storage::fake('public');
 
-        $banner = Banner::create([
-            'imagen' => $this->guardarImagen('uno.png', 900, 900),
-            'destino_tipo' => 'url',
-            'destino_valor' => 'https://example.com',
-            'orden' => 0,
-            'activo' => true,
-        ]);
+        $banner = $this->crearBanner($this->guardarImagen('subida.png', $ancho, $alto));
 
+        [$anchoFinal, $altoFinal] = getimagesizefromstring(Storage::disk('public')->get($banner->imagen));
+
+        // Lo único que importa: la forma de la imagen se conserva, así que no
+        // se perdió ni un pedazo del diseño.
+        $this->assertEqualsWithDelta($proporcion, $anchoFinal / $altoFinal, 0.02);
+        $this->assertLessThanOrEqual(1600, $anchoFinal);
+        $this->assertLessThanOrEqual(640, $altoFinal);
+    }
+
+    public function test_una_imagen_pesada_se_aliviana(): void
+    {
+        config(['filament.default_filesystem_disk' => 'public']);
+        Storage::fake('public');
+
+        $ruta = $this->guardarImagen('pesada.png', 3000, 1200);
+        $pesoOriginal = strlen(Storage::disk('public')->get($ruta));
+
+        $banner = $this->crearBanner($ruta);
+
+        $this->assertSame('banners/pesada.jpg', $banner->imagen);
+        $this->assertFalse(Storage::disk('public')->exists($ruta), 'El archivo original quedó ocupando lugar.');
+        $this->assertLessThan($pesoOriginal, strlen(Storage::disk('public')->get($banner->imagen)));
+    }
+
+    public function test_no_vuelve_a_procesar_una_imagen_que_ya_esta_bien(): void
+    {
+        config(['filament.default_filesystem_disk' => 'public']);
+        Storage::fake('public');
+
+        $banner = $this->crearBanner($this->guardarImagen('uno.png', 900, 300));
         $antes = Storage::disk('public')->get($banner->imagen);
 
         $banner->update(['orden' => 5]);
 
-        $this->assertSame('banners/uno.jpg', $banner->fresh()->imagen);
-        $this->assertSame($antes, Storage::disk('public')->get($banner->imagen));
-    }
-
-    /**
-     * Los banners que ya estaban cargados se acomodan con solo abrirlos y
-     * guardarlos, sin tener que volver a subir la imagen.
-     */
-    public function test_un_banner_viejo_se_acomoda_al_guardarlo(): void
-    {
-        config(['filament.default_filesystem_disk' => 'public']);
-        Storage::fake('public');
-
-        $banner = Banner::withoutEvents(fn () => Banner::create([
-            'imagen' => $this->guardarImagen('viejo.png', 1983, 793),
-            'destino_tipo' => 'url',
-            'destino_valor' => 'https://example.com',
-            'orden' => 0,
-            'activo' => true,
-        ]));
-
-        $banner->save();
-
-        [$ancho, $alto] = getimagesizefromstring(Storage::disk('public')->get($banner->fresh()->imagen));
-
-        $this->assertSame(1600, $ancho);
-        $this->assertSame(400, $alto);
+        $this->assertSame($antes, Storage::disk('public')->get($banner->fresh()->imagen));
     }
 }
