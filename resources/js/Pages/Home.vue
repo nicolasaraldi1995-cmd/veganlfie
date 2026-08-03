@@ -5,12 +5,13 @@ import ProductCard from '@/Components/ProductCard.vue';
 import ImageModal from '@/Components/ImageModal.vue';
 import ComboDetailModal from '@/Components/ComboDetailModal.vue';
 import BannerSlider from '@/Components/BannerSlider.vue';
+import FranjaDatos from '@/Components/FranjaDatos.vue';
 import WelcomeGuideModal from '@/Components/WelcomeGuideModal.vue';
 import { Link, Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 function addCombo(id) { router.post(route('cart.add-combo'), { combo_id: id }, { preserveScroll: true }); }
 
-const props = defineProps({ banners: Array, pasillos: Array, combos: Array, masVendidos: Array, mostrarGuiaBienvenida: Boolean });
+const props = defineProps({ datos: Object, banners: Array, pasillos: Array, combos: Array, masVendidos: Array, mostrarGuiaBienvenida: Boolean });
 
 const modalImage = ref(null);
 const comboSeleccionado = ref(null);
@@ -31,6 +32,7 @@ function scrollTo(id) {
     <PublicLayout>
         <WelcomeGuideModal v-if="mostrarGuia" @close="mostrarGuia = false" />
         <BannerSlider :banners="banners" />
+        <FranjaDatos :envio-gratis-desde="datos.envioGratisDesde" :total-productos="datos.totalProductos" />
 
         <div class="px-6 py-5">
             <!-- Más vendidos -->
