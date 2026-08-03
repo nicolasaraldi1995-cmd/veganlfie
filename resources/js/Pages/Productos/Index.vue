@@ -66,10 +66,17 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'categorias', categoria: categoriaActual.id, marca: m.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
-                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300 flex items-center justify-center p-5">
+                            <!-- Sin margen y con object-cover: el archivo ya viene
+                                 cuadrado desde el servidor (ver MarcaObserver), así
+                                 que el logo llena el círculo tal como se recortó.
+                                 El margen que había antes lo hacía verse chico,
+                                 con un anillo blanco alrededor. -->
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300">
                                 <img v-if="m.logo_url" :src="m.logo_url" :alt="m.nombre"
-                                    class="max-w-full max-h-full object-contain group-hover:scale-[1.06] transition-transform duration-500" />
-                                <span v-else class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                                    class="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" />
+                                <div v-else class="w-full h-full flex items-center justify-center">
+                                    <span class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                                </div>
                             </div>
                             <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ m.productos_count }}</span>
                         </div>
@@ -87,10 +94,17 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                     <Link v-for="m in items" :key="m.id" :href="route('productos.index', { vista: 'marcas', marca: m.id })"
                         class="group flex flex-col items-center">
                         <div class="relative">
-                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300 flex items-center justify-center p-5">
+                            <!-- Sin margen y con object-cover: el archivo ya viene
+                                 cuadrado desde el servidor (ver MarcaObserver), así
+                                 que el logo llena el círculo tal como se recortó.
+                                 El margen que había antes lo hacía verse chico,
+                                 con un anillo blanco alrededor. -->
+                            <div class="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden bg-surface-1 ring-1 ring-border group-hover:ring-accent/50 shadow-sm group-hover:shadow-md transition-all duration-300">
                                 <img v-if="m.logo_url" :src="m.logo_url" :alt="m.nombre"
-                                    class="max-w-full max-h-full object-contain group-hover:scale-[1.06] transition-transform duration-500" />
-                                <span v-else class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                                    class="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-500" />
+                                <div v-else class="w-full h-full flex items-center justify-center">
+                                    <span class="text-4xl font-bold text-surface-4">{{ m.nombre.charAt(0) }}</span>
+                                </div>
                             </div>
                             <span class="absolute bottom-1 right-1 bg-surface-1/95 backdrop-blur-sm text-text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm ring-1 ring-border">{{ m.productos_count }}</span>
                         </div>
