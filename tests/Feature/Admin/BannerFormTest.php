@@ -37,5 +37,8 @@ class BannerFormTest extends TestCase
         // 2 MB frenaba una imagen de banner de 1600x400 en buena calidad.
         $this->assertGreaterThanOrEqual(8192, $campo->getMaxSize());
         $this->assertTrue($campo->hasImageEditor(), 'Sin editor no se puede recortar ni acomodar la imagen al subirla.');
+        // 4:1 = 1600x400, la proporción exacta de la franja del inicio: si el
+        // archivo no la respeta sobran espacios a los costados.
+        $this->assertSame('4:1', $campo->getImageCropAspectRatio());
     }
 }

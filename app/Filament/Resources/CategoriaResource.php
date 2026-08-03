@@ -31,7 +31,16 @@ class CategoriaResource extends Resource
                 ->image()
                 ->maxSize(5120)
                 ->directory('categorias')
-                ->visibility('public'),
+                ->visibility('public')
+                // Recorte redondo estilo WhatsApp: en la web la categoría se
+                // muestra dentro de un círculo, así que se elige acá qué parte
+                // de la foto queda adentro.
+                ->imageEditor()
+                ->circleCropper()
+                ->imageCropAspectRatio('1:1')
+                ->imageEditorViewportWidth(400)
+                ->imageEditorViewportHeight(400)
+                ->helperText('Tocá el lápiz para mover y agrandar la foto dentro del círculo, igual que en WhatsApp.'),
             Forms\Components\TextInput::make('orden')
                 ->numeric()
                 ->default(0),

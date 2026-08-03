@@ -31,7 +31,15 @@ class MarcaResource extends Resource
                 ->image()
                 ->maxSize(5120)
                 ->directory('marcas')
-                ->visibility('public'),
+                ->visibility('public')
+                // Mismo recorte redondo que categorías: el logo se muestra
+                // dentro de un círculo en la web.
+                ->imageEditor()
+                ->circleCropper()
+                ->imageCropAspectRatio('1:1')
+                ->imageEditorViewportWidth(400)
+                ->imageEditorViewportHeight(400)
+                ->helperText('Tocá el lápiz para mover y agrandar el logo dentro del círculo, igual que en WhatsApp.'),
             Forms\Components\Toggle::make('activo')
                 ->default(true),
             Forms\Components\TextInput::make('descuento_porcentaje')
