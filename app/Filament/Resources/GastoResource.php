@@ -64,11 +64,12 @@ class GastoResource extends Resource
                 Tables\Columns\TextColumn::make('tipo')
                     ->badge()
                     ->formatStateUsing(fn (string $state) => Gasto::TIPOS[$state] ?? $state)
+                    // Sin default, agregar un tipo nuevo a Gasto::TIPOS rompía
+                    // toda la lista de gastos con un error 500.
                     ->color(fn (string $state) => match ($state) {
                         'comisionista' => 'warning',
                         'proveedor' => 'info',
-                        'logistica' => 'gray',
-                        'otro' => 'gray',
+                        default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('monto')
                     ->money('ARS')

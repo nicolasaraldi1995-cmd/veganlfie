@@ -24,6 +24,25 @@ class Combo extends Model
         'activo' => 'boolean',
     ];
 
+    /**
+     * Mismo recorte que Presentacion::toArray. Los controladores ponen en null
+     * los precios calculados (precio_final, precio_sin_descuento), pero
+     * precio_manual es una columna de verdad y viajaba igual: un combo con
+     * precio fijo le mostraba el precio a cualquier visitante sin cuenta.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $data = parent::toArray();
+
+        if (auth()->guest()) {
+            unset($data['precio_manual'], $data['descuento_porcentaje']);
+        }
+
+        return $data;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Combo $combo) {

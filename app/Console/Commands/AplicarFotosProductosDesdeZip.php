@@ -43,7 +43,9 @@ class AplicarFotosProductosDesdeZip extends Command
         $ok = 0;
         $fail = 0;
 
-        foreach (glob($extractDir.'/*') as $file) {
+        // glob() devuelve false si falla: sin el ?: [] el array_map de más
+        // abajo cortaba el comando con un error fatal.
+        foreach (glob($extractDir.'/*') ?: [] as $file) {
             $productoId = (int) pathinfo($file, PATHINFO_FILENAME);
             $ext = pathinfo($file, PATHINFO_EXTENSION);
 
@@ -61,7 +63,7 @@ class AplicarFotosProductosDesdeZip extends Command
             $ok++;
         }
 
-        array_map('unlink', glob($extractDir.'/*'));
+        array_map('unlink', glob($extractDir.'/*') ?: []);
         rmdir($extractDir);
 
         $this->newLine();
