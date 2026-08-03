@@ -271,12 +271,6 @@ parameters:
 			path: app/Http/Controllers/ListaPreciosController.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:activos\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/MarcaController.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:activos\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -365,12 +359,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Models/Pedido.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:onlyTrashed\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Models/Producto.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$congelado\.$#'

@@ -52,6 +52,9 @@ class Marca extends Model
         return $data;
     }
 
+    /**
+     * @return HasMany<Producto, $this>
+     */
     public function productos(): HasMany
     {
         return $this->hasMany(Producto::class);

@@ -84,6 +84,9 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
+    /**
+     * @return HasMany<Presentacion, $this>
+     */
     public function presentaciones(): HasMany
     {
         return $this->hasMany(Presentacion::class);

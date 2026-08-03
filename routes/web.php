@@ -33,6 +33,7 @@ Route::get('/combos', [ComboController::class, 'index'])->name('combos.index');
 Route::middleware('auth')->group(function () {
     Route::get('/lista-de-precios', [ListaPreciosController::class, 'index'])->name('lista-precios');
     Route::get('/lista-de-precios/pdf', [ListaPreciosController::class, 'pdf'])->name('lista-precios.pdf');
+    Route::get('/lista-de-precios/html', [ListaPreciosController::class, 'html'])->name('lista-precios.html');
 });
 Route::get('/nuevos', NuevosController::class)->name('nuevos');
 Route::get('/veganlife', VeganlifeController::class)->name('veganlife');
