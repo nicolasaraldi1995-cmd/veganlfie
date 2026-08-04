@@ -57,7 +57,14 @@ class MediaController extends Controller
 
         return response($contenido)
             ->header('Content-Type', $this->tipoDe($path, $contenido))
-            ->header('Cache-Control', 'public, max-age=604800');
+            ->header('Cache-Control', 'public, max-age=604800')
+            // Un SVG es texto y puede traer <script> adentro; servido desde
+            // este dominio, ese script corre con la sesión de quien abra la
+            // imagen. Los 63 iconos de categoría son SVG y tienen que seguir
+            // dibujándose, así que en vez de dejar de servirlos se les corta la
+            // capacidad de ejecutar: sin scripts, sin pedidos a la red, sin
+            // formularios. Vale para todo /media, que son todas imágenes.
+            ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
     }
 
     /**

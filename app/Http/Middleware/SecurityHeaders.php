@@ -22,7 +22,10 @@ class SecurityHeaders
         // 'unsafe-inline' en script/style es el techo del sitio público (JSON-LD
         // de productos, estilos inline de Vue) -- subirlo de nivel implica pasar
         // a nonces por request.
-        if (! $request->is('admin*')) {
+        // Si la respuesta ya trae su propio CSP, se respeta: /media manda uno
+        // mucho más cerrado para que un SVG con <script> adentro no pueda
+        // hacer nada. Sin este chequeo, el de acá lo pisaba y lo dejaba correr.
+        if (! $request->is('admin*') && ! $response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', implode(' ', [
                 "default-src 'self';",
                 "script-src 'self' 'unsafe-inline';",

@@ -35,6 +35,7 @@ class CategoriaResource extends Resource
                 ->maxLength(255),
             Forms\Components\FileUpload::make('imagen')
                 ->image()
+                ->acceptedFileTypes(ProductoResource::IMAGENES)
                 ->maxSize(5120)
                 ->directory('categorias')
                 ->visibility('public')

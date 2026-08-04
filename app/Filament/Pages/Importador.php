@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use League\Flysystem\Local\LocalFilesystemAdapter;
 use Livewire\WithFileUploads;
 
 class Importador extends Page implements Forms\Contracts\HasForms
@@ -113,6 +114,13 @@ class Importador extends Page implements Forms\Contracts\HasForms
                     'text/plain',
                     'application/octet-stream',
                 ])
+                // Al disco privado, NO al del panel. El del panel se symlinkea
+                // a public/storage, así que la lista del proveedor con los
+                // costos se bajaba entera desde /storage/imports/ sin cuenta:
+                // Apache la sirve antes de llegar a PHP y el filtro de
+                // MediaController ni se entera. "visibility private" no salva
+                // nada en un disco local, no saca el archivo de esa carpeta.
+                ->disk(self::DISCO)
                 ->directory('imports')
                 ->visibility('private')
                 ->maxSize(10240)
@@ -128,13 +136,12 @@ class Importador extends Page implements Forms\Contracts\HasForms
     }
 
     /**
-     * Devuelve una ruta de archivo que la librería de Excel pueda abrir.
-     *
-     * El formulario guarda el archivo en el disco que use el panel, que en
-     * producción es un bucket: ahí no existe ninguna ruta local. Antes esto
-     * pedía la ruta del disco "local" a secas, así que el importador fallaba
-     * en producción. Se baja a un temporal y se lee de ahí.
+     * storage/app/private: fuera del árbol que publica el servidor web, a
+     * diferencia del disco del panel. La lista del proveedor trae los costos y
+     * los márgenes, así que no puede quedar donde Apache la alcance.
      */
+    private const DISCO = 'local';
+
     private function rutaGuardada(): ?string
     {
         $valor = $this->archivo;
@@ -146,12 +153,16 @@ class Importador extends Page implements Forms\Contracts\HasForms
         return is_string($valor) && $valor !== '' ? $valor : null;
     }
 
+    /**
+     * Devuelve una ruta de archivo que la librería de Excel pueda abrir. Si el
+     * disco no es local (un bucket), se baja a un temporal y se lee de ahí.
+     */
     private function rutaLocal(): string
     {
         $guardada = (string) $this->rutaGuardada();
-        $disco = Storage::disk(config('filament.default_filesystem_disk'));
+        $disco = Storage::disk(self::DISCO);
 
-        if ($disco->getAdapter() instanceof \League\Flysystem\Local\LocalFilesystemAdapter) {
+        if ($disco->getAdapter() instanceof LocalFilesystemAdapter) {
             return $disco->path($guardada);
         }
 

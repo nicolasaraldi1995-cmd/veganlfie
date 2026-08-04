@@ -1,8 +1,14 @@
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
+# Sin listado de carpetas. Venía anidado dentro de mod_negotiation, que en
+# muchos servidores no está cargado: ahí la directiva no se aplicaba nunca y
+# entrando a /storage/ se veía el contenido de cada carpeta, archivo por
+# archivo. Va suelto para que valga siempre.
+Options -Indexes
 
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+<IfModule mod_rewrite.c>
     RewriteEngine On
 
     # Handle Authorization Header

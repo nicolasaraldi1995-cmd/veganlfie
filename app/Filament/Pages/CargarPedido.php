@@ -218,13 +218,24 @@ class CargarPedido extends Page implements Forms\Contracts\HasForms
                     ],
                 ]);
 
+                // El precio se relee de la base, NO se toma de $this->items.
+                // Esa propiedad viaja al navegador y vuelve: desde la consola
+                // se podía hacer $wire.set('items.7.precio', 1) y cargar un
+                // pedido de $80.000 por $3. Mismo criterio que
+                // CargarPedidoDesdeArchivo, que ya releía los precios.
+                $precios = Presentacion::whereIn('id', array_column($this->items, 'presentacion_id'))
+                    ->get()
+                    ->keyBy('id');
+
                 foreach ($this->items as $item) {
+                    $precio = (float) ($precios[$item['presentacion_id']]->precio_final ?? 0);
+
                     PedidoItem::create([
                         'pedido_id' => $pedido->id,
                         'presentacion_id' => $item['presentacion_id'],
                         'cantidad' => $item['cantidad'],
-                        'precio_unitario' => $item['precio'],
-                        'subtotal' => round($item['precio'] * $item['cantidad'], 2),
+                        'precio_unitario' => $precio,
+                        'subtotal' => round($precio * $item['cantidad'], 2),
                     ]);
                 }
 

@@ -27,6 +27,7 @@ class BannerResource extends Resource
         return $form->schema([
             Forms\Components\FileUpload::make('imagen')
                 ->image()
+                ->acceptedFileTypes(ProductoResource::IMAGENES)
                 ->required()
                 // 2 MB no alcanzaba para una imagen de banner en buena calidad.
                 ->maxSize(8192)

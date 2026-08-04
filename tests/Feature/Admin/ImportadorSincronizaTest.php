@@ -48,7 +48,8 @@ class ImportadorSincronizaTest extends TestCase
 
         $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.xls';
         file_put_contents($ruta, $html);
-        Storage::disk('public')->put('imports/lista.xls', $html);
+        // Al disco privado: el del panel se publica en public/storage.
+        Storage::disk('local')->put('imports/lista.xls', $html);
 
         return $ruta;
     }
@@ -57,6 +58,7 @@ class ImportadorSincronizaTest extends TestCase
     {
         config(['filament.default_filesystem_disk' => 'public']);
         Storage::fake('public');
+        Storage::fake('local');
 
         $this->lista();
 

@@ -80,9 +80,16 @@ class Presentacion extends Model
         return $this->belongsTo(Producto::class);
     }
 
+    /**
+     * Activa Y con precio. Una presentación sin precio no se puede vender: el
+     * operador no ve ese campo al cargar un producto, así que se guardaba en 0
+     * y quedaba publicada a $0, comprable. Que no aparezca es más sano que que
+     * se venda regalada; el admin la sigue viendo en el panel para ponerle el
+     * precio. Hoy no hay ninguna en ese estado (0 de 2161).
+     */
     public function scopeActivos($query)
     {
-        return $query->where('activo', true);
+        return $query->where('activo', true)->where('precio', '>', 0);
     }
 
     public function scopeConStock($query)

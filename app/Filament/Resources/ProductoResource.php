@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\ProductoResource\Pages;
 use App\Models\Marca;
+use App\Models\Presentacion;
 use App\Models\Producto;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -20,6 +21,13 @@ class ProductoResource extends Resource
     protected static ?string $navigationGroup = 'Catálogo';
 
     protected static ?int $navigationSort = 10;
+
+    /**
+     * ->image() a secas valida "mimetypes:image/*", y ahí adentro entra
+     * image/svg+xml: un SVG lleva <script> y se serviría desde este dominio.
+     * Se listan los formatos de foto, como ya hacía MarcaResource.
+     */
+    public const IMAGENES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 
     public static function form(Form $form): Form
     {
@@ -134,6 +142,7 @@ class ProductoResource extends Resource
                             ])->visible(fn () => auth()->user()?->isAdmin()),
                             Forms\Components\FileUpload::make('imagen')
                                 ->image()
+                                ->acceptedFileTypes(self::IMAGENES)
                                 ->maxSize(5120)
                                 ->directory('presentaciones')
                                 ->visibility('public')
@@ -141,6 +150,13 @@ class ProductoResource extends Resource
                                 ->label('Imagen'),
                             Forms\Components\Toggle::make('activo')->default(true),
                         ])
+                        // Los campos de plata están ocultos para el operador
+                        // pero se dehidratan igual, así que su valor llegaba
+                        // desde el navegador: con $wire.set se podía dejar el
+                        // precio público de un producto en $1. Se repone acá,
+                        // en el servidor.
+                        ->mutateRelationshipDataBeforeCreateUsing(fn (array $data) => self::soloElAdminPoneElPrecio($data, null))
+                        ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, Presentacion $record) => self::soloElAdminPoneElPrecio($data, $record))
                         ->defaultItems(1)
                         ->addActionLabel('Agregar presentación')
                         ->collapsible()
@@ -149,6 +165,7 @@ class ProductoResource extends Resource
                 Forms\Components\Tabs\Tab::make('Imagen')->schema([
                     Forms\Components\FileUpload::make('imagen')
                         ->image()
+                        ->acceptedFileTypes(self::IMAGENES)
                         ->maxSize(5120)
                         ->directory('productos')
                         ->visibility('public')
@@ -165,6 +182,32 @@ class ProductoResource extends Resource
         }
 
         $component->state(Marca::find($get('../../marca_id'))?->{$campo});
+    }
+
+    /**
+     * Repone los valores de plata que el operador no tendría que poder tocar.
+     * Los campos están ocultos para él, pero ocultar no es impedir: el estado
+     * viaja al navegador y vuelve. Al admin no se le toca nada, que para eso
+     * los ve y los edita.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private static function soloElAdminPoneElPrecio(array $data, ?Presentacion $guardada): array
+    {
+        if (auth()->user()?->isAdmin() ?? false) {
+            return $data;
+        }
+
+        // Sobre una presentación que ya existe se repone lo que hay en la base.
+        // Sobre una nueva queda en cero, y con precio cero no se publica (ver
+        // Presentacion::scopeActivos): el dueño le pone el precio y recién ahí
+        // aparece en la web. Antes salía a la venta a $0.
+        foreach (['precio', 'precio_costo', 'margen_porcentaje', 'descuento_porcentaje', 'oferta_precio', 'oferta_porcentaje'] as $campo) {
+            $data[$campo] = $guardada->{$campo} ?? ($campo === 'precio' ? 0 : null);
+        }
+
+        return $data;
     }
 
     private static function recalcularPrecio(Forms\Get $get, Forms\Set $set): void

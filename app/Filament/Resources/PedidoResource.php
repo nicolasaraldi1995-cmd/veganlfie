@@ -130,6 +130,14 @@ class PedidoResource extends Resource
                                 ->dehydratedWhenHidden(),
                         ])
                         ->columns(6)
+                        // El precio y el subtotal se rearman en el servidor
+                        // antes de guardar. Los campos están ocultos para el
+                        // operador pero se dehidratan igual (hace falta, si no
+                        // se le borran los ítems al guardar), así que su valor
+                        // llegaba desde el navegador: con $wire.set se podía
+                        // dejar un pedido de $20.000 en $2.
+                        ->mutateRelationshipDataBeforeCreateUsing(fn (array $data) => self::precioDeLaBase($data))
+                        ->mutateRelationshipDataBeforeSaveUsing(fn (array $data) => self::precioDeLaBase($data))
                         ->addActionLabel('Agregar producto')
                         ->defaultItems(0)
                         ->reorderable(false)
@@ -324,6 +332,32 @@ class PedidoResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /**
+     * Deja el ítem con el precio que corresponde, sin creerle al navegador.
+     * El admin sí puede fijar un precio a mano (para eso ve el campo); al resto
+     * se le repone el de la presentación. El subtotal se calcula siempre acá:
+     * el campo está deshabilitado en pantalla, así que nunca es un dato, es una
+     * cuenta.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private static function precioDeLaBase(array $data): array
+    {
+        $cantidad = max(1, (int) ($data['cantidad'] ?? 1));
+
+        $precio = (auth()->user()?->isAdmin() ?? false)
+            ? (float) ($data['precio_unitario'] ?? 0)
+            : (float) (Presentacion::find($data['presentacion_id'] ?? null)->precio_final ?? 0);
+
+        return [
+            ...$data,
+            'cantidad' => $cantidad,
+            'precio_unitario' => $precio,
+            'subtotal' => round($precio * $cantidad, 2),
+        ];
     }
 
     // PedidoPolicy (view/update) existe para el autoservicio del cliente en

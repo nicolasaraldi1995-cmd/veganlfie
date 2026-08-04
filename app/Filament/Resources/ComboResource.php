@@ -32,6 +32,7 @@ class ComboResource extends Resource
                     ->rows(3),
                 Forms\Components\FileUpload::make('imagen')
                     ->image()
+                    ->acceptedFileTypes(ProductoResource::IMAGENES)
                     ->maxSize(5120)
                     ->directory('combos')
                     ->visibility('public'),
