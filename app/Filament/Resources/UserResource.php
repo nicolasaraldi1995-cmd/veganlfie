@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Validation\Rules\Password;
 
 class UserResource extends Resource
 {
@@ -49,9 +50,14 @@ class UserResource extends Resource
                     'cliente' => 'Cliente',
                 ])
                 ->required(),
+            // Sin mínimo, el formulario aceptaba una contraseña de un carácter
+            // para una cuenta que ve costos, márgenes y la caja.
             Forms\Components\TextInput::make('password')
                 ->label('Contraseña')
                 ->password()
+                ->minLength(8)
+                ->rule(Password::defaults())
+                ->helperText('Ocho caracteres o más, con letras y números.')
                 ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
                 ->dehydrated(fn ($state) => filled($state))
                 ->required(fn (string $operation) => $operation === 'create'),

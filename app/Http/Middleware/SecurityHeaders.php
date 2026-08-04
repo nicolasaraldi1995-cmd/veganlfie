@@ -17,6 +17,13 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
+        // Le dice al navegador que a este dominio se entra solo por https, así
+        // no queda ese primer pedido en claro donde la cookie de sesión viaja
+        // a la vista. Solo en producción: en local no hay certificado.
+        if (app()->isProduction()) {
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        }
+
         // ponytail: el panel /admin (Filament + Livewire, modales, notificaciones)
         // no se probó contra un CSP y queda afuera para no arriesgar romperlo.
         // 'unsafe-inline' en script/style es el techo del sitio público (JSON-LD

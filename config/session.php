@@ -169,7 +169,11 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // En producción arranca en true aunque nadie haya puesto la variable en el
+    // servidor. Sin ese segundo argumento quedaba en null, o sea que la cookie
+    // de sesión también viajaba por http y quien estuviera en la misma red la
+    // levantaba y entraba como ese usuario.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

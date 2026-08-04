@@ -15,23 +15,34 @@ Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // Ver precios pide cuenta, así que crearse una es la llave a toda la lista
+    // mayorista: sin tope, un competidor automatiza altas y la scrapea.
+    Route::post('register', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:5,60');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    // El tope de LoginRequest es por email+IP: probar UNA contraseña contra
+    // MUCHAS cuentas no llegaba nunca al límite. Este es por IP a secas, así
+    // que también corta esa forma de probar.
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:20,1');
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
 
+    // La respuesta cambia según si el email existe, así que sin tope se puede
+    // barrer una lista y quedarse con los que son clientes de la distribuidora.
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:5,60')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:10,60')
         ->name('password.store');
 });
 

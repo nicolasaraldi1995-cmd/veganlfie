@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Categoria;
 use App\Models\Marca;
+use App\Models\Producto;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
 
@@ -60,7 +61,7 @@ class ListaPreciosController extends Controller
      */
     public function planilla()
     {
-        $productos = \App\Models\Producto::activos()
+        $productos = Producto::activos()
             ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()->orderBy('unidad')])
             ->orderBy('nombre')
             ->get();
@@ -77,10 +78,10 @@ class ListaPreciosController extends Controller
             foreach ($productos as $producto) {
                 foreach ($producto->presentaciones as $presentacion) {
                     fputcsv($salida, [
-                        $producto->nombre,
-                        $producto->marca->nombre ?? '',
-                        $producto->categoria->nombre ?? '',
-                        $presentacion->unidad,
+                        self::comoTexto($producto->nombre),
+                        self::comoTexto($producto->marca->nombre ?? ''),
+                        self::comoTexto($producto->categoria->nombre ?? ''),
+                        self::comoTexto($presentacion->unidad),
                         number_format((float) $presentacion->precio, 2, ',', '.'),
                         $presentacion->stock,
                     ], ';');
@@ -89,6 +90,20 @@ class ListaPreciosController extends Controller
 
             fclose($salida);
         }, $nombre, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Excel trata como fórmula toda celda que empiece con =, +, - o @. Un
+     * producto llamado "=HYPERLINK(...)" se ejecutaba al abrir la planilla en
+     * la máquina de quien la bajara. Con la comilla adelante, Excel lo muestra
+     * como texto y no la ejecuta. El lector del Importador ya hacía lo
+     * simétrico al leer; faltaba al escribir.
+     */
+    private static function comoTexto(?string $valor): string
+    {
+        $valor = (string) $valor;
+
+        return preg_match('/^[=+\-@\t\r]/', $valor) === 1 ? "'".$valor : $valor;
     }
 
     /**
@@ -149,7 +164,7 @@ class ListaPreciosController extends Controller
         // común, y ese archivo no existe en el celular del cliente -- rompía
         // justamente lo que hace útil a esta lista, que ande sin internet.
         return response()->streamDownload(
-            fn () => print($html),
+            fn () => print ($html),
             'VEGANLIFE-precios-'.now()->format('d-m-Y').'.html',
             ['Content-Type' => 'text/html; charset=utf-8'],
         );
