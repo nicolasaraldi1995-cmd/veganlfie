@@ -81,6 +81,17 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
     }
 
     /**
+     * De qué cliente es el cobro: el de la fila que se apretó en la lista de
+     * los que deben, o el que se está mirando en el resumen de abajo.
+     *
+     * @param  array<string, mixed>  $arguments
+     */
+    private function clienteDelCobro(array $arguments): ?User
+    {
+        return User::find($arguments['cliente'] ?? $this->cliente_id);
+    }
+
+    /**
      * Anota la plata que el cliente entrega a cuenta. No se ata a ningún pedido
      * puntual: entra como pago general y baja el saldo total, que es lo que se
      * está mirando en esta pantalla. Para saldar un pedido en particular está
@@ -89,11 +100,31 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
     public function registrarPagoAction(): Action
     {
         return Action::make('registrarPago')
-            ->label('Registrar pago')
+            ->label('Cobrar')
             ->icon('heroicon-o-banknotes')
             ->color('success')
-            ->modalHeading(fn () => 'Registrar pago de '.($this->resumen['cliente']['nombre'] ?? 'cliente'))
+            ->size('sm')
+            ->modalHeading(fn (array $arguments) => 'Cobrarle a '.($this->clienteDelCobro($arguments)->name ?? 'cliente'))
+            ->modalDescription(function (array $arguments): string {
+                $cliente = $this->clienteDelCobro($arguments);
+                $debe = $cliente ? app(CuentaClienteService::class)->saldoDe($cliente) : null;
+
+                return 'Debe $'.number_format((float) $debe, 0, ',', '.').'.';
+            })
             ->modalSubmitActionLabel('Registrar')
+            // El monto viene con lo que debe: si paga todo, no hay nada que
+            // tipear. Se calcula al abrir, para que valga igual desde la lista
+            // de arriba que desde el resumen.
+            ->fillForm(function (array $arguments): array {
+                $cliente = $this->clienteDelCobro($arguments);
+                $debe = $cliente ? app(CuentaClienteService::class)->saldoDe($cliente) : null;
+
+                return [
+                    'monto' => round(max(0, (float) $debe), 2),
+                    'metodo' => 'efectivo',
+                    'fecha' => now(),
+                ];
+            })
             ->form([
                 Forms\Components\TextInput::make('monto')
                     ->label('Cuánto entrega')
@@ -101,10 +132,7 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
                     ->minValue(0)
                     ->required()
                     ->prefix('$')
-                    ->autofocus()
-                    // Viene con lo que debe: si paga todo, no hay nada que tipear.
-                    ->default(fn () => round(max(0, (float) ($this->resumen['saldoTotal'] ?? 0)), 2))
-                    ->helperText(fn () => 'Debe $'.number_format((float) ($this->resumen['saldoTotal'] ?? 0), 0, ',', '.')),
+                    ->autofocus(),
                 Forms\Components\ToggleButtons::make('metodo')
                     ->label('Cómo pagó')
                     ->options(Pago::METODOS)
@@ -121,33 +149,40 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
                         'otro' => 'heroicon-o-ellipsis-horizontal',
                     ])
                     ->inline()
-                    ->default('efectivo')
                     ->required(),
                 Forms\Components\DatePicker::make('fecha')
                     ->label('Fecha')
-                    ->required()
-                    ->default(now()),
+                    ->required(),
                 Forms\Components\TextInput::make('notas')
                     ->label('Nota')
                     ->placeholder('Opcional'),
             ])
-            ->action(function (array $data): void {
+            ->action(function (array $arguments, array $data): void {
+                $cliente = $this->clienteDelCobro($arguments);
+
+                if (! $cliente) {
+                    return;
+                }
+
                 Pago::create([
-                    'user_id' => $this->cliente_id,
+                    'user_id' => $cliente->id,
                     'monto' => $data['monto'],
                     'metodo' => $data['metodo'],
                     'fecha' => $data['fecha'],
                     'notas' => $data['notas'] ?? null,
                 ]);
 
-                // Se recalculan las dos vistas que quedaron viejas: el resumen
-                // de este cliente y la lista de arriba, de la que puede
-                // desaparecer si saldó todo.
-                $this->verResumen();
+                // La lista de arriba siempre queda vieja: el cliente puede
+                // desaparecer de ella si saldó todo. El resumen de abajo, sólo
+                // si es justo el cliente que se está mirando.
                 $this->cargarClientesConSaldo();
 
+                if ($this->showResumen && (int) $this->cliente_id === $cliente->id) {
+                    $this->verResumen();
+                }
+
                 Notification::make()
-                    ->title('Pago de $'.number_format((float) $data['monto'], 0, ',', '.').' registrado')
+                    ->title('Pago de $'.number_format((float) $data['monto'], 0, ',', '.').' de '.$cliente->name)
                     ->success()
                     ->send();
             });

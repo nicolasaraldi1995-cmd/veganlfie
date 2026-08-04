@@ -22,10 +22,14 @@
                                 <td class="px-3 py-2 text-gray-400">{{ $cliente['celular'] ?? '—' }}</td>
                                 <td class="px-3 py-2 text-gray-400">{{ $cliente['desde'] }}</td>
                                 <td class="px-3 py-2 text-right font-bold text-red-500">${{ number_format($cliente['saldo'], 0, ',', '.') }}</td>
-                                <td class="px-3 py-2 text-right">
-                                    <x-filament::button size="xs" wire:click="verClienteConSaldo({{ $cliente['id'] }})" icon="heroicon-o-eye">
-                                        Ver
-                                    </x-filament::button>
+                                <td class="px-3 py-2">
+                                    <div class="flex justify-end gap-2">
+                                        {{-- Se cobra desde acá mismo, sin tener que abrir el cliente primero. --}}
+                                        {{ ($this->registrarPagoAction)(['cliente' => $cliente['id']]) }}
+                                        <x-filament::button size="sm" color="gray" wire:click="verClienteConSaldo({{ $cliente['id'] }})" icon="heroicon-o-eye">
+                                            Ver
+                                        </x-filament::button>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach

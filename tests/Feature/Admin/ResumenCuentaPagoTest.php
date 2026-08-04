@@ -82,6 +82,58 @@ class ResumenCuentaPagoTest extends TestCase
             ->assertActionDataSet(['monto' => 7500.0, 'metodo' => 'efectivo']);
     }
 
+    /**
+     * El cobro se hace desde la fila de la lista de arriba, sin abrir a nadie:
+     * ahí el cliente no sale de la pantalla, viene indicado en el botón.
+     */
+    public function test_cobra_desde_la_lista_sin_abrir_el_cliente(): void
+    {
+        $primero = $this->clienteQueDebe(8000);
+        $segundo = $this->clienteQueDebe(2000);
+
+        $componente = Livewire::actingAs(User::factory()->create(['role' => 'admin']))
+            ->test(ResumenCuenta::class);
+
+        // Sin resumen abierto: no hay cliente elegido en ningún lado, y el
+        // botón está igual en cada fila de la lista.
+        $componente->assertSet('showResumen', false)->assertSee('Cobrar');
+
+        $componente->mountAction('registrarPago', ['cliente' => $segundo->id])
+            ->assertActionDataSet(['monto' => 2000.0])
+            ->setActionData(['metodo' => 'transferencia', 'fecha' => now()->toDateString()])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $this->assertEquals(2000, Pago::where('user_id', $segundo->id)->sole()->monto);
+        $this->assertSame(0, Pago::where('user_id', $primero->id)->count());
+
+        // El que saldó desaparece de la lista; el otro sigue debiendo.
+        $this->assertSame(
+            [$primero->id],
+            array_column($componente->get('clientesConSaldo'), 'id')
+        );
+    }
+
+    /**
+     * Cobrarle a uno desde la lista no tiene que pisar el resumen que se está
+     * mirando de otro cliente.
+     */
+    public function test_cobrar_desde_la_lista_no_toca_el_resumen_abierto_de_otro(): void
+    {
+        $mirado = $this->clienteQueDebe(9000);
+        $otro = $this->clienteQueDebe(1000);
+
+        $componente = $this->resumenAbierto($mirado);
+
+        $componente->mountAction('registrarPago', ['cliente' => $otro->id])
+            ->setActionData(['monto' => 1000, 'metodo' => 'efectivo', 'fecha' => now()->toDateString()])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $this->assertSame($mirado->name, $componente->get('resumen')['cliente']['nombre']);
+        $this->assertEquals(9000, $componente->get('resumen')['saldoTotal']);
+    }
+
     public function test_no_registra_un_pago_sin_monto(): void
     {
         $cliente = $this->clienteQueDebe(3000);
