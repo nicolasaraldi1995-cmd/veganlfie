@@ -36,10 +36,31 @@ class ProductImportService
         ];
     }
 
+    /**
+     * Catálogo cargado en memoria antes de empezar. Sin esto el importador
+     * hacía una consulta por marca, por categoría, por producto y por
+     * presentación de cada fila: 7244 consultas para 1879 filas. Con la base en
+     * otro servidor eso tardaba minutos y la importación moría por timeout.
+     *
+     * @var array<string, \App\Models\Marca>
+     */
+    private array $marcasPorNombre = [];
+
+    /** @var array<string, \App\Models\Categoria> */
+    private array $categoriasPorNombre = [];
+
+    /** @var array<string, \App\Models\Producto> */
+    private array $productosPorClave = [];
+
+    /** @var array<string, \App\Models\Presentacion> */
+    private array $presentacionesPorClave = [];
+
     public function import(string $path, array $columnMap, int $headerRow = 1, array $options = []): array
     {
         $rows = $this->readFile($path, $headerRow);
         $mapped = $this->mapColumns($rows, $columnMap);
+
+        $this->precargarCatalogo();
 
         DB::beginTransaction();
         try {
@@ -74,36 +95,60 @@ class ProductImportService
         return $this->stats;
     }
 
+    /**
+     * Trae todo el catálogo de una sola vez (4 consultas) para que después el
+     * recorrido de las filas no tenga que ir a la base a buscar nada.
+     */
+    private function precargarCatalogo(): void
+    {
+        $this->marcasPorNombre = Marca::withTrashed()->get()
+            ->keyBy(fn (Marca $m) => mb_strtolower(trim($m->nombre)))->all();
+
+        $this->categoriasPorNombre = Categoria::withTrashed()->get()
+            ->keyBy(fn (Categoria $c) => mb_strtolower(trim($c->nombre)))->all();
+
+        $this->productosPorClave = Producto::withTrashed()->get()
+            ->keyBy(fn (Producto $p) => $this->claveProducto($p->nombre, (int) $p->marca_id))->all();
+
+        $this->presentacionesPorClave = Presentacion::withTrashed()->get()
+            ->keyBy(fn (Presentacion $p) => $p->producto_id.'|||'.mb_strtolower(trim((string) $p->unidad)))->all();
+    }
+
+    private function claveProducto(string $nombre, int $marcaId): string
+    {
+        return mb_strtolower(trim($nombre)).'|||'.$marcaId;
+    }
+
     private function importProductGroup(array $first, Collection $presentaciones, array $options, array $columnMap): void
     {
-        // firstOrCreate no ve las filas con soft-delete, pero su nombre/slug sigue
-        // ocupado a nivel de base: si la marca o categoría fue borrada antes y el
-        // Excel la vuelve a mencionar, hay que restaurarla (no crear una nueva con
-        // el mismo nombre, porque el índice único de "slug" lo rechaza).
-        $marca = Marca::withTrashed()->where('nombre', trim($first['marca']))->first();
+        // Las marcas y categorías borradas siguen ocupando su nombre/slug a nivel
+        // de base: si el Excel las vuelve a mencionar hay que restaurarlas, no
+        // crear otra con el mismo nombre (el índice único de "slug" lo rechaza).
+        $marcaNombre = trim($first['marca']);
+        $marca = $this->marcasPorNombre[mb_strtolower($marcaNombre)] ?? null;
         if ($marca) {
             if ($marca->trashed()) {
                 $marca->restore();
             }
         } else {
-            $marca = Marca::create(['nombre' => trim($first['marca'])]);
+            $marca = Marca::create(['nombre' => $marcaNombre]);
+            $this->marcasPorNombre[mb_strtolower($marcaNombre)] = $marca;
             $this->stats['marcas_creadas']++;
         }
 
         $categoriaNombre = trim($first['categoria'] ?? 'Sin categoría');
-        $categoria = Categoria::withTrashed()->where('nombre', $categoriaNombre)->first();
+        $categoria = $this->categoriasPorNombre[mb_strtolower($categoriaNombre)] ?? null;
         if ($categoria) {
             if ($categoria->trashed()) {
                 $categoria->restore();
             }
         } else {
             $categoria = Categoria::create(['nombre' => $categoriaNombre]);
+            $this->categoriasPorNombre[mb_strtolower($categoriaNombre)] = $categoria;
             $this->stats['categorias_creadas']++;
         }
 
-        $producto = Producto::where('nombre', trim($first['nombre']))
-            ->where('marca_id', $marca->id)
-            ->first();
+        $producto = $this->productosPorClave[$this->claveProducto($first['nombre'], (int) $marca->id)] ?? null;
 
         $sinTacc = $this->parseBool($first['sin_tacc'] ?? null);
         $congelado = $this->parseBool($first['congelado'] ?? null);
@@ -126,7 +171,13 @@ class ProductImportService
                     $datosActualizar['nuevo'] = $nuevo;
                 }
 
-                $producto->update($datosActualizar);
+                // save() en vez de update(): si nada cambió no manda ninguna
+                // consulta. La mayoría de las filas del Excel vienen iguales a
+                // lo que ya está cargado.
+                $producto->fill($datosActualizar);
+                if ($producto->isDirty()) {
+                    $producto->save();
+                }
                 $this->stats['productos_actualizados']++;
             }
         } else {
@@ -138,6 +189,7 @@ class ProductImportService
                 'congelado' => $congelado,
                 'nuevo' => $nuevo,
             ]);
+            $this->productosPorClave[$this->claveProducto($producto->nombre, (int) $marca->id)] = $producto;
             $this->stats['productos_creados']++;
         }
 
@@ -149,15 +201,17 @@ class ProductImportService
 
             $precio = $this->parsePrice($row['precio'] ?? 0);
 
-            $presentacion = Presentacion::where('producto_id', $producto->id)
-                ->where('unidad', $unidad)
-                ->first();
+            $clave = $producto->id.'|||'.mb_strtolower($unidad);
+            $presentacion = $this->presentacionesPorClave[$clave] ?? null;
 
             if ($presentacion) {
-                $presentacion->update(['precio' => $precio]);
+                $presentacion->precio = $precio;
+                if ($presentacion->isDirty()) {
+                    $presentacion->save();
+                }
                 $this->stats['presentaciones_actualizadas']++;
             } else {
-                Presentacion::create([
+                $this->presentacionesPorClave[$clave] = Presentacion::create([
                     'producto_id' => $producto->id,
                     'unidad' => $unidad,
                     'precio' => $precio,
@@ -168,8 +222,96 @@ class ProductImportService
         }
     }
 
+    /**
+     * ¿El archivo es en realidad una tabla HTML?
+     *
+     * La lista que exporta el sistema viejo se llama .xls pero por dentro es
+     * HTML. PhpSpreadsheet la lee, pero tarda 26 segundos para 1900 filas, y el
+     * archivo se lee tres veces (encabezados, previsualización e importación).
+     * Leerla a mano es cuestión de milisegundos.
+     */
+    private function esTablaHtml(string $path): bool
+    {
+        $inicio = (string) file_get_contents($path, false, null, 0, 1024);
+
+        return (bool) preg_match('/<\s*(table|html|meta)\b/i', $inicio);
+    }
+
+    /**
+     * Todas las filas del archivo como listas de celdas, en crudo.
+     *
+     * @return array<int, array<int, string>>
+     */
+    private function celdasDeTablaHtml(string $path): array
+    {
+        $doc = new \DOMDocument;
+        // El HTML exportado no es válido del todo; los avisos no importan.
+        @$doc->loadHTML('<?xml encoding="UTF-8">'.file_get_contents($path));
+
+        $filas = [];
+        foreach ($doc->getElementsByTagName('tr') as $tr) {
+            $celdas = [];
+            foreach ($tr->childNodes as $celda) {
+                if ($celda instanceof \DOMElement && in_array(strtolower($celda->nodeName), ['td', 'th'], true)) {
+                    $celdas[] = $this->limpiarCelda($celda->textContent);
+                }
+            }
+            $filas[] = $celdas;
+        }
+
+        return $filas;
+    }
+
+    /**
+     * Deja la celda como la vería una planilla.
+     *
+     * - Los espacios repetidos se juntan en uno: en HTML se ven como uno solo,
+     *   pero si se dejan tal cual, "Repelente  bactericida" y "Repelente
+     *   bactericida" pasan por productos distintos y se duplica el producto.
+     * - Una fórmula sin calcular (la fila de totales al final del archivo) vale
+     *   como celda vacía; si no, se creaba una marca llamada "=SUMA(...)".
+     */
+    private function limpiarCelda(string $texto): string
+    {
+        $limpio = trim(preg_replace('/\s+/u', ' ', html_entity_decode($texto, ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+
+        return str_starts_with($limpio, '=') ? '' : $limpio;
+    }
+
+    /**
+     * @return Collection<int, array<string, string>>
+     */
+    private function leerTablaHtml(string $path, int $headerRow): Collection
+    {
+        $filas = $this->celdasDeTablaHtml($path);
+        $encabezados = $filas[$headerRow - 1] ?? [];
+        $datos = collect();
+
+        foreach (array_slice($filas, $headerRow) as $celdas) {
+            $fila = [];
+            $tieneDatos = false;
+
+            foreach ($celdas as $i => $valor) {
+                $fila[$encabezados[$i] ?? "col_{$i}"] = $valor;
+                if ($valor !== '') {
+                    $tieneDatos = true;
+                }
+            }
+
+            if ($tieneDatos) {
+                $datos->push($fila);
+            }
+        }
+
+        return $datos;
+    }
+
     public function readFile(string $path, int $headerRow = 1): Collection
     {
+        if ($this->esTablaHtml($path)) {
+            return $this->leerTablaHtml($path, $headerRow);
+        }
+
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
         $rows = collect();
@@ -206,6 +348,16 @@ class ProductImportService
 
     public function getHeaders(string $path, int $headerRow = 1): array
     {
+        if ($this->esTablaHtml($path)) {
+            // De la fila de encabezados en sí, no de la primera fila de datos:
+            // esa puede venir incompleta (el archivo trae filas separadoras con
+            // una sola celda) y se perdían casi todas las columnas.
+            return array_values(array_filter(
+                $this->celdasDeTablaHtml($path)[$headerRow - 1] ?? [],
+                fn ($h) => trim((string) $h) !== ''
+            ));
+        }
+
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
         $headers = [];
