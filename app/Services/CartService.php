@@ -133,8 +133,10 @@ class CartService
 
         if ($cantidadDeseada > $stock) {
             throw ValidationException::withMessages([
+                // Sin decir cuántas quedan: el número de unidades es dato del
+                // sistema, y este aviso sería la forma de sacárselo de a uno.
                 'cantidad' => $stock > 0
-                    ? "Solo quedan {$stock} unidades disponibles."
+                    ? 'No nos queda esa cantidad. Probá pidiendo menos.'
                     : 'Este producto no tiene stock disponible.',
             ]);
         }

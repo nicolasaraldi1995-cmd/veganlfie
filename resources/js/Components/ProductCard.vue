@@ -43,11 +43,12 @@ const descuento = computed(() => {
 // no los manda si no hay sesión (ver Presentacion::toArray).
 const puedeVerPrecios = computed(() => !!page.props.auth?.puedeVerPrecios);
 
-const stock = computed(() => selected.value?.stock ?? 0);
+// Cuántas unidades quedan es dato del sistema: afuera solo se sabe si hay o no,
+// que es lo que decide si el botón va habilitado. El tope real lo pone el
+// servidor, que avisa cuando se pidió de más.
 const controlarStock = computed(() => page.props.controlarStock);
-const sinStock = computed(() => controlarStock.value && stock.value <= 0);
-const stockBajo = computed(() => controlarStock.value && !sinStock.value && stock.value <= 5);
-const maxCompra = computed(() => controlarStock.value ? stock.value : 99999);
+const sinStock = computed(() => controlarStock.value && selected.value?.hay_stock === false);
+const maxCompra = 9999;
 
 const enCarrito = computed(() => {
     if (!selected.value) return false;
@@ -141,10 +142,8 @@ const imageSrc = computed(() => {
                         <span class="text-2xl price-display truncate" :class="enOferta ? 'text-red-500' : 'text-text'">${{ precioFinal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</span>
                         <del v-if="enOferta" class="text-[11px] text-text-muted shrink-0">${{ precioOriginal.toLocaleString('es-AR', { maximumFractionDigits: 0 }) }}</del>
                     </div>
-                    <div v-if="puedeVerPrecios && (precioUnidad || stockBajo)" class="flex items-center gap-1.5 mt-1.5">
-                        <p v-if="precioUnidad" class="text-[9.5px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</p>
-                        <span v-if="precioUnidad && stockBajo" class="text-text-muted/50 text-[9px]">·</span>
-                        <p v-if="stockBajo" class="text-[10px] font-semibold text-amber-600">¡Últimas {{ stock }}!</p>
+                    <div v-if="puedeVerPrecios && precioUnidad" class="flex items-center gap-1.5 mt-1.5">
+                        <p class="text-[9.5px] text-text-muted">${{ precioUnidad.precio.toLocaleString('es-AR') }}/{{ precioUnidad.unidad }}</p>
                     </div>
                 </div>
 

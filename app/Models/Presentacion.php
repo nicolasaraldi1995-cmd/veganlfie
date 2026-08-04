@@ -26,7 +26,7 @@ class Presentacion extends Model
         'precio_costo', 'descuento_porcentaje', 'margen_porcentaje', 'iva',
     ];
 
-    protected $appends = ['imagen_url'];
+    protected $appends = ['imagen_url', 'hay_stock'];
 
     protected $casts = [
         'precio' => 'decimal:2',
@@ -64,6 +64,14 @@ class Presentacion extends Model
         }
 
         unset($data['precio_costo'], $data['descuento_porcentaje'], $data['margen_porcentaje']);
+
+        // Cuántas unidades hay es dato del sistema. Afuera alcanza con saber si
+        // se puede comprar o no: el número exacto le dibujaba el inventario a
+        // cualquiera que mirara el código de la página. El equipo sí lo ve, que
+        // lo necesita para la lista de precios y para preparar los pedidos.
+        if (! (auth()->user()?->isOperador() ?? false)) {
+            unset($data['stock']);
+        }
 
         if (auth()->guest()) {
             unset($data['precio'], $data['oferta_precio'], $data['oferta_porcentaje']);
@@ -143,5 +151,14 @@ class Presentacion extends Model
     public function getImagenUrlAttribute(): ?string
     {
         return $this->resolveMediaUrl($this->imagen);
+    }
+
+    /**
+     * Lo único que necesita saber la web: si el botón de comprar va habilitado
+     * o bloqueado. El número de unidades no sale de acá adentro.
+     */
+    public function getHayStockAttribute(): bool
+    {
+        return $this->stock > 0;
     }
 }
