@@ -255,7 +255,14 @@ class ProductoResource extends Resource
                     ->label('Categoría'),
                 Tables\Filters\Filter::make('sin_imagen')
                     ->label('Sin foto')
-                    ->query(fn ($query) => $query->where(fn ($q) => $q->whereNull('imagen')->orWhere('imagen', '')))
+                    // En la web la tarjeta usa la foto de la presentación si el
+                    // producto no tiene una propia, así que un producto sin foto
+                    // propia igual puede verse bien. Acá se listan sólo los que
+                    // no tienen foto en ningún lado, que son los que hay que
+                    // completar de verdad.
+                    ->query(fn ($query) => $query
+                        ->where(fn ($q) => $q->whereNull('imagen')->orWhere('imagen', ''))
+                        ->whereDoesntHave('presentaciones', fn ($q) => $q->whereNotNull('imagen')->where('imagen', '!=', '')))
                     ->toggle(),
                 Tables\Filters\TernaryFilter::make('sin_tacc')->label('Sin TACC'),
                 Tables\Filters\TernaryFilter::make('frio')->label('Frío'),

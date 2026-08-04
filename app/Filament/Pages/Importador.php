@@ -73,10 +73,18 @@ class Importador extends Page implements Forms\Contracts\HasForms
         return $form->schema([
             Forms\Components\FileUpload::make('archivo')
                 ->label('Archivo Excel o CSV')
+                // La lista que exporta el sistema viejo es en realidad una tabla
+                // HTML con extensión .xls: el navegador la anuncia como
+                // text/html y el formulario la rechazaba. La librería de Excel
+                // la lee igual, así que se aceptan también esos tipos. El
+                // archivo se valida de verdad al leerlo, no acá.
                 ->acceptedFileTypes([
                     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                     'application/vnd.ms-excel',
                     'text/csv',
+                    'text/html',
+                    'text/plain',
+                    'application/octet-stream',
                 ])
                 ->directory('imports')
                 ->visibility('private')
