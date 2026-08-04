@@ -26,7 +26,16 @@ class ProductImportService
     public function preview(string $path, array $columnMap, int $headerRow = 1): array
     {
         $rows = $this->readFile($path, $headerRow);
-        $mapped = $this->mapColumns($rows, $columnMap)->take(20);
+
+        // El precio se muestra ya interpretado. Si se mostrara el texto crudo,
+        // "1.105,00" (mil ciento cinco pesos) aparecía como $1,11 y parecía que
+        // la importación iba a romper los precios, cuando en realidad los lee
+        // bien.
+        $mapped = $this->mapColumns($rows, $columnMap)->take(20)->map(function (array $fila) {
+            $fila['precio'] = $this->parsePrice($fila['precio'] ?? 0);
+
+            return $fila;
+        });
 
         return [
             'total_filas' => $rows->count(),

@@ -69,6 +69,17 @@ class Importador extends Page implements Forms\Contracts\HasForms
 
     public array $importResult = [];
 
+    /**
+     * Sin esto el formulario nunca queda inicializado y Filament valida un
+     * estado vacío: al tocar "Siguiente" avisaba que el archivo es obligatorio
+     * aunque estuviera elegido. En los tests no se notaba porque fillForm()
+     * inicializa el formulario por su cuenta.
+     */
+    public function mount(): void
+    {
+        $this->getForm('form')?->fill();
+    }
+
     public function form(Form $form): Form
     {
         return $form->schema([
