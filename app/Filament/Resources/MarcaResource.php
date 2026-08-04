@@ -75,7 +75,8 @@ class MarcaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('logo')
-                    ->circular(),
+                    ->circular()
+                    ->checkFileExistence(false),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable(),

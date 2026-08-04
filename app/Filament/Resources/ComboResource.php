@@ -98,7 +98,7 @@ class ComboResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('imagen')->circular(),
+                Tables\Columns\ImageColumn::make('imagen')->circular()->checkFileExistence(false),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable(),

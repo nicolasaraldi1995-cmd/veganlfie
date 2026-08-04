@@ -88,7 +88,8 @@ class BannerResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('imagen')
-                    ->height(60),
+                    ->height(60)
+                    ->checkFileExistence(false),
                 Tables\Columns\TextColumn::make('destino_tipo')
                     ->badge()
                     ->label('Tipo'),

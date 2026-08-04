@@ -209,7 +209,13 @@ class ProductoResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('imagen')
-                    ->circular(),
+                    ->circular()
+                    // Sin esto Filament le pregunta al disco si el archivo
+                    // existe, una vez por fila. Con las imágenes en un bucket
+                    // eso son 25 consultas por red sólo para dibujar la tabla, y
+                    // la lista de productos se caía con un 504. Si alguna imagen
+                    // faltara se ve rota, que para eso está el aviso de al lado.
+                    ->checkFileExistence(false),
                 // Marca visual para encontrar de un vistazo los productos que
                 // quedaron sin foto (hay ~189 tras perderse el disco viejo).
                 Tables\Columns\IconColumn::make('sin_imagen')

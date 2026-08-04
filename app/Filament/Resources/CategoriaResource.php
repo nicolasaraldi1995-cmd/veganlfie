@@ -53,7 +53,8 @@ class CategoriaResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('imagen'),
+                Tables\Columns\ImageColumn::make('imagen')
+                    ->checkFileExistence(false),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable(),
