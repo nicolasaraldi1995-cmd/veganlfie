@@ -25,14 +25,14 @@ onUnmounted(() => clearInterval(timer));
 
 <template>
     <div v-if="banners.length" class="relative group" @touchstart="onTouchStart" @touchend="onTouchEnd">
-        <!-- Ancho completo de la pantalla, siempre. La proporción 5:2 define el
-             alto, con tope de 460px para que en un monitor no se coma media
+        <!-- Ancho completo de la pantalla, siempre. La proporción 3:1 define el
+             alto, con tope de 380px para que en un monitor no se coma media
              pantalla. La imagen nunca se recorta (object-contain) y lo que
              sobre lo cubre el fondo desenfocado.
              w-full es necesario: con aspect-ratio y max-height juntos, el
              navegador achica el ancho para respetar la proporción en vez de
              estirarse. Fijando el ancho, lo que cede es el alto. -->
-        <div class="relative w-full overflow-hidden bg-surface-2 aspect-[5/2] max-h-[460px] rounded-2xl border border-border shadow-sm">
+        <div class="relative w-full overflow-hidden bg-surface-2 aspect-[3/1] max-h-[380px] rounded-2xl border border-border shadow-sm">
             <!-- Fundido con opacidad, sin TransitionGroup: combinado con v-show
                  las clases de la animación quedaban pegadas y varias diapositivas
                  se quedaban en opacidad 0 para siempre, o sea el banner en blanco.
