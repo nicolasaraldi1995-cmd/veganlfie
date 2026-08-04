@@ -8,6 +8,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\WithFileUploads;
 
 class Importador extends Page implements Forms\Contracts\HasForms
@@ -136,13 +137,40 @@ class Importador extends Page implements Forms\Contracts\HasForms
         return $temporal;
     }
 
+    /**
+     * Muestra el error de forma que se pueda entender y lo deja en el registro
+     * del servidor. Antes, cuando algo fallaba fuera de un try, el usuario veía
+     * un "500" pelado que no dice nada de qué salió mal.
+     */
+    private function avisarDelError(string $titulo, \Throwable $e): void
+    {
+        report($e);
+
+        Notification::make()
+            ->title($titulo)
+            ->body($e->getMessage().' ('.class_basename($e).' en '.basename($e->getFile()).':'.$e->getLine().')')
+            ->danger()
+            ->persistent()
+            ->send();
+    }
+
     public function loadHeaders(): void
     {
-        // getState() es lo que hace que el archivo subido se guarde de verdad y
-        // devuelva su ruta. Sin esto, la propiedad todavía tiene el archivo
-        // temporal de Livewire y no hay ninguna ruta que abrir: por eso este
-        // paso venía fallando.
-        $this->archivo = $this->getForm('form')?->getState()['archivo'] ?? $this->archivo;
+        try {
+            // getState() es lo que hace que el archivo subido se guarde de verdad
+            // y devuelva su ruta. Sin esto, la propiedad todavía tiene el archivo
+            // temporal de Livewire y no hay ninguna ruta que abrir.
+            // Va adentro del try: guardar el archivo en el disco puede fallar, y
+            // si esa falla se escapa, el usuario ve un "500" pelado en vez de
+            // enterarse de qué pasó.
+            $this->archivo = $this->getForm('form')?->getState()['archivo'] ?? $this->archivo;
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->avisarDelError('No se pudo guardar el archivo', $e);
+
+            return;
+        }
 
         if (! $this->rutaGuardada()) {
             Notification::make()->title('Subí un archivo primero')->danger()->send();
@@ -158,11 +186,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
             $this->autoMapColumns();
             $this->step = 'map';
         } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Error al leer el archivo')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            $this->avisarDelError('Error al leer el archivo', $e);
         }
     }
 
@@ -180,11 +204,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
             $this->previewData = $service->preview($path, $this->columnMap, $this->header_row);
             $this->step = 'preview';
         } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Error al generar preview')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            $this->avisarDelError('Error al generar la previsualización', $e);
         }
     }
 
@@ -204,11 +224,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
                 ->success()
                 ->send();
         } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Error en la importación')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            $this->avisarDelError('Error en la importación', $e);
         }
     }
 
