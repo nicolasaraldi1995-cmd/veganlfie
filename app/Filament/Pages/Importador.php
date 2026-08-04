@@ -34,7 +34,15 @@ class Importador extends Page implements Forms\Contracts\HasForms
 
     protected static string $view = 'filament.pages.importador';
 
-    public ?string $archivo = null;
+    /**
+     * Filament entrega el archivo como lista, no como texto. Declararlo
+     * ?string hacía que asignarle el estado del formulario reventara con
+     * "Cannot assign array to property": por eso este importador nunca llegaba
+     * a leer el archivo. Se normaliza en rutaGuardada().
+     *
+     * @var array<int|string, mixed>|string|null
+     */
+    public array|string|null $archivo = null;
 
     public int $header_row = 5;
 
@@ -84,16 +92,58 @@ class Importador extends Page implements Forms\Contracts\HasForms
         ]);
     }
 
+    /**
+     * Devuelve una ruta de archivo que la librería de Excel pueda abrir.
+     *
+     * El formulario guarda el archivo en el disco que use el panel, que en
+     * producción es un bucket: ahí no existe ninguna ruta local. Antes esto
+     * pedía la ruta del disco "local" a secas, así que el importador fallaba
+     * en producción. Se baja a un temporal y se lee de ahí.
+     */
+    private function rutaGuardada(): ?string
+    {
+        $valor = $this->archivo;
+
+        if (is_array($valor)) {
+            $valor = reset($valor) ?: null;
+        }
+
+        return is_string($valor) && $valor !== '' ? $valor : null;
+    }
+
+    private function rutaLocal(): string
+    {
+        $guardada = (string) $this->rutaGuardada();
+        $disco = Storage::disk(config('filament.default_filesystem_disk'));
+
+        if ($disco->getAdapter() instanceof \League\Flysystem\Local\LocalFilesystemAdapter) {
+            return $disco->path($guardada);
+        }
+
+        $extension = pathinfo($guardada, PATHINFO_EXTENSION) ?: 'xlsx';
+        $temporal = tempnam(sys_get_temp_dir(), 'importador_').'.'.$extension;
+
+        file_put_contents($temporal, $disco->get($guardada));
+
+        return $temporal;
+    }
+
     public function loadHeaders(): void
     {
-        if (! $this->archivo) {
+        // getState() es lo que hace que el archivo subido se guarde de verdad y
+        // devuelva su ruta. Sin esto, la propiedad todavía tiene el archivo
+        // temporal de Livewire y no hay ninguna ruta que abrir: por eso este
+        // paso venía fallando.
+        $this->archivo = $this->getForm('form')?->getState()['archivo'] ?? $this->archivo;
+
+        if (! $this->rutaGuardada()) {
             Notification::make()->title('Subí un archivo primero')->danger()->send();
 
             return;
         }
 
         try {
-            $path = Storage::disk('local')->path($this->archivo);
+            $path = $this->rutaLocal();
             $service = new ProductImportService;
             $this->headers = $service->getHeaders($path, $this->header_row);
 
@@ -117,7 +167,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
         }
 
         try {
-            $path = Storage::disk('local')->path($this->archivo);
+            $path = $this->rutaLocal();
             $service = new ProductImportService;
             $this->previewData = $service->preview($path, $this->columnMap, $this->header_row);
             $this->step = 'preview';
@@ -133,7 +183,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
     public function runImport(): void
     {
         try {
-            $path = Storage::disk('local')->path($this->archivo);
+            $path = $this->rutaLocal();
             $service = new ProductImportService;
             $this->importResult = $service->import($path, $this->columnMap, $this->header_row, [
                 'actualizar_existentes' => $this->actualizar_existentes,
