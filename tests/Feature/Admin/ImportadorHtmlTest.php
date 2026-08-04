@@ -132,6 +132,62 @@ class ImportadorHtmlTest extends TestCase
         $this->assertEquals(3200, $producto->presentaciones->firstWhere('unidad', '500gr')->precio);
     }
 
+    /**
+     * Las etiquetas de adorno del HTML (NUEVO, SIN TACC...) no son parte del
+     * nombre: si se leen, "Queso cheddar NUEVO" pasa por un producto distinto
+     * y se duplica.
+     */
+    public function test_no_toma_las_etiquetas_como_parte_del_nombre(): void
+    {
+        $html = <<<'HTML'
+        <html><body>
+        <section class="marca"><button><h2>Casa Vegana</h2></button><div class="cuerpo">
+            <div class="prod" data-cat="Quesos">
+                <div class="prod-nom">Queso cheddar <span class="badge badge-nuevo">NUEVO</span><span class="tag">SIN TACC</span></div>
+                <div class="pres"><span class="unidad">200gr</span><input class="cant" data-precio="1500"></div>
+            </div>
+        </div></section>
+        </body></html>
+        HTML;
+
+        $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.html';
+        file_put_contents($ruta, $html);
+
+        $fila = (new ProductImportService)->readFile($ruta)->first();
+
+        $this->assertSame('Queso cheddar', $fila['Nombre']);
+    }
+
+    /**
+     * A una marca renombrada le queda el slug viejo. Buscándola sólo por el
+     * nombre no se la encontraba, se intentaba crear otra y la base la
+     * rechazaba: "Duplicate entry 'bygiro-pancakes' for key marcas_slug_unique".
+     */
+    public function test_encuentra_la_marca_por_su_slug_aunque_le_hayan_cambiado_el_nombre(): void
+    {
+        $marca = Marca::create(['nombre' => 'Bygiro pancakes']);
+        $marca->update(['nombre' => 'Bygiro']);   // el slug queda en bygiro-pancakes
+
+        $this->assertSame('bygiro-pancakes', $marca->fresh()->slug);
+
+        $html = '<table>'.str_repeat('<tr><td>x</td></tr>', 4)
+            .'<tr><td>Nombre</td><td>Marca</td><td>Categoría</td><td>Unidad</td><td>Precio</td></tr>'
+            .'<tr><td>Pancakes clásicos</td><td>Bygiro pancakes</td><td>Congelados</td><td>6u</td><td>1.000,00</td></tr></table>';
+
+        $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.xls';
+        file_put_contents($ruta, $html);
+
+        $stats = (new ProductImportService)->import($ruta, [
+            'nombre' => 'Nombre', 'marca' => 'Marca', 'categoria' => 'Categoría',
+            'unidad' => 'Unidad', 'precio' => 'Precio', 'stock' => '',
+            'sin_tacc' => '', 'congelado' => '', 'nuevo' => '',
+        ], 5);
+
+        $this->assertSame([], $stats['errores']);
+        $this->assertSame(0, $stats['marcas_creadas']);
+        $this->assertSame($marca->id, Producto::where('nombre', 'Pancakes clásicos')->first()?->marca_id);
+    }
+
     public function test_lee_los_encabezados_de_la_fila_indicada(): void
     {
         $encabezados = (new ProductImportService)->getHeaders($this->archivo(), 5);

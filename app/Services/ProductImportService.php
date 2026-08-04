@@ -111,11 +111,26 @@ class ProductImportService
      */
     private function precargarCatalogo(): void
     {
-        $this->marcasPorNombre = Marca::withTrashed()->get()
-            ->keyBy(fn (Marca $m) => $this->claveDeNombre($m->nombre))->all();
+        // Se indexa por el slug guardado Y por el slug que sale del nombre.
+        // No siempre coinciden: si a una marca se le cambia el nombre, el slug
+        // queda como estaba ("Bygiro" conserva bygiro-pancakes). Buscando sólo
+        // por el nombre no se la encontraba, se intentaba crearla y chocaba
+        // contra el índice único del slug, que es lo que mira la base.
+        $this->marcasPorNombre = [];
+        foreach (Marca::withTrashed()->get() as $marca) {
+            $this->marcasPorNombre[$this->claveDeNombre($marca->nombre)] = $marca;
+            if (filled($marca->slug)) {
+                $this->marcasPorNombre[$marca->slug] ??= $marca;
+            }
+        }
 
-        $this->categoriasPorNombre = Categoria::withTrashed()->get()
-            ->keyBy(fn (Categoria $c) => $this->claveDeNombre($c->nombre))->all();
+        $this->categoriasPorNombre = [];
+        foreach (Categoria::withTrashed()->get() as $categoria) {
+            $this->categoriasPorNombre[$this->claveDeNombre($categoria->nombre)] = $categoria;
+            if (filled($categoria->slug)) {
+                $this->categoriasPorNombre[$categoria->slug] ??= $categoria;
+            }
+        }
 
         // orderBy('activo') deja los activos al final, y keyBy se queda con el
         // último: si un nombre está repetido entre uno dado de baja y uno
@@ -408,12 +423,28 @@ class ProductImportService
 
     /**
      * Texto del primer nodo que coincida, o cadena vacía si no hay ninguno.
+     *
+     * Se descartan las etiquetas de adorno (NUEVO, SIN TACC, FRÍO...): son
+     * hermanas del nombre dentro del mismo bloque, y si se leen quedan pegadas
+     * al nombre del producto -- "Pancakes clásicos NUEVO" pasaba por un
+     * producto distinto.
      */
     private function textoDe(\DOMXPath $xp, string $consulta, ?\DOMNode $desde): string
     {
         $nodo = $xp->query($consulta, $desde)->item(0);
 
-        return $nodo === null ? '' : trim($nodo->textContent);
+        if ($nodo === null) {
+            return '';
+        }
+
+        $copia = $nodo->cloneNode(true);
+        $xpCopia = new \DOMXPath($copia->ownerDocument);
+
+        foreach ($xpCopia->query('.//*[contains(@class,"badge") or contains(@class,"tag")]', $copia) ?: [] as $adorno) {
+            $adorno->parentNode?->removeChild($adorno);
+        }
+
+        return trim(preg_replace('/\s+/u', ' ', $copia->textContent) ?? '');
     }
 
     public function readFile(string $path, int $headerRow = 1): Collection
