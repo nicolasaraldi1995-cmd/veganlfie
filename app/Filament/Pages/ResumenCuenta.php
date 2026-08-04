@@ -6,13 +6,18 @@ use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\User;
 use App\Services\CuentaClienteService;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
-class ResumenCuenta extends Page implements Forms\Contracts\HasForms
+class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
 {
     use Forms\Concerns\InteractsWithForms;
+    use InteractsWithActions;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
@@ -73,6 +78,79 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
                 ->searchable()
                 ->required(),
         ]);
+    }
+
+    /**
+     * Anota la plata que el cliente entrega a cuenta. No se ata a ningún pedido
+     * puntual: entra como pago general y baja el saldo total, que es lo que se
+     * está mirando en esta pantalla. Para saldar un pedido en particular está
+     * el botón de pago del propio pedido.
+     */
+    public function registrarPagoAction(): Action
+    {
+        return Action::make('registrarPago')
+            ->label('Registrar pago')
+            ->icon('heroicon-o-banknotes')
+            ->color('success')
+            ->modalHeading(fn () => 'Registrar pago de '.($this->resumen['cliente']['nombre'] ?? 'cliente'))
+            ->modalSubmitActionLabel('Registrar')
+            ->form([
+                Forms\Components\TextInput::make('monto')
+                    ->label('Cuánto entrega')
+                    ->numeric()
+                    ->minValue(0)
+                    ->required()
+                    ->prefix('$')
+                    ->autofocus()
+                    // Viene con lo que debe: si paga todo, no hay nada que tipear.
+                    ->default(fn () => round(max(0, (float) ($this->resumen['saldoTotal'] ?? 0)), 2))
+                    ->helperText(fn () => 'Debe $'.number_format((float) ($this->resumen['saldoTotal'] ?? 0), 0, ',', '.')),
+                Forms\Components\ToggleButtons::make('metodo')
+                    ->label('Cómo pagó')
+                    ->options(Pago::METODOS)
+                    ->colors([
+                        'efectivo' => 'success',
+                        'transferencia' => 'info',
+                        'mercadopago' => 'warning',
+                        'otro' => 'gray',
+                    ])
+                    ->icons([
+                        'efectivo' => 'heroicon-o-banknotes',
+                        'transferencia' => 'heroicon-o-arrows-right-left',
+                        'mercadopago' => 'heroicon-o-device-phone-mobile',
+                        'otro' => 'heroicon-o-ellipsis-horizontal',
+                    ])
+                    ->inline()
+                    ->default('efectivo')
+                    ->required(),
+                Forms\Components\DatePicker::make('fecha')
+                    ->label('Fecha')
+                    ->required()
+                    ->default(now()),
+                Forms\Components\TextInput::make('notas')
+                    ->label('Nota')
+                    ->placeholder('Opcional'),
+            ])
+            ->action(function (array $data): void {
+                Pago::create([
+                    'user_id' => $this->cliente_id,
+                    'monto' => $data['monto'],
+                    'metodo' => $data['metodo'],
+                    'fecha' => $data['fecha'],
+                    'notas' => $data['notas'] ?? null,
+                ]);
+
+                // Se recalculan las dos vistas que quedaron viejas: el resumen
+                // de este cliente y la lista de arriba, de la que puede
+                // desaparecer si saldó todo.
+                $this->verResumen();
+                $this->cargarClientesConSaldo();
+
+                Notification::make()
+                    ->title('Pago de $'.number_format((float) $data['monto'], 0, ',', '.').' registrado')
+                    ->success()
+                    ->send();
+            });
     }
 
     public function verResumen(): void

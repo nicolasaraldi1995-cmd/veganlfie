@@ -55,7 +55,7 @@
                     @if($resumen['cliente']['negocio'])<p class="text-sm text-gray-500">{{ $resumen['cliente']['negocio'] }}</p>@endif
                     <p class="text-xs text-gray-400">{{ $resumen['cliente']['email'] }} · {{ $resumen['cliente']['celular'] }}</p>
                 </div>
-                <div class="flex gap-6 text-right">
+                <div class="flex flex-wrap items-center gap-6 text-right">
                     <div>
                         <p class="text-xs text-gray-400">Total pedidos</p>
                         <p class="text-lg font-bold">${{ number_format($resumen['totalPedidos'], 0, ',', '.') }}</p>
@@ -71,6 +71,7 @@
                             @if($resumen['saldoTotal'] <= 0) ✓ @endif
                         </p>
                     </div>
+                    {{ $this->registrarPagoAction }}
                 </div>
             </div>
         </x-filament::section>
