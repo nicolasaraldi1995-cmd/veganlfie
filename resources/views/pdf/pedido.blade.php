@@ -48,6 +48,14 @@
         <p>Entrega: {{ ($pedido->datos_cliente['entrega'] ?? 'envio') === 'retiro' ? 'Retiro en local' : 'Envío a domicilio' }}</p>
     </div>
 
+    @php
+        // Mismo criterio que la ficha del pedido en el panel, que le esconde
+        // precio, subtotal y total al operador: el que arma el pedido no tiene
+        // por qué ver cuánta plata mueve. Para el cliente esto es su
+        // comprobante, así que sus propios precios los ve siempre.
+        $verPrecios = auth()->id() === $pedido->user_id || (auth()->user()?->isAdmin() ?? false);
+    @endphp
+
     <div class="section">
         <h3>Productos</h3>
         <table>
@@ -57,8 +65,10 @@
                     <th>Marca</th>
                     <th>Presentación</th>
                     <th class="text-right">Cant.</th>
-                    <th class="text-right">Precio</th>
-                    <th class="text-right">Subtotal</th>
+                    @if($verPrecios)
+                        <th class="text-right">Precio</th>
+                        <th class="text-right">Subtotal</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -68,14 +78,18 @@
                     <td>{{ $item->presentacion->producto->marca->nombre ?? '' }}</td>
                     <td>{{ $item->presentacion->unidad ?? '' }}</td>
                     <td class="text-right">{{ $item->cantidad }}</td>
-                    <td class="text-right">${{ number_format($item->precio_unitario, 2, ',', '.') }}</td>
-                    <td class="text-right">${{ number_format($item->subtotal, 2, ',', '.') }}</td>
+                    @if($verPrecios)
+                        <td class="text-right">${{ number_format($item->precio_unitario, 2, ',', '.') }}</td>
+                        <td class="text-right">${{ number_format($item->subtotal, 2, ',', '.') }}</td>
+                    @endif
                 </tr>
                 @endforeach
+                @if($verPrecios)
                 <tr class="total-row">
                     <td colspan="5" class="text-right">Total</td>
                     <td class="text-right">${{ number_format($pedido->total, 2, ',', '.') }}</td>
                 </tr>
+                @endif
             </tbody>
         </table>
     </div>
