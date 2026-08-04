@@ -105,7 +105,7 @@ Checklist de `.env` — estos valores **tienen** que cambiar respecto al `.env` 
 Con `APP_ENV=production`, el sitio ya fuerza que todas las URLs generadas usen `https://` automáticamente (`AppServiceProvider`), así que no hace falta tocar código para eso — solo el `.env` del servidor.
 
 **Antes de anunciar el sitio a clientes nuevos:**
-1. Cambiá la contraseña del admin sembrado por el seeder (`admin@veganlife.com`). Si nunca la tocaste después de armar el sitio, hoy sigue siendo `password` — entrá al panel → Clientes → tu usuario → cambiar contraseña.
+1. **Cambiá la contraseña del admin y la del operador.** El seeder ahora genera una al azar y la imprime al correrlo, pero **las instalaciones armadas antes quedaron con `password`**, que estaba escrita en el código: si nunca la tocaste, cualquiera que sepa el correo entra al panel con los costos, la caja y los datos de todos los clientes. Panel → Clientes → tu usuario → cambiar contraseña, o `php artisan usuarios:clave admin@veganlife.com <clave-nueva>`.
 2. Corré `php artisan config:cache` y `php artisan route:cache` en el servidor después de cada deploy (acelera bastante; si no lo hacés no rompe nada, pero es más lento).
 3. Verificá que `storage/` y `bootstrap/cache/` tengan permisos de escritura para el usuario del servidor web.
 
