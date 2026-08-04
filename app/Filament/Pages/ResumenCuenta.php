@@ -29,6 +29,16 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
 
     protected static ?int $navigationSort = 5;
 
+    /**
+     * Del dueño, como Caja, Gastos y Clientes: acá se ve cuánto debe y qué
+     * celular tiene cada cliente, y desde el botón de cobrar se registra
+     * plata. El operador carga pedidos, no maneja la cuenta corriente.
+     */
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() ?? false;
+    }
+
     protected static string $view = 'filament.pages.resumen-cuenta';
 
     public ?string $cliente_id = null;

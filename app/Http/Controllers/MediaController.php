@@ -21,14 +21,34 @@ class MediaController extends Controller
     ];
 
     /**
+     * Las únicas carpetas del disco que son de cara al público: todas de
+     * imágenes. Se listan a mano y no al revés (prohibir "imports") para que
+     * una carpeta interna nueva nazca cerrada, no abierta.
+     */
+    private const CARPETAS_PUBLICAS = [
+        'banners',
+        'categorias',
+        'combos',
+        'marcas',
+        'presentaciones',
+        'productos',
+    ];
+
+    /**
      * Sirve los archivos del disco configurado (S3 u otro) a través del
      * propio dominio de la app, en vez de que el navegador pida el dominio
      * público del bucket directamente -- ese dominio devuelve 503 en el
      * embed cruzado de <img> aunque el archivo esté perfecto (confirmado con
      * curl y con navegación directa, ambos siempre 200).
+     *
+     * En el mismo disco vive "imports", que es lo que sube el Importador: la
+     * lista del proveedor con los costos. Sin el filtro de abajo, se bajaba
+     * entera desde /media/imports/... sin estar siquiera logueado.
      */
     public function show(string $path): Response
     {
+        abort_unless($this->esPublico($path), 404);
+
         $disk = Storage::disk(config('filament.default_filesystem_disk'));
 
         abort_unless($disk->exists($path), 404);
@@ -38,6 +58,24 @@ class MediaController extends Controller
         return response($contenido)
             ->header('Content-Type', $this->tipoDe($path, $contenido))
             ->header('Cache-Control', 'public, max-age=604800');
+    }
+
+    /**
+     * La ruta tiene que empezar por una carpeta de la lista y no salirse de
+     * ella. Se rechaza cualquier ".." antes de mirar el disco: la ruta viene
+     * de un comodín de la URL, así que la arma quien pide.
+     */
+    private function esPublico(string $path): bool
+    {
+        if (str_contains($path, '..') || str_starts_with($path, '/')) {
+            return false;
+        }
+
+        $carpeta = strtok($path, '/');
+
+        return $carpeta !== false
+            && in_array($carpeta, self::CARPETAS_PUBLICAS, true)
+            && str_contains($path, '/');
     }
 
     /**
