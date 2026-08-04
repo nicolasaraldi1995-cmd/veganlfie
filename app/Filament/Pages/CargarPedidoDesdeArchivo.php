@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\PedidoResource;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Models\Presentacion;
@@ -149,7 +150,7 @@ class CargarPedidoDesdeArchivo extends Page implements Forms\Contracts\HasForms
             ->success()
             ->send();
 
-        $this->redirect(\App\Filament\Resources\PedidoResource::getUrl('view', ['record' => $pedido->id]));
+        $this->redirect(PedidoResource::getUrl('view', ['record' => $pedido->id]));
     }
 
     /**

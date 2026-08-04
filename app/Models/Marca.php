@@ -43,9 +43,9 @@ class Marca extends Model
      *
      * @return array<string, mixed>
      */
-    public function toArray(): array
+    public function attributesToArray(): array
     {
-        $data = parent::toArray();
+        $data = parent::attributesToArray();
 
         if (auth()->user()?->isAdmin() ?? false) {
             return $data;

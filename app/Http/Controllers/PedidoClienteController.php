@@ -55,7 +55,9 @@ class PedidoClienteController extends Controller
 
         $request->validate([
             'presentacion_id' => 'required|exists:presentaciones,id',
-            'cantidad' => 'required|integer|min:0',
+            // Mismo tope que el carrito (ver UpdateCartRequest): sin esto, con el
+            // control de stock apagado entraba cualquier numero y reventaba la columna.
+            'cantidad' => 'required|integer|min:0|max:9999',
         ]);
 
         try {
@@ -92,7 +94,7 @@ class PedidoClienteController extends Controller
 
         $request->validate([
             'presentacion_id' => 'required|exists:presentaciones,id',
-            'cantidad' => 'required|integer|min:1',
+            'cantidad' => 'required|integer|min:1|max:9999',
         ]);
 
         try {

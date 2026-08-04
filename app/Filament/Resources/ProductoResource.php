@@ -177,6 +177,13 @@ class ProductoResource extends Resource
 
     private static function heredarDeMarcaSiVacio(Forms\Components\TextInput $component, Forms\Get $get, string $campo): void
     {
+        // Solo para el dueño. Al operador estos campos ni se le muestran, pero
+        // el estado del formulario igual viaja a su navegador: este gancho le
+        // volvía a poner el margen de la marca justo después de recortarlo.
+        if (! (auth()->user()?->isAdmin() ?? false)) {
+            return;
+        }
+
         if (filled($component->getState())) {
             return;
         }

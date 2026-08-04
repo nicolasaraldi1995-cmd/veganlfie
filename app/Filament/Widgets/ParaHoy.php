@@ -2,6 +2,8 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Pages\ResumenCuenta;
+use App\Filament\Resources\PedidoResource;
 use App\Models\Pedido;
 use App\Services\CuentaClienteService;
 use Filament\Widgets\StatsOverviewWidget;
@@ -31,7 +33,7 @@ class ParaHoy extends StatsOverviewWidget
      */
     private static function urlPedidos(string $estado): string
     {
-        return \App\Filament\Resources\PedidoResource::getUrl('index', [
+        return PedidoResource::getUrl('index', [
             'tableFilters' => ['estado' => ['value' => $estado]],
         ]);
     }
@@ -66,7 +68,7 @@ class ParaHoy extends StatsOverviewWidget
                     : 'Nadie debe')
                 ->icon('heroicon-o-banknotes')
                 ->color($deudores->isNotEmpty() ? 'danger' : 'success')
-                ->url(\App\Filament\Pages\ResumenCuenta::getUrl());
+                ->url(ResumenCuenta::getUrl());
         }
 
         return $stats;

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Marca;
 use App\Models\Producto;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -232,7 +233,7 @@ class SincronizarCatalogo
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $filas
+     * @param  Collection<int, array<string, mixed>>  $filas
      */
     private function nombreReal($filas, string $normalizado): string
     {

@@ -45,12 +45,17 @@ class ComboResource extends Resource
                         Forms\Components\Select::make('presentacion_id')
                             ->label('Presentación')
                             ->options(function () {
+                                // Sin el precio para el operador: con abrir
+                                // "Crear combo" se llevaba la lista entera.
+                                // Mismo criterio que PedidoResource.
+                                $mostrarPrecio = auth()->user()?->isAdmin();
+
                                 return Presentacion::with('producto')
                                     ->activos()
                                     ->whereHas('producto')
                                     ->get()
                                     ->mapWithKeys(fn ($p) => [
-                                        $p->id => "{$p->producto->nombre} — {$p->unidad} (\${$p->precio})",
+                                        $p->id => "{$p->producto->nombre} — {$p->unidad}".($mostrarPrecio ? " (\${$p->precio})" : ''),
                                     ]);
                             })
                             ->searchable()
@@ -91,7 +96,12 @@ class ComboResource extends Resource
                 Forms\Components\Placeholder::make('precio_auto')
                     ->label('Precio final')
                     ->content(fn ($record) => $record ? '$'.number_format($record->precio, 2, ',', '.') : 'Guardá el combo para ver el precio'),
-            ]),
+            ])
+                // Poner precios es del dueño, igual que Actualizar precios y
+                // Ofertas masivas. El operador podía dejar un combo en $1 con
+                // solo cambiar el desplegable a "precio manual", y así queda
+                // publicado en la web.
+                ->visible(fn () => auth()->user()?->isAdmin() ?? false),
         ]);
     }
 

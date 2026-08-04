@@ -32,9 +32,9 @@ class Combo extends Model
      *
      * @return array<string, mixed>
      */
-    public function toArray(): array
+    public function attributesToArray(): array
     {
-        $data = parent::toArray();
+        $data = parent::attributesToArray();
 
         if (auth()->guest()) {
             unset($data['precio_manual'], $data['descuento_porcentaje']);

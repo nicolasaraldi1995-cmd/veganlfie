@@ -52,17 +52,17 @@ class ProductImportService
      * presentación de cada fila: 7244 consultas para 1879 filas. Con la base en
      * otro servidor eso tardaba minutos y la importación moría por timeout.
      *
-     * @var array<string, \App\Models\Marca>
+     * @var array<string, Marca>
      */
     private array $marcasPorNombre = [];
 
-    /** @var array<string, \App\Models\Categoria> */
+    /** @var array<string, Categoria> */
     private array $categoriasPorNombre = [];
 
-    /** @var array<string, \App\Models\Producto> */
+    /** @var array<string, Producto> */
     private array $productosPorClave = [];
 
-    /** @var array<string, \App\Models\Presentacion> */
+    /** @var array<string, Presentacion> */
     private array $presentacionesPorClave = [];
 
     public function import(string $path, array $columnMap, int $headerRow = 1, array $options = []): array

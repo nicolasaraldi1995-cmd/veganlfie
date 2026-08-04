@@ -16,5 +16,9 @@ return [
     'except' => [
         'filament.*',
         'livewire.*',
+        // Las de lista-precios se quedan a propósito, aunque sean internas: el
+        // Vue las llama con route() detrás de v-if="esStaff", así que sacarlas
+        // le rompe el acceso al equipo. Lo que viaja es la dirección, no el
+        // permiso: las cuatro están cerradas con auth + staff.
     ],
 ];

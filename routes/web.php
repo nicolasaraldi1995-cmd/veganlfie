@@ -23,7 +23,7 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/media/{path}', [MediaController::class, 'show'])->where('path', '.*')->name('media.show');
 
 Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
-Route::get('/api/buscar', [ProductoController::class, 'buscar'])->middleware('throttle:60,1')->name('productos.buscar');
+Route::get('/api/buscar', [ProductoController::class, 'buscar'])->middleware('throttle:buscar')->name('productos.buscar');
 Route::get('/productos/{producto:slug}', [ProductoController::class, 'show'])->name('productos.show');
 
 Route::get('/marcas/{marca:slug}', [MarcaController::class, 'show'])->name('marcas.show');
@@ -43,7 +43,7 @@ Route::get('/veganlife', VeganlifeController::class)->name('veganlife');
 Route::get('/ofertas', OfertasController::class)->name('ofertas');
 
 Route::get('/carrito', [CartController::class, 'index'])->name('cart.index');
-Route::middleware('throttle:30,1')->group(function () {
+Route::middleware('throttle:carrito')->group(function () {
     Route::post('/carrito/add', [CartController::class, 'add'])->name('cart.add');
     Route::post('/carrito/add-combo', [CartController::class, 'addCombo'])->name('cart.add-combo');
     Route::patch('/carrito/update', [CartController::class, 'update'])->name('cart.update');
@@ -53,7 +53,7 @@ Route::middleware('throttle:30,1')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:checkout')->name('checkout.store');
     Route::get('/checkout/confirmacion/{pedido}', [CheckoutController::class, 'confirmacion'])->name('checkout.confirmacion');
 });
 
@@ -65,7 +65,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::get('/mis-pedidos', [MisPedidosController::class, 'index'])->name('mis-pedidos');
     Route::get('/mis-pedidos/{pedido}', [PedidoClienteController::class, 'show'])->name('pedido.show');
-    Route::middleware('throttle:30,1')->group(function () {
+    Route::middleware('throttle:pedido')->group(function () {
         Route::patch('/mis-pedidos/{pedido}/item', [PedidoClienteController::class, 'updateItem'])->name('pedido.update-item');
         Route::post('/mis-pedidos/{pedido}/item', [PedidoClienteController::class, 'addItem'])->name('pedido.add-item');
         Route::delete('/mis-pedidos/{pedido}/item', [PedidoClienteController::class, 'removeItem'])->name('pedido.remove-item');
