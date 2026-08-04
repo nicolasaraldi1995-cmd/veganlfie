@@ -117,10 +117,14 @@ class ProductImportService
         $this->categoriasPorNombre = Categoria::withTrashed()->get()
             ->keyBy(fn (Categoria $c) => $this->claveDeNombre($c->nombre))->all();
 
-        $this->productosPorClave = Producto::withTrashed()->get()
+        // orderBy('activo') deja los activos al final, y keyBy se queda con el
+        // último: si un nombre está repetido entre uno dado de baja y uno
+        // vigente, se actualiza el vigente. Sin esto el precio nuevo iba a
+        // parar al producto que ya no se muestra.
+        $this->productosPorClave = Producto::withTrashed()->orderBy('activo')->get()
             ->keyBy(fn (Producto $p) => $this->claveProducto($p->nombre, (int) $p->marca_id))->all();
 
-        $this->presentacionesPorClave = Presentacion::withTrashed()->get()
+        $this->presentacionesPorClave = Presentacion::withTrashed()->orderBy('activo')->get()
             ->keyBy(fn (Presentacion $p) => $p->producto_id.'|||'.$this->normalizar((string) $p->unidad))->all();
     }
 

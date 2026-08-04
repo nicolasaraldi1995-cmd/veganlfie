@@ -50,6 +50,48 @@ class ListaPreciosController extends Controller
     }
 
     /**
+     * La lista completa como planilla, con las mismas columnas que espera el
+     * importador: se exporta, se editan los precios en Excel y se vuelve a
+     * subir. Reemplaza al archivo del sistema viejo, que era una tabla HTML
+     * disfrazada de .xls.
+     *
+     * Sale en CSV con punto y coma y BOM, que es lo que abre bien el Excel en
+     * español sin tener que elegir nada al abrirlo.
+     */
+    public function planilla()
+    {
+        $productos = \App\Models\Producto::activos()
+            ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()->orderBy('unidad')])
+            ->orderBy('nombre')
+            ->get();
+
+        $nombre = 'lista-precios-veganlife-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($productos) {
+            $salida = fopen('php://output', 'w');
+
+            // BOM: sin esto Excel muestra mal los acentos.
+            fwrite($salida, "\xEF\xBB\xBF");
+            fputcsv($salida, ['Nombre', 'Marca', 'Categoría', 'Unidad', 'Precio', 'Stock'], ';');
+
+            foreach ($productos as $producto) {
+                foreach ($producto->presentaciones as $presentacion) {
+                    fputcsv($salida, [
+                        $producto->nombre,
+                        $producto->marca->nombre ?? '',
+                        $producto->categoria->nombre ?? '',
+                        $presentacion->unidad,
+                        number_format((float) $presentacion->precio, 2, ',', '.'),
+                        $presentacion->stock,
+                    ], ';');
+                }
+            }
+
+            fclose($salida);
+        }, $nombre, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
      * Lista de precios como un HTML autocontenido (estilos, script y logo
      * embebidos) pensada para mandar por WhatsApp: el cliente la abre en el
      * celular y funciona sin internet, con buscador y marcas desplegables.
