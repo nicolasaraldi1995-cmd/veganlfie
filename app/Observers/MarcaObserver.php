@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Marca;
+use App\Services\IvaPorMarca;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -20,6 +21,20 @@ use Illuminate\Support\Facades\Storage;
 class MarcaObserver
 {
     private const LADO = 600;
+
+    /**
+     * Prender o apagar el IVA de la marca mueve el precio de todos sus
+     * productos. Va en "saved" y no en "saving" para que los precios sólo se
+     * toquen si el cambio de la marca quedó realmente guardado.
+     */
+    public function saved(Marca $marca): void
+    {
+        if (! $marca->wasChanged('iva')) {
+            return;
+        }
+
+        app(IvaPorMarca::class)->aplicar($marca, (bool) $marca->iva);
+    }
 
     public function saving(Marca $marca): void
     {

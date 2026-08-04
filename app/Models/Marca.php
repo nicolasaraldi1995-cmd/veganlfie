@@ -16,12 +16,13 @@ class Marca extends Model
 {
     use HasFactory, HasMediaUrl, SoftDeletes;
 
-    protected $fillable = ['nombre', 'slug', 'logo', 'activo', 'descuento_porcentaje', 'margen_porcentaje'];
+    protected $fillable = ['nombre', 'slug', 'logo', 'activo', 'descuento_porcentaje', 'margen_porcentaje', 'iva'];
 
     protected $appends = ['logo_url'];
 
     protected $casts = [
         'activo' => 'boolean',
+        'iva' => 'boolean',
         'descuento_porcentaje' => 'decimal:2',
         'margen_porcentaje' => 'decimal:2',
     ];

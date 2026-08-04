@@ -46,6 +46,11 @@ class MarcaResource extends Resource
                 ->helperText('Tocá el lápiz para mover y agrandar el logo dentro del círculo, igual que en WhatsApp.'),
             Forms\Components\Toggle::make('activo')
                 ->default(true),
+            Forms\Components\Toggle::make('iva')
+                ->label('Aplicar IVA (21%)')
+                ->helperText('Al prenderlo, todos los productos de esta marca suben el 21%. Al apagarlo vuelven al precio anterior. Prenderlo dos veces no lo suma dos veces.')
+                // Mueve precios: sólo el admin.
+                ->visible(fn () => auth()->user()?->isAdmin()),
             Forms\Components\TextInput::make('descuento_porcentaje')
                 ->label('Descuento del proveedor')
                 ->numeric()
