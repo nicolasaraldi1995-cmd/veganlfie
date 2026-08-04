@@ -24,7 +24,7 @@ class HomeController extends Controller
         ]);
 
         $pasillos = Categoria::activos()
-            ->has('productos')
+            ->whereHas('productos', fn ($q) => $q->where('activo', true))
             ->withCount(['productos' => fn ($q) => $q->activos()])
             ->orderBy('orden')
             ->get()

@@ -77,6 +77,61 @@ class ImportadorHtmlTest extends TestCase
         $this->assertSame($marca->id, Producto::where('nombre', 'Crudda bar brownie')->first()?->marca_id);
     }
 
+    /**
+     * El circuito cerrado: la lista que exporta la propia web se puede volver a
+     * subir al importador tal cual, sin convertirla a nada.
+     */
+    public function test_importa_la_lista_que_exporta_la_propia_web(): void
+    {
+        $html = <<<'HTML'
+        <html><body><main>
+        <section class="marca" data-marca="casa vegana" data-inicial="C">
+            <button class="marca-btn"><h2>Casa Vegana</h2><span class="cuenta">1</span></button>
+            <div class="cuerpo">
+                <div class="prod" data-prod="queso cheddar" data-cat="Quesos">
+                    <div class="prod-nom">Queso cheddar</div>
+                    <div class="pres">
+                        <span class="unidad">200gr</span>
+                        <span class="precio">$1.500</span>
+                        <input class="cant" type="number" data-id="7" data-precio="1500.55" data-nombre="Queso cheddar 200gr">
+                    </div>
+                    <div class="pres">
+                        <span class="unidad">500gr</span>
+                        <span class="precio">$3.200</span>
+                        <input class="cant" type="number" data-id="8" data-precio="3200" data-nombre="Queso cheddar 500gr">
+                    </div>
+                </div>
+            </div>
+        </section>
+        </main></body></html>
+        HTML;
+
+        $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.html';
+        file_put_contents($ruta, $html);
+
+        $servicio = new ProductImportService;
+
+        $this->assertSame(['Nombre', 'Marca', 'Categoría', 'Unidad', 'Precio'], $servicio->getHeaders($ruta));
+
+        $stats = $servicio->import($ruta, [
+            'nombre' => 'Nombre', 'marca' => 'Marca', 'categoria' => 'Categoría',
+            'unidad' => 'Unidad', 'precio' => 'Precio', 'stock' => '',
+            'sin_tacc' => '', 'congelado' => '', 'nuevo' => '',
+        ]);
+
+        $this->assertSame([], $stats['errores']);
+        $this->assertSame(1, $stats['productos_creados']);
+        $this->assertSame(2, $stats['presentaciones_creadas']);
+
+        $producto = Producto::where('nombre', 'Queso cheddar')->firstOrFail();
+        $this->assertSame('Casa Vegana', $producto->marca->nombre);
+
+        // El precio sale del atributo, no del texto: el texto está redondeado
+        // para leerlo y perdería los centavos.
+        $this->assertEquals(1500.55, $producto->presentaciones->firstWhere('unidad', '200gr')->precio);
+        $this->assertEquals(3200, $producto->presentaciones->firstWhere('unidad', '500gr')->precio);
+    }
+
     public function test_lee_los_encabezados_de_la_fila_indicada(): void
     {
         $encabezados = (new ProductImportService)->getHeaders($this->archivo(), 5);

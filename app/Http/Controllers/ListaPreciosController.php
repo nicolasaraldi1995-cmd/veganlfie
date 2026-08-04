@@ -12,7 +12,7 @@ class ListaPreciosController extends Controller
     public function index()
     {
         $categorias = Categoria::activos()
-            ->has('productos')
+            ->whereHas('productos', fn ($q) => $q->where('activo', true))
             ->with(['productos' => fn ($q) => $q->activos()
                 ->with(['marca', 'presentaciones' => fn ($p) => $p->activos()->orderBy('precio')])
                 ->orderBy('nombre'),
@@ -102,7 +102,7 @@ class ListaPreciosController extends Controller
         set_time_limit(90);
 
         $marcas = Marca::activos()
-            ->has('productos')
+            ->whereHas('productos', fn ($q) => $q->where('activo', true))
             ->with(['productos' => fn ($q) => $q->activos()
                 ->with(['categoria', 'presentaciones' => fn ($p) => $p->activos()->orderBy('precio')])
                 ->orderBy('nombre'),
@@ -165,7 +165,7 @@ class ListaPreciosController extends Controller
         set_time_limit(90);
 
         $categorias = Categoria::activos()
-            ->has('productos')
+            ->whereHas('productos', fn ($q) => $q->where('activo', true))
             ->with(['productos' => fn ($q) => $q->activos()
                 ->with(['marca', 'presentaciones' => fn ($p) => $p->activos()->orderBy('precio')])
                 ->orderBy('nombre'),

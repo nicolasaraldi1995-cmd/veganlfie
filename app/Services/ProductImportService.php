@@ -346,8 +346,82 @@ class ProductImportService
         return $datos;
     }
 
+    /**
+     * ¿Es la lista de precios que exporta la propia web?
+     *
+     * Se reconoce por su estructura: marcas en <section class="marca"> y cada
+     * presentación con su <input class="cant" data-precio>. Así el circuito se
+     * cierra: se exporta, se edita, se vuelve a subir.
+     */
+    private function esListaDeLaWeb(string $path): bool
+    {
+        $inicio = (string) file_get_contents($path, false, null, 0, 200000);
+
+        return str_contains($inicio, 'class="marca"') && str_contains($inicio, 'data-precio');
+    }
+
+    /**
+     * Convierte la lista exportada por la web a las mismas columnas que el
+     * resto del importador (Nombre, Marca, Categoría, Unidad, Precio).
+     *
+     * @return Collection<int, array<string, string>>
+     */
+    private function leerListaDeLaWeb(string $path): Collection
+    {
+        $doc = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $doc->loadHTML((string) file_get_contents($path), LIBXML_COMPACT);
+        libxml_clear_errors();
+
+        $xp = new \DOMXPath($doc);
+        $filas = collect();
+
+        foreach ($xp->query('//section[contains(concat(" ", normalize-space(@class), " "), " marca ")]') ?: [] as $seccion) {
+            $marca = $this->textoDe($xp, './/h2', $seccion);
+
+            foreach ($xp->query('.//div[contains(concat(" ", normalize-space(@class), " "), " prod ")]', $seccion) ?: [] as $prod) {
+                $nombre = $this->textoDe($xp, './/*[contains(concat(" ", normalize-space(@class), " "), " prod-nom ")]', $prod);
+                $categoria = $prod instanceof \DOMElement ? trim($prod->getAttribute('data-cat')) : '';
+
+                foreach ($xp->query('.//input[contains(concat(" ", normalize-space(@class), " "), " cant ")]', $prod) ?: [] as $input) {
+                    if (! $input instanceof \DOMElement) {
+                        continue;
+                    }
+
+                    $unidad = $this->textoDe($xp, './/*[contains(concat(" ", normalize-space(@class), " "), " unidad ")]', $input->parentNode);
+
+                    // El precio sale del atributo, no del texto: el texto está
+                    // redondeado para leerlo y perdería los centavos.
+                    $filas->push([
+                        'Nombre' => $nombre,
+                        'Marca' => $marca,
+                        'Categoría' => $categoria,
+                        'Unidad' => $unidad,
+                        'Precio' => $input->getAttribute('data-precio'),
+                    ]);
+                }
+            }
+        }
+
+        return $filas;
+    }
+
+    /**
+     * Texto del primer nodo que coincida, o cadena vacía si no hay ninguno.
+     */
+    private function textoDe(\DOMXPath $xp, string $consulta, ?\DOMNode $desde): string
+    {
+        $nodo = $xp->query($consulta, $desde)->item(0);
+
+        return $nodo === null ? '' : trim($nodo->textContent);
+    }
+
     public function readFile(string $path, int $headerRow = 1): Collection
     {
+        if ($this->esListaDeLaWeb($path)) {
+            return $this->leerListaDeLaWeb($path);
+        }
+
         if ($this->esTablaHtml($path)) {
             return $this->leerTablaHtml($path, $headerRow);
         }
@@ -388,6 +462,12 @@ class ProductImportService
 
     public function getHeaders(string $path, int $headerRow = 1): array
     {
+        if ($this->esListaDeLaWeb($path)) {
+            // Columnas fijas: la lista de la web no tiene encabezados, se arman
+            // a partir de su estructura.
+            return ['Nombre', 'Marca', 'Categoría', 'Unidad', 'Precio'];
+        }
+
         if ($this->esTablaHtml($path)) {
             // De la fila de encabezados en sí, no de la primera fila de datos:
             // esa puede venir incompleta (el archivo trae filas separadoras con

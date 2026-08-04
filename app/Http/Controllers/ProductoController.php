@@ -112,7 +112,7 @@ class ProductoController extends Controller
             }
 
             $categoriasConCount = Categoria::activos()
-                ->has('productos')
+                ->whereHas('productos', fn ($q) => $q->where('activo', true))
                 ->withCount(['productos' => fn ($q) => $q->activos()])
                 ->orderBy('orden')
                 ->get();
@@ -195,7 +195,7 @@ class ProductoController extends Controller
             }
 
             $marcasConCount = Marca::activos()
-                ->has('productos')
+                ->whereHas('productos', fn ($q) => $q->where('activo', true))
                 ->withCount(['productos' => fn ($q) => $q->activos()])
                 ->orderBy('nombre')
                 ->get();
