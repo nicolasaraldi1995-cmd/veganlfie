@@ -17,9 +17,15 @@ class CategoriaResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
+    // Sin esto el menú decía "Categorias", sin tilde: el nombre lo arma
+    // Filament a partir del modelo, que no lleva acentos.
+    protected static ?string $modelLabel = 'Categoría';
+
+    protected static ?string $pluralModelLabel = 'Categorías';
+
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 22;
+    protected static ?int $navigationSort = 13;
 
     public static function form(Form $form): Form
     {

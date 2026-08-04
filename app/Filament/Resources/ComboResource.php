@@ -17,9 +17,9 @@ class ComboResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-gift';
 
-    protected static ?string $navigationGroup = 'Catálogo';
+    protected static ?string $navigationGroup = 'Promociones';
 
-    protected static ?int $navigationSort = 24;
+    protected static ?int $navigationSort = 21;
 
     public static function form(Form $form): Form
     {

@@ -21,7 +21,7 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $title = 'Actualizar Precios por Marca';
 
-    protected static ?int $navigationSort = 42;
+    protected static ?int $navigationSort = 41;
 
     protected static string $view = 'filament.pages.actualizar-precios';
 

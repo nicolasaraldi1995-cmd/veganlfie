@@ -20,7 +20,7 @@ class PresentacionResource extends Resource
 
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 23;
+    protected static ?int $navigationSort = 11;
 
     protected static ?string $pluralModelLabel = 'Stock';
 

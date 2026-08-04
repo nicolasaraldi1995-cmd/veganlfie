@@ -19,7 +19,7 @@ class MarcaResource extends Resource
 
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 21;
+    protected static ?int $navigationSort = 12;
 
     public static function form(Form $form): Form
     {

@@ -20,7 +20,7 @@ class Configuracion extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $title = 'Configuración del sitio';
 
-    protected static ?int $navigationSort = 43;
+    protected static ?int $navigationSort = 42;
 
     protected static string $view = 'filament.pages.configuracion';
 

@@ -28,7 +28,7 @@ class CargarPedido extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $title = 'Cargar pedido para un cliente';
 
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 2;
 
     protected static string $view = 'filament.pages.cargar-pedido';
 

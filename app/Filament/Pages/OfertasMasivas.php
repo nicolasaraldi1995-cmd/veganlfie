@@ -16,13 +16,13 @@ class OfertasMasivas extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-fire';
 
-    protected static ?string $navigationGroup = 'Herramientas';
+    protected static ?string $navigationGroup = 'Promociones';
 
     protected static ?string $navigationLabel = 'Ofertas masivas';
 
     protected static ?string $title = 'Ofertas Masivas';
 
-    protected static ?int $navigationSort = 41;
+    protected static ?int $navigationSort = 20;
 
     protected static string $view = 'filament.pages.ofertas-masivas';
 

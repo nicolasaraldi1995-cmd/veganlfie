@@ -20,7 +20,7 @@ class GastoResource extends Resource
 
     protected static ?string $navigationLabel = 'Gastos';
 
-    protected static ?int $navigationSort = 30;
+    protected static ?int $navigationSort = 31;
 
     public static function canAccess(): bool
     {

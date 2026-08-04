@@ -20,7 +20,7 @@ class Caja extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $title = 'Caja por período';
 
-    protected static ?int $navigationSort = 29;
+    protected static ?int $navigationSort = 30;
 
     protected static string $view = 'filament.pages.caja';
 

@@ -22,7 +22,7 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $title = 'Resumen de Cuenta';
 
-    protected static ?int $navigationSort = 11;
+    protected static ?int $navigationSort = 5;
 
     protected static string $view = 'filament.pages.resumen-cuenta';
 

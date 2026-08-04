@@ -34,11 +34,16 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Green,
             ])
-            ->sidebarCollapsibleOnDesktop()
+            // Sin colapsar: plegado se veían sólo los iconos y no se entendía
+            // qué era cada cosa. El menú siempre muestra el nombre al lado.
             ->databaseTransactions()
+            // De arriba abajo, por lo que más se usa en el día a día. Sin icono
+            // en el grupo: Filament no admite icono en el grupo y en sus
+            // pantallas a la vez, y el de cada pantalla es el que sirve.
             ->navigationGroups([
                 'Ventas',
                 'Catálogo',
+                'Promociones',
                 'Finanzas',
                 'Herramientas',
             ])

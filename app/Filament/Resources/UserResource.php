@@ -23,7 +23,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Clientes';
 
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
