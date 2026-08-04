@@ -138,6 +138,21 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
                         <p class="text-[15px] font-semibold text-text mt-3 text-center leading-snug group-hover:text-accent transition">{{ cat.nombre }}</p>
                     </Link>
                 </div>
+
+                <!-- Los productos de la marca, acá mismo: las categorías de
+                     arriba siguen sirviendo para filtrar, pero ya no hace falta
+                     entrar a una para ver qué hay. -->
+                <div v-if="productos?.data?.length" class="mt-12">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-0.5 h-6 rounded-full bg-accent"></div>
+                        <h2 class="text-[15px] font-semibold text-text">Todos los productos</h2>
+                        <span class="text-[11px] text-accent bg-accent/10 px-2 py-0.5 rounded-lg">{{ productos.total }}</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                        <ProductCard v-for="p in productos.data" :key="p.id" :producto="p" @image-click="modalImage = $event" />
+                    </div>
+                    <Pagination :links="productos.links" />
+                </div>
             </template>
 
             <!-- Search grouped -->
