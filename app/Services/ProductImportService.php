@@ -8,6 +8,7 @@ use App\Models\Presentacion;
 use App\Models\Producto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProductImportService
@@ -111,21 +112,47 @@ class ProductImportService
     private function precargarCatalogo(): void
     {
         $this->marcasPorNombre = Marca::withTrashed()->get()
-            ->keyBy(fn (Marca $m) => mb_strtolower(trim($m->nombre)))->all();
+            ->keyBy(fn (Marca $m) => $this->claveDeNombre($m->nombre))->all();
 
         $this->categoriasPorNombre = Categoria::withTrashed()->get()
-            ->keyBy(fn (Categoria $c) => mb_strtolower(trim($c->nombre)))->all();
+            ->keyBy(fn (Categoria $c) => $this->claveDeNombre($c->nombre))->all();
 
         $this->productosPorClave = Producto::withTrashed()->get()
             ->keyBy(fn (Producto $p) => $this->claveProducto($p->nombre, (int) $p->marca_id))->all();
 
         $this->presentacionesPorClave = Presentacion::withTrashed()->get()
-            ->keyBy(fn (Presentacion $p) => $p->producto_id.'|||'.mb_strtolower(trim((string) $p->unidad)))->all();
+            ->keyBy(fn (Presentacion $p) => $p->producto_id.'|||'.$this->normalizar((string) $p->unidad))->all();
+    }
+
+    /**
+     * Clave con la que se buscan marcas y categorías: el mismo slug que la base
+     * tiene como índice único.
+     *
+     * Antes la comparación la hacía MySQL, que ignora mayúsculas Y acentos: para
+     * la base "Crudda- Barras proteícas" y "Crudda - Barras proteicas" son la
+     * misma marca. Al pasar la búsqueda a PHP eso se perdió, no encontraba la
+     * marca existente, intentaba crearla y chocaba contra el índice único del
+     * slug. Usar el slug como clave hace que las dos escrituras caigan juntas,
+     * que es exactamente el criterio de la base.
+     */
+    private function claveDeNombre(?string $nombre): string
+    {
+        $nombre = trim((string) $nombre);
+
+        return Str::slug($nombre) ?: $this->normalizar($nombre);
+    }
+
+    /**
+     * Minúsculas y sin acentos, como compara MySQL.
+     */
+    private function normalizar(string $texto): string
+    {
+        return mb_strtolower(Str::ascii(trim($texto)));
     }
 
     private function claveProducto(string $nombre, int $marcaId): string
     {
-        return mb_strtolower(trim($nombre)).'|||'.$marcaId;
+        return $this->normalizar($nombre).'|||'.$marcaId;
     }
 
     private function importProductGroup(array $first, Collection $presentaciones, array $options, array $columnMap): void
@@ -134,26 +161,26 @@ class ProductImportService
         // de base: si el Excel las vuelve a mencionar hay que restaurarlas, no
         // crear otra con el mismo nombre (el índice único de "slug" lo rechaza).
         $marcaNombre = trim($first['marca']);
-        $marca = $this->marcasPorNombre[mb_strtolower($marcaNombre)] ?? null;
+        $marca = $this->marcasPorNombre[$this->claveDeNombre($marcaNombre)] ?? null;
         if ($marca) {
             if ($marca->trashed()) {
                 $marca->restore();
             }
         } else {
             $marca = Marca::create(['nombre' => $marcaNombre]);
-            $this->marcasPorNombre[mb_strtolower($marcaNombre)] = $marca;
+            $this->marcasPorNombre[$this->claveDeNombre($marcaNombre)] = $marca;
             $this->stats['marcas_creadas']++;
         }
 
         $categoriaNombre = trim($first['categoria'] ?? 'Sin categoría');
-        $categoria = $this->categoriasPorNombre[mb_strtolower($categoriaNombre)] ?? null;
+        $categoria = $this->categoriasPorNombre[$this->claveDeNombre($categoriaNombre)] ?? null;
         if ($categoria) {
             if ($categoria->trashed()) {
                 $categoria->restore();
             }
         } else {
             $categoria = Categoria::create(['nombre' => $categoriaNombre]);
-            $this->categoriasPorNombre[mb_strtolower($categoriaNombre)] = $categoria;
+            $this->categoriasPorNombre[$this->claveDeNombre($categoriaNombre)] = $categoria;
             $this->stats['categorias_creadas']++;
         }
 
@@ -210,7 +237,7 @@ class ProductImportService
 
             $precio = $this->parsePrice($row['precio'] ?? 0);
 
-            $clave = $producto->id.'|||'.mb_strtolower($unidad);
+            $clave = $producto->id.'|||'.$this->normalizar($unidad);
             $presentacion = $this->presentacionesPorClave[$clave] ?? null;
 
             if ($presentacion) {

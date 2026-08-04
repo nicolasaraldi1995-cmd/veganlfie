@@ -43,6 +43,40 @@ class ImportadorHtmlTest extends TestCase
         return $ruta;
     }
 
+    /**
+     * El caso que reventó en producción: la marca ya existe pero escrita con
+     * otros acentos o espacios. MySQL las considera la misma (ignora acentos y
+     * mayúsculas), así que el importador tiene que encontrarla igual. Si no, la
+     * intenta crear y choca contra el índice único del slug:
+     *   Duplicate entry 'crudda-barras-proteicas' for key 'marcas_slug_unique'
+     */
+    public function test_encuentra_la_marca_aunque_cambien_acentos_y_espacios(): void
+    {
+        $marca = Marca::create(['nombre' => 'Crudda - Barras proteicas']);
+
+        $html = <<<'HTML'
+        <table>
+        <tr><td>x</td></tr><tr><td>x</td></tr><tr><td>x</td></tr><tr><td>x</td></tr>
+        <tr><td>Nombre</td><td>Marca</td><td>Categoría</td><td>Unidad</td><td>Precio</td></tr>
+        <tr><td>Crudda bar brownie</td><td>Crudda- Barras proteícas</td><td>Barras</td><td>50gr</td><td>1.500,00</td></tr>
+        </table>
+        HTML;
+
+        $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.xls';
+        file_put_contents($ruta, $html);
+
+        $stats = (new ProductImportService)->import($ruta, [
+            'nombre' => 'Nombre', 'marca' => 'Marca', 'categoria' => 'Categoría',
+            'unidad' => 'Unidad', 'precio' => 'Precio', 'stock' => '',
+            'sin_tacc' => '', 'congelado' => '', 'nuevo' => '',
+        ], 5);
+
+        $this->assertSame([], $stats['errores']);
+        $this->assertSame(0, $stats['marcas_creadas'], 'Tendría que haber reusado la marca que ya existía.');
+        $this->assertSame(1, Marca::count());
+        $this->assertSame($marca->id, Producto::where('nombre', 'Crudda bar brownie')->first()?->marca_id);
+    }
+
     public function test_lee_los_encabezados_de_la_fila_indicada(): void
     {
         $encabezados = (new ProductImportService)->getHeaders($this->archivo(), 5);
