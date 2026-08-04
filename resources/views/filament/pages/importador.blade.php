@@ -91,6 +91,43 @@
                     </div>
                 @endif
 
+                {{-- Lo que el archivo deja afuera. El importador sólo agrega y
+                     actualiza, así que sin esto un producto que el proveedor
+                     sacó de la lista queda publicado para siempre. --}}
+                @if(($resumenSync['bajas'] ?? 0) > 0 || ($resumenSync['cambiosDeMarca'] ?? 0) > 0)
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm font-semibold text-amber-900 mb-3">Comparado con lo que hay publicado hoy</p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                            <div class="bg-white rounded-lg p-3 border border-amber-200">
+                                <p class="text-xl font-bold text-amber-800">{{ $resumenSync['cambiosDeMarca'] ?? 0 }}</p>
+                                <p class="text-xs text-amber-700 mb-1">productos cambiaron de marca</p>
+                                @foreach($resumenSync['ejemplosMarca'] ?? [] as $c)
+                                    <p class="text-[11px] text-gray-500 truncate">{{ $c['nombre'] }}: {{ $c['marcaVieja'] }} → {{ $c['marcaNueva'] }}</p>
+                                @endforeach
+                            </div>
+                            <div class="bg-white rounded-lg p-3 border border-amber-200">
+                                <p class="text-xl font-bold text-amber-800">{{ $resumenSync['bajas'] ?? 0 }}</p>
+                                <p class="text-xs text-amber-700 mb-1">no están en este archivo</p>
+                                @foreach($resumenSync['ejemplosBaja'] ?? [] as $c)
+                                    <p class="text-[11px] text-gray-500 truncate">{{ $c['nombre'] }} ({{ $c['marca'] }})</p>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <label class="flex items-start gap-2 text-sm text-amber-900 cursor-pointer">
+                            <input type="checkbox" wire:model="sincronizar" class="mt-0.5 rounded border-amber-400 text-amber-600">
+                            <span>
+                                <b>Poner el catálogo a tono con este archivo.</b>
+                                Mueve los productos a la marca que les corresponde y da de baja los que ya no están.
+                                <span class="block text-xs text-amber-700 mt-0.5">
+                                    La baja no borra nada: el producto queda con su foto y su historial, sólo deja de mostrarse en la web.
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                @endif
+
                 {{-- Preview table --}}
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
@@ -167,6 +204,20 @@
                         <p class="text-xl font-bold text-gray-700">{{ $importResult['filas_saltadas'] ?? 0 }}</p>
                         <p class="text-sm text-gray-600">Filas saltadas</p>
                     </div>
+                    @if(!empty($syncResult))
+                        <div class="bg-amber-50 rounded-lg p-3 text-center">
+                            <p class="text-xl font-bold text-amber-800">{{ $syncResult['marcas'] ?? 0 }}</p>
+                            <p class="text-sm text-amber-700">Movidos de marca</p>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3 text-center">
+                            <p class="text-xl font-bold text-amber-800">{{ $syncResult['bajas'] ?? 0 }}</p>
+                            <p class="text-sm text-amber-700">Dados de baja</p>
+                        </div>
+                        <div class="bg-amber-50 rounded-lg p-3 text-center">
+                            <p class="text-xl font-bold text-amber-800">{{ $syncResult['duplicados'] ?? 0 }}</p>
+                            <p class="text-sm text-amber-700">Duplicados unificados</p>
+                        </div>
+                    @endif
                 </div>
 
                 @if(!empty($importResult['errores']))

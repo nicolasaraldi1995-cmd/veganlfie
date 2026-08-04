@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Services\ProductImportService;
+use App\Services\SincronizarCatalogo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -68,6 +69,20 @@ class Importador extends Page implements Forms\Contracts\HasForms
     public array $previewData = [];
 
     public array $importResult = [];
+
+    /**
+     * Qué haría la sincronización con este archivo: se muestra junto a la
+     * previsualización para poder decidir antes de importar.
+     *
+     * @var array<string, mixed>
+     */
+    public array $resumenSync = [];
+
+    /** Arranca apagado: dar de baja productos no se hace sin pedirlo. */
+    public bool $sincronizar = false;
+
+    /** @var array<string, int> */
+    public array $syncResult = [];
 
     /**
      * Sin esto el formulario nunca queda inicializado y Filament valida un
@@ -213,16 +228,46 @@ class Importador extends Page implements Forms\Contracts\HasForms
             $path = $this->rutaLocal();
             $service = new ProductImportService;
             $this->previewData = $service->preview($path, $this->columnMap, $this->header_row);
+
+            // Además de lo que se va a importar, se calcula lo que el archivo
+            // deja afuera: el importador nunca da de baja nada, así que sin
+            // esto un producto que el proveedor sacó de la lista queda
+            // publicado para siempre.
+            $this->resumenSync = $this->resumirSync(app(SincronizarCatalogo::class)->analizar($path, $this->header_row));
+
             $this->step = 'preview';
         } catch (\Throwable $e) {
             $this->avisarDelError('Error al generar la previsualización', $e);
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $plan
+     * @return array<string, mixed>
+     */
+    private function resumirSync(array $plan): array
+    {
+        return [
+            'cambiosDeMarca' => count($plan['cambiosDeMarca']),
+            'cambiosDeNombre' => count($plan['cambiosDeNombre']),
+            'bajas' => count($plan['bajas']),
+            'ejemplosMarca' => array_slice($plan['cambiosDeMarca'], 0, 8),
+            'ejemplosBaja' => array_slice($plan['bajas'], 0, 8),
+        ];
+    }
+
     public function runImport(): void
     {
         try {
             $path = $this->rutaLocal();
+
+            // La sincronización va primero: mueve los productos a la marca que
+            // les corresponde, y así la importación de precios los encuentra.
+            if ($this->sincronizar) {
+                $sincronizador = app(SincronizarCatalogo::class);
+                $this->syncResult = $sincronizador->aplicar($sincronizador->analizar($path, $this->header_row));
+            }
+
             $service = new ProductImportService;
             $this->importResult = $service->import($path, $this->columnMap, $this->header_row, [
                 'actualizar_existentes' => $this->actualizar_existentes,
@@ -249,6 +294,9 @@ class Importador extends Page implements Forms\Contracts\HasForms
         ];
         $this->previewData = [];
         $this->importResult = [];
+        $this->resumenSync = [];
+        $this->syncResult = [];
+        $this->sincronizar = false;
         $this->step = 'upload';
     }
 
