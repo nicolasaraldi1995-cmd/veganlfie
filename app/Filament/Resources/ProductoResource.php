@@ -23,6 +23,18 @@ class ProductoResource extends Resource
     protected static ?int $navigationSort = 10;
 
     /**
+     * El middleware del panel ya frena a quien no es del equipo, pero eso
+     * cubre la URL, no el componente. Filament revisa esto en cada hidratación,
+     * así que el que intente invocarlo por dentro tampoco pasa.
+     */
+    public static function canAccess(): bool
+    {
+        $usuario = auth()->user();
+
+        return (bool) ($usuario?->isAdmin() || $usuario?->isOperador());
+    }
+
+    /**
      * ->image() a secas valida "mimetypes:image/*", y ahí adentro entra
      * image/svg+xml: un SVG lleva <script> y se serviría desde este dominio.
      * Se listan los formatos de foto, como ya hacía MarcaResource.
@@ -372,7 +384,8 @@ class ProductoResource extends Resource
                         ->icon('heroicon-o-x-mark')
                         ->action(fn ($records) => $records->each(fn ($r) => $r->update(['nuevo' => false])))
                         ->deselectRecordsAfterCompletion(),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() ?? false),
                 ]),
             ])
             ->defaultSort('nombre');

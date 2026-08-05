@@ -6,6 +6,7 @@ use App\Filament\Resources\BannerResource;
 use App\Filament\Resources\BannerResource\Pages\CreateBanner;
 use App\Models\User;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Form;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -28,7 +29,7 @@ class BannerFormTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $this->actingAs($admin);
 
-        $campo = collect(BannerResource::form(new \Filament\Forms\Form(
+        $campo = collect(BannerResource::form(new Form(
             Livewire::test(CreateBanner::class)->instance()
         ))->getComponents())
             ->first(fn ($c) => $c instanceof FileUpload && $c->getName() === 'imagen');

@@ -20,6 +20,26 @@ class Pedido extends Model
         'datos_cliente' => 'array',
     ];
 
+    /**
+     * Al operador no le llega el total. La ficha del pedido ya se lo esconde en
+     * pantalla, pero viajaba igual dentro del estado del formulario. El total
+     * se recalcula solo al guardar (EditPedido::afterSave), así que nadie lo
+     * necesita de vuelta desde el navegador.
+     *
+     * @return array<string, mixed>
+     */
+    public function attributesToArray(): array
+    {
+        $data = parent::attributesToArray();
+        $usuario = auth()->user();
+
+        if (($usuario?->isOperador() ?? false) && ! $usuario->isAdmin()) {
+            unset($data['total']);
+        }
+
+        return $data;
+    }
+
     const ESTADOS = [
         'pending' => 'Pendiente',
         'confirmed' => 'Confirmado',

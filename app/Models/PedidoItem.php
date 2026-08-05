@@ -18,6 +18,32 @@ class PedidoItem extends Model
         'subtotal' => 'decimal:2',
     ];
 
+    /**
+     * Al operador no le llegan los importes. La ficha del pedido ya se los
+     * esconde en pantalla, pero el valor viajaba igual dentro del estado del
+     * formulario y se leía con ver-código-fuente. Al guardar no hace falta:
+     * los importes se rearman en el servidor (PedidoResource::precioDeLaBase).
+     *
+     * @return array<string, mixed>
+     */
+    public function attributesToArray(): array
+    {
+        $data = parent::attributesToArray();
+
+        if ($this->esOperador()) {
+            unset($data['precio_unitario'], $data['subtotal']);
+        }
+
+        return $data;
+    }
+
+    private function esOperador(): bool
+    {
+        $usuario = auth()->user();
+
+        return ($usuario?->isOperador() ?? false) && ! $usuario->isAdmin();
+    }
+
     public function pedido(): BelongsTo
     {
         return $this->belongsTo(Pedido::class);

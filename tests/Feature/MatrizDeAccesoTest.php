@@ -28,6 +28,9 @@ class MatrizDeAccesoTest extends TestCase
         'admin/actualizar-precios',
         'admin/ofertas-masivas',
         'admin/resumen-cuenta',
+        // Subir un archivo acá reescribe el precio de todo el catálogo de una:
+        // es manejo de precios, no carga de pedidos.
+        'admin/importador',
     ];
 
     /** Del dueño y del empleado: el trabajo de todos los días. */
@@ -42,7 +45,6 @@ class MatrizDeAccesoTest extends TestCase
         'admin/banners',
         'admin/cargar-pedido',
         'admin/cargar-pedido-desde-archivo',
-        'admin/importador',
         'lista-de-precios',
         'lista-de-precios/pdf',
         'lista-de-precios/html',

@@ -21,6 +21,18 @@ class MarcaResource extends Resource
 
     protected static ?int $navigationSort = 12;
 
+    /**
+     * El middleware del panel ya frena a quien no es del equipo, pero eso
+     * cubre la URL, no el componente. Filament revisa esto en cada hidratación,
+     * así que el que intente invocarlo por dentro tampoco pasa.
+     */
+    public static function canAccess(): bool
+    {
+        $usuario = auth()->user();
+
+        return (bool) ($usuario?->isAdmin() || $usuario?->isOperador());
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -111,6 +123,7 @@ class MarcaResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()?->isAdmin() ?? false)
                         ->before(function ($records, Tables\Actions\DeleteBulkAction $action) {
                             if ($records->contains(fn (Marca $r) => $r->productos()->exists())) {
                                 Notification::make()

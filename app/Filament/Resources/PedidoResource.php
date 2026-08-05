@@ -27,6 +27,18 @@ class PedidoResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    /**
+     * El middleware del panel ya frena a quien no es del equipo, pero eso
+     * cubre la URL, no el componente. Filament revisa esto en cada hidratación,
+     * así que el que intente invocarlo por dentro tampoco pasa.
+     */
+    public static function canAccess(): bool
+    {
+        $usuario = auth()->user();
+
+        return (bool) ($usuario?->isAdmin() || $usuario?->isOperador());
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -111,7 +123,10 @@ class PedidoResource extends Resource
                                 ->numeric()
                                 ->minValue(0)
                                 ->prefix('$')
-                                ->required()
+                                // Obligatorio sólo para quien lo ve. Al operador
+                                // ni le llega el valor, y no hace falta: se
+                                // rearma en el servidor antes de guardar.
+                                ->required(fn () => auth()->user()?->isAdmin() ?? false)
                                 ->reactive()
                                 ->afterStateUpdated(function ($state, Forms\Get $get, Forms\Set $set) {
                                     $cantidad = (int) $get('cantidad');

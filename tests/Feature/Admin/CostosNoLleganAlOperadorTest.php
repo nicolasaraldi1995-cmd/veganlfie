@@ -5,10 +5,13 @@ namespace Tests\Feature\Admin;
 use App\Filament\Resources\ComboResource\Pages\CreateCombo;
 use App\Filament\Resources\ComboResource\Pages\EditCombo;
 use App\Filament\Resources\MarcaResource\Pages\EditMarca;
+use App\Filament\Resources\PedidoResource\Pages\EditPedido;
 use App\Filament\Resources\ProductoResource\Pages\EditProducto;
 use App\Models\Categoria;
 use App\Models\Combo;
 use App\Models\Marca;
+use App\Models\Pedido;
+use App\Models\PedidoItem;
 use App\Models\Presentacion;
 use App\Models\Producto;
 use App\Models\User;
@@ -91,6 +94,35 @@ class CostosNoLleganAlOperadorTest extends TestCase
         }
 
         $this->assertStringNotContainsString('62.50', $html);
+    }
+
+    /**
+     * En la ficha del pedido pasaba lo mismo con el total y los importes de
+     * cada ítem: escondidos en pantalla, presentes en el estado.
+     */
+    public function test_el_total_del_pedido_no_viaja_en_la_pantalla_de_editarlo(): void
+    {
+        $presentacion = $this->catalogo();
+        $pedido = Pedido::factory()->create([
+            'user_id' => User::factory()->create(['role' => 'cliente'])->id,
+            'estado' => 'pending',
+        ]);
+        PedidoItem::create([
+            'pedido_id' => $pedido->id,
+            'presentacion_id' => $presentacion->id,
+            'cantidad' => 2,
+            'precio_unitario' => 10000,
+            'subtotal' => 20000,
+        ]);
+        $pedido->recalcularTotal();
+
+        $html = Livewire::actingAs($this->operador())
+            ->test(EditPedido::class, ['record' => $pedido->id])
+            ->html();
+
+        foreach (['20000.00', '10000.00'] as $importe) {
+            $this->assertStringNotContainsString($importe, $html, "El importe {$importe} llegó al navegador del operador.");
+        }
     }
 
     /** Al dueño sí, que para eso los edita. */

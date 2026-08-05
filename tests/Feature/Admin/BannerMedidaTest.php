@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Banner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class BannerMedidaTest extends TestCase
@@ -65,7 +66,7 @@ class BannerMedidaTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('medidas')]
+    #[DataProvider('medidas')]
     public function test_la_imagen_nunca_se_recorta(int $ancho, int $alto, float $proporcion): void
     {
         config(['filament.default_filesystem_disk' => 'public']);

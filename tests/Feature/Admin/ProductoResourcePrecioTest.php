@@ -23,7 +23,7 @@ class ProductoResourcePrecioTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(EditProducto::class, ['record' => $producto->id])
-            ->set("data.presentaciones.0.precio_costo", 1000)
+            ->set('data.presentaciones.0.precio_costo', 1000)
             ->set('data.presentaciones.0.descuento_porcentaje', 15)
             ->set('data.presentaciones.0.margen_porcentaje', 75)
             ->set('data.presentaciones.0.iva', true)

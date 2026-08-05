@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PedidoResource\Pages;
 
+use App\Filament\Concerns\ExigeAccesoAlRecurso;
 use App\Filament\Resources\PedidoResource;
 use App\Models\Pago;
 use App\Models\Pedido;
@@ -14,6 +15,8 @@ use Filament\Resources\Pages\ViewRecord;
 
 class ViewPedido extends ViewRecord
 {
+    use ExigeAccesoAlRecurso;
+
     protected static string $resource = PedidoResource::class;
 
     protected function getHeaderActions(): array

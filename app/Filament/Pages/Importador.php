@@ -24,11 +24,16 @@ class Importador extends Page implements Forms\Contracts\HasForms
 
     protected static ?string $navigationLabel = 'Importador';
 
+    /**
+     * Del dueño, como Actualizar precios y Ofertas masivas. Subir un archivo
+     * acá reescribe el precio de todo el catálogo de una, y de paso puede dar
+     * de baja lo que no figure: eso no es carga de pedidos, es manejo de
+     * precios. Para pasar a pedido lo que mandó un cliente está "Pedido desde
+     * archivo", que el operador sí abre.
+     */
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-
-        return $user?->isAdmin() || $user?->isOperador();
+        return auth()->user()?->isAdmin() ?? false;
     }
 
     protected static ?string $title = 'Importar Productos';
@@ -141,6 +146,28 @@ class Importador extends Page implements Forms\Contracts\HasForms
      * los márgenes, así que no puede quedar donde Apache la alcance.
      */
     private const DISCO = 'local';
+
+    /**
+     * Cuántas listas se guardan. Cada una pesa un mega y medio y no se vuelven
+     * a mirar; se dejan unas pocas por si hay que revisar qué se importó.
+     */
+    private const CUANTAS_SE_GUARDAN = 5;
+
+    /**
+     * Borra las listas viejas. Sin esto se juntaban para siempre: una por cada
+     * vez que se actualizan los precios, sin que nadie las saque nunca.
+     */
+    private function borrarLasViejas(): void
+    {
+        $disco = Storage::disk(self::DISCO);
+        $archivos = collect($disco->files('imports'))
+            ->sortByDesc(fn (string $archivo) => $disco->lastModified($archivo))
+            ->slice(self::CUANTAS_SE_GUARDAN);
+
+        foreach ($archivos as $archivo) {
+            $disco->delete($archivo);
+        }
+    }
 
     private function rutaGuardada(): ?string
     {
@@ -284,6 +311,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
                 'actualizar_existentes' => $this->actualizar_existentes,
             ]);
             $this->step = 'result';
+            $this->borrarLasViejas();
 
             $total = $this->importResult['productos_creados'] + $this->importResult['productos_actualizados'];
             Notification::make()

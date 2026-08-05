@@ -12,6 +12,7 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Table;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -42,7 +43,7 @@ class ImagenesSinConsultarElBucketTest extends TestCase
      * @param  class-string  $resource
      * @param  class-string  $pagina
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('recursosConImagen')]
+    #[DataProvider('recursosConImagen')]
     public function test_la_columna_de_imagen_no_consulta_el_disco_por_cada_fila(string $resource, string $pagina): void
     {
         $this->actingAs(User::factory()->create(['role' => 'admin']));

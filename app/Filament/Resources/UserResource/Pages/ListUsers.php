@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserResource\Pages;
 
+use App\Filament\Concerns\ExigeAccesoAlRecurso;
 use App\Filament\Resources\UserResource;
 use App\Services\CuentaClienteService;
 use Filament\Actions;
@@ -10,6 +11,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListUsers extends ListRecords
 {
+    use ExigeAccesoAlRecurso;
+
     protected static string $resource = UserResource::class;
 
     protected function getHeaderActions(): array

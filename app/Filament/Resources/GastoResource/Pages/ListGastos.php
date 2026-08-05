@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\GastoResource\Pages;
 
+use App\Filament\Concerns\ExigeAccesoAlRecurso;
 use App\Filament\Resources\GastoResource;
 use App\Models\Gasto;
 use Filament\Actions;
@@ -10,6 +11,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ListGastos extends ListRecords
 {
+    use ExigeAccesoAlRecurso;
+
     protected static string $resource = GastoResource::class;
 
     protected function getHeaderActions(): array

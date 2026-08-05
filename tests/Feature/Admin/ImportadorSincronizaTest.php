@@ -10,6 +10,7 @@ use App\Models\Producto;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -54,7 +55,7 @@ class ImportadorSincronizaTest extends TestCase
         return $ruta;
     }
 
-    private function hastaLaPrevisualizacion(): \Livewire\Features\SupportTesting\Testable
+    private function hastaLaPrevisualizacion(): Testable
     {
         config(['filament.default_filesystem_disk' => 'public']);
         Storage::fake('public');
