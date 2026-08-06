@@ -87,6 +87,16 @@ class BannerResource extends Resource
             Forms\Components\TextInput::make('destino_valor')
                 ->label('URL')
                 ->placeholder('https://...')
+                // El valor va al href del banner en la portada. Sin este freno
+                // se podía dejar "javascript:..." y que se ejecutara en el
+                // navegador de cualquiera que tocara la imagen. El modelo lo
+                // vuelve a filtrar antes de dibujarlo; acá está para que quien
+                // lo carga se entere en el momento y no en silencio.
+                ->rules(['nullable', 'url:http,https'])
+                ->validationMessages([
+                    'url' => 'Tiene que ser una dirección web completa, empezando con http:// o https://',
+                ])
+                ->helperText('Dirección completa, con https:// adelante.')
                 ->visible(fn (Forms\Get $get) => $get('destino_tipo') === 'url'),
             Forms\Components\TextInput::make('orden')
                 ->numeric()
