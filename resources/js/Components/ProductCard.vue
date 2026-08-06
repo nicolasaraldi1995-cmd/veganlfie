@@ -122,13 +122,19 @@ const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0]
                 En carrito
             </span>
 
-            <!-- Insignias comerciales: agrupadas en la esquina de la imagen para no ocupar espacio del contenido -->
-            <div class="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
-                <span v-if="producto.nuevo" class="text-[8px] font-bold uppercase tracking-wider text-white bg-amber-500 px-1.5 py-0.5 rounded shadow-sm">Nuevo</span>
-                <span v-if="producto.sin_tacc" class="text-[8px] font-bold uppercase tracking-wider text-accent-dim bg-white/95 px-1.5 py-0.5 rounded shadow-sm">Sin TACC</span>
-                <span v-if="producto.frio" class="text-[8px] font-bold uppercase tracking-wider text-white bg-sky-500 px-1.5 py-0.5 rounded shadow-sm">Frío</span>
-                <span v-if="producto.congelado" class="text-[8px] font-bold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded shadow-sm">Congelado</span>
-                <span v-if="envasePet" class="text-[8px] font-bold uppercase tracking-wider text-white bg-slate-600 px-1.5 py-0.5 rounded shadow-sm">{{ envasePet }}</span>
+            <!-- Insignias comerciales: agrupadas en la esquina de la imagen para
+                 no ocupar espacio del contenido.
+                 A 12px, que es el piso de tamaño de letra del sitio. Estaban en
+                 8px: entraban más cómodas, pero "Sin TACC" en 8px sobre una foto
+                 no se lee en un teléfono, y avisar de un alérgeno con letra que
+                 no se lee no es avisar. Caben: de 1667 productos publicados,
+                 1657 no tienen ninguna insignia y el que más tiene, tiene dos. -->
+            <div class="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1.5">
+                <span v-if="producto.nuevo" class="text-[12px] font-bold uppercase tracking-wide text-white bg-amber-500 px-2 py-1 rounded shadow-sm">Nuevo</span>
+                <span v-if="producto.sin_tacc" class="text-[12px] font-bold uppercase tracking-wide text-accent-dim bg-white/95 px-2 py-1 rounded shadow-sm">Sin TACC</span>
+                <span v-if="producto.frio" class="text-[12px] font-bold uppercase tracking-wide text-white bg-sky-500 px-2 py-1 rounded shadow-sm">Frío</span>
+                <span v-if="producto.congelado" class="text-[12px] font-bold uppercase tracking-wide text-white bg-blue-600 px-2 py-1 rounded shadow-sm">Congelado</span>
+                <span v-if="envasePet" class="text-[12px] font-bold uppercase tracking-wide text-white bg-slate-600 px-2 py-1 rounded shadow-sm">{{ envasePet }}</span>
             </div>
         </div>
 
