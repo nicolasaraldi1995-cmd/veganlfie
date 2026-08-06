@@ -1,10 +1,22 @@
 <script setup>
 import { router, usePage } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import ProductoDetailModal from '@/Components/ProductoDetailModal.vue';
+import { envasePet } from '@/envase';
 
 const props = defineProps({ producto: Object });
+// ponytail: el evento 'imageClick' ya no se dispara -- la foto sola la
+// reemplazó la ventana de detalle, que muestra la imagen entera y además el
+// nombre completo. Queda declarado para no tocar las diez páginas que todavía
+// lo escuchan; esas líneas y su <ImageModal> quedaron inertes y se limpian
+// aparte.
 const emit = defineEmits(['imageClick']);
 const page = usePage();
+
+// La ventana vive adentro de la tarjeta y se teletransporta al body, así que no
+// hubo que tocar ninguna de las diez páginas que dibujan tarjetas. Mientras
+// está cerrada no dibuja nada: en la portada hay 587 tarjetas.
+const detalleAbierto = ref(false);
 
 const selectedIndex = ref(0);
 const cantidad = ref(1);
@@ -91,16 +103,9 @@ const imageSrc = computed(() => {
 });
 
 // PET y PETG son el envase de plástico, y en el nombre casi siempre van al
-// final -- justo donde el título se corta a dos líneas, así que dos productos
-// que solo se diferencian en el envase se ven idénticos en la tarjeta.
-//
-// Se busca como palabra suelta y no como pedazo de texto: de los once
-// productos con "pet" adentro, cinco son "petaca" y "pétalos de rosa".
-//
-// Sin lookbehind a propósito, aunque sería más prolijo: Safari recién lo
-// soporta desde 2023, y una expresión regular que el navegador no entiende no
-// rompe esta línea, rompe el archivo entero. \b alcanza y anda en todos.
-const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0].toUpperCase() ?? null);
+// final: justo donde el título se corta a dos líneas. La cuenta vive en
+// resources/js/envase.js porque también la usa la ventana de detalle.
+const pet = computed(() => envasePet(props.producto.nombre));
 </script>
 
 <template>
@@ -108,7 +113,11 @@ const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0]
         :class="enCarrito ? 'border border-accent/40 shadow-sm shadow-accent/5' : 'border border-[rgba(0,0,0,0.14)] hover:border-border-hover hover:shadow-lg hover:shadow-black/8'">
 
         <!-- Image -->
-        <div class="relative aspect-[5/4] bg-surface-2 overflow-hidden cursor-pointer shrink-0" @click="imageSrc && emit('imageClick', imageSrc)">
+        <!-- Abre el detalle aunque no haya foto: el que no tiene imagen es
+             justamente el que más necesita que se lea el nombre entero. -->
+        <div class="relative aspect-[5/4] bg-surface-2 overflow-hidden cursor-pointer shrink-0"
+            role="button" tabindex="0" :aria-label="`Ver ${producto.nombre}`"
+            @click="detalleAbierto = true" @keydown.enter.prevent="detalleAbierto = true" @keydown.space.prevent="detalleAbierto = true">
             <img v-if="imageSrc" :src="imageSrc" :alt="producto.nombre" loading="lazy" class="w-full h-full object-cover hover:scale-[1.03] transition-transform duration-500" />
             <div v-else class="w-full h-full flex items-center justify-center">
                 <svg class="w-8 h-8 text-surface-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1">
@@ -134,7 +143,7 @@ const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0]
                 <span v-if="producto.sin_tacc" class="text-[12px] font-bold uppercase tracking-wide text-accent-dim bg-white/95 px-2 py-1 rounded shadow-sm">Sin TACC</span>
                 <span v-if="producto.frio" class="text-[12px] font-bold uppercase tracking-wide text-white bg-sky-500 px-2 py-1 rounded shadow-sm">Frío</span>
                 <span v-if="producto.congelado" class="text-[12px] font-bold uppercase tracking-wide text-white bg-blue-600 px-2 py-1 rounded shadow-sm">Congelado</span>
-                <span v-if="envasePet" class="text-[12px] font-bold uppercase tracking-wide text-white bg-slate-600 px-2 py-1 rounded shadow-sm">{{ envasePet }}</span>
+                <span v-if="pet" class="text-[12px] font-bold uppercase tracking-wide text-white bg-slate-600 px-2 py-1 rounded shadow-sm">{{ pet }}</span>
             </div>
         </div>
 
@@ -142,7 +151,12 @@ const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0]
             <!-- Marca como pill translúcida: se diferencia claramente del nombre del producto -->
             <span class="brand-label inline-block max-w-full truncate text-accent-dim bg-accent-muted px-2.5 py-1 rounded-full">{{ producto.marca?.nombre }}</span>
 
-            <h3 class="product-title text-text text-[14.5px] leading-tight line-clamp-2 min-h-[2.3rem] mt-2">{{ producto.nombre }}</h3>
+            <!-- El nombre también abre el detalle: es el que se corta a dos
+                 líneas, así que es donde uno va a buscar el resto. El title=
+                 muestra el nombre entero al pasar el mouse, que en la
+                 computadora resuelve el caso sin abrir nada. -->
+            <h3 class="product-title text-text text-[14.5px] leading-tight line-clamp-2 min-h-[2.3rem] mt-2 cursor-pointer hover:text-accent transition-colors"
+                :title="producto.nombre" @click="detalleAbierto = true">{{ producto.nombre }}</h3>
 
             <!-- Pills: alto fijo y recorte de overflow para que productos con muchas o pocas presentaciones ocupen el mismo espacio. mb-3 fijo asegura que nunca queden pegadas al bloque de precio/botón, incluso cuando el mt-auto de ese bloque no tiene espacio extra para empujar -->
             <div class="mt-2 mb-3 min-h-[30px] overflow-hidden">
@@ -212,6 +226,11 @@ const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0]
                 </div>
             </div>
         </div>
+
+        <!-- Se monta recién al abrirse. Con 587 tarjetas en la portada, tener
+             587 ventanas dibujadas "por si acaso" significaba 587 escuchas de
+             teclado colgadas del documento, disparándose en cada tecla. -->
+        <ProductoDetailModal v-if="detalleAbierto" :producto="producto" @close="detalleAbierto = false" />
     </div>
 </template>
 
