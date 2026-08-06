@@ -10,6 +10,13 @@ use Inertia\Inertia;
 
 class ProductoController extends Controller
 {
+    /**
+     * Cuántos resultados de búsqueda se traen como mucho. La pantalla los
+     * agrupa por categoría y no pagina, así que sin tope una palabra corta se
+     * llevaba el catálogo entero al navegador.
+     */
+    private const TOPE_BUSQUEDA = 200;
+
     public function index(Request $request)
     {
         $vista = $request->input('vista');
@@ -38,7 +45,13 @@ class ProductoController extends Controller
                 $query->congelados();
             }
 
-            $productos = $query->orderBy('nombre')->get();
+            // Con tope. Buscar "a" devolvía 1624 productos: 2,5 segundos, 3,4 MB
+            // de respuesta y 92 MB de memoria, para una pantalla que nadie va a
+            // leer entera. Y ni siquiera hace falta escribir una sola letra a
+            // propósito: "de" devuelve 1135. Se cuenta primero y se traen los
+            // primeros; si el término es muy amplio, se avisa en pantalla.
+            $totalResultados = (clone $query)->count();
+            $productos = $query->orderBy('nombre')->limit(self::TOPE_BUSQUEDA)->get();
             $porCategoria = $productos->groupBy(fn ($p) => $p->categoria?->nombre ?? 'Sin categoría')
                 ->sortKeys()
                 ->map(fn ($items, $cat) => ['nombre' => $cat, 'productos' => $items->values()])
@@ -47,7 +60,8 @@ class ProductoController extends Controller
             return Inertia::render('Productos/Index', [
                 'modo' => 'busqueda',
                 'productosPorCategoria' => $porCategoria,
-                'totalResultados' => $productos->count(),
+                'totalResultados' => $totalResultados,
+                'mostrados' => $productos->count(),
                 'productos' => null,
                 'items' => null,
                 'breadcrumb' => null,

@@ -6,7 +6,7 @@ import ImageModal from '@/Components/ImageModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 
-const props = defineProps({ modo: String, productos: Object, productosPorCategoria: Array, totalResultados: Number, items: Array, breadcrumb: Array, marcas: Array, categorias: Array, categoriaActual: Object, marcaActual: Object, filtros: Object });
+const props = defineProps({ modo: String, productos: Object, productosPorCategoria: Array, totalResultados: Number, mostrados: Number, items: Array, breadcrumb: Array, marcas: Array, categorias: Array, categoriaActual: Object, marcaActual: Object, filtros: Object });
 const modalImage = ref(null);
 const buscar = ref(props.filtros.buscar || '');
 let deb = null;
@@ -157,7 +157,10 @@ watch(buscar, (v) => { clearTimeout(deb); deb = setTimeout(() => { if (v.length 
 
             <!-- Search grouped -->
             <template v-else-if="modo === 'busqueda' && productosPorCategoria?.length">
-                <p class="text-[13px] text-text-muted mb-6">{{ totalResultados }} resultados para "{{ filtros.buscar }}"</p>
+                <p class="text-[13px] text-text-muted mb-6">
+                    {{ totalResultados }} resultados para "{{ filtros.buscar }}"
+                    <span v-if="mostrados && mostrados < totalResultados" class="text-text-secondary">— mostrando los primeros {{ mostrados }}. Escribí algo más preciso para achicar la lista.</span>
+                </p>
                 <div v-for="g in productosPorCategoria" :key="g.nombre" class="mb-12">
                     <div class="flex items-center gap-3 mb-5">
                         <div class="w-0.5 h-6 rounded-full bg-accent"></div>

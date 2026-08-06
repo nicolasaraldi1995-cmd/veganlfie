@@ -280,6 +280,10 @@ class PedidoResource extends Resource
                 Tables\Filters\SelectFilter::make('estado')
                     ->options(Pedido::ESTADOS),
             ])
+            // Sin esto Filament ofrece "Todos" en el desplegable, y la
+            // elección queda guardada en la sesión: quien la toque deja la
+            // pantalla colgada dos horas sin poder volver atrás.
+            ->paginated([25, 50, 100])
             ->actions([
                 // Sólo el icono, para que la tabla entre sin barra lateral. El
                 // nombre sigue estando en el globito al pasar por encima.

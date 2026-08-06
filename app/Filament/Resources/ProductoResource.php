@@ -356,6 +356,10 @@ class ProductoResource extends Resource
                 Tables\Filters\TernaryFilter::make('nuevo'),
                 Tables\Filters\TernaryFilter::make('activo'),
             ])
+            // Sin esto Filament ofrece "Todos" en el desplegable, y la
+            // elección queda guardada en la sesión: quien la toque deja la
+            // pantalla colgada dos horas sin poder volver atrás.
+            ->paginated([25, 50, 100])
             ->actions([
                 // Sólo el icono: esta tabla tiene once columnas y los dos
                 // botones con texto se llevaban 170px, que era justo lo que

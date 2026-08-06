@@ -23,27 +23,34 @@ class HomeController extends Controller
             'destino_tipo' => $b->destino_tipo,
         ]);
 
-        $pasillos = Categoria::activos()
+        $categorias = Categoria::activos()
             ->whereHas('productos', fn ($q) => $q->where('activo', true))
             ->withCount(['productos' => fn ($q) => $q->activos()])
             ->orderBy('orden')
-            ->get()
-            ->map(function ($cat) {
-                $productos = Producto::activos()
-                    ->where('categoria_id', $cat->id)
-                    ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()])
-                    ->orderBy('nombre')
-                    ->take(12)
-                    ->get();
+            ->get();
 
-                return [
-                    'id' => $cat->id,
-                    'nombre' => $cat->nombre,
-                    'slug' => $cat->slug,
-                    'total' => $cat->productos_count,
-                    'productos' => $productos,
-                ];
-            })
+        // Los productos de todas las categorías se traen de una sola vez. Antes
+        // acá había un map() que consultaba adentro del bucle: 276 consultas y
+        // 1,1 segundos para dibujar la portada, cuatro por cada una de las 66
+        // categorías. Se piden juntos y se reparten en PHP, que sale mucho más
+        // barato que 66 idas y vueltas a la base.
+        $porCategoria = Producto::activos()
+            ->whereIn('categoria_id', $categorias->pluck('id'))
+            ->with(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()])
+            ->orderBy('nombre')
+            ->get()
+            ->groupBy('categoria_id');
+
+        $pasillos = $categorias
+            ->map(fn ($cat) => [
+                'id' => $cat->id,
+                'nombre' => $cat->nombre,
+                'slug' => $cat->slug,
+                'total' => $cat->productos_count,
+                // El tope de doce queda acá: el pasillo muestra hasta doce y el
+                // resto se ve entrando a la categoría.
+                'productos' => ($porCategoria[$cat->id] ?? collect())->take(12)->values(),
+            ])
             ->filter(fn ($p) => $p['productos']->isNotEmpty())
             ->values();
 

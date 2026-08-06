@@ -94,6 +94,10 @@ class GastoResource extends Resource
                             ->when($data['hasta'], fn ($q, $d) => $q->whereDate('fecha', '<=', $d));
                     }),
             ])
+            // Sin esto Filament ofrece "Todos" en el desplegable, y la
+            // elección queda guardada en la sesión: quien la toque deja la
+            // pantalla colgada dos horas sin poder volver atrás.
+            ->paginated([25, 50, 100])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
