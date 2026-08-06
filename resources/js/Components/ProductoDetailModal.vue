@@ -1,12 +1,10 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
-import { envasePet } from '@/envase';
 
 const props = defineProps({ producto: { type: Object, default: null } });
 const emit = defineEmits(['close']);
 
 const presentaciones = computed(() => props.producto?.presentaciones ?? []);
-const pet = computed(() => envasePet(props.producto?.nombre));
 const imagen = computed(() => props.producto?.imagen_url ?? presentaciones.value.find((p) => p.imagen_url)?.imagen_url ?? null);
 
 // Además de la X y del clic afuera. Escape es lo que la gente aprieta primero
@@ -51,7 +49,6 @@ onUnmounted(() => document.removeEventListener('keydown', alTeclear));
                             <span v-if="producto.sin_tacc" class="text-[12px] font-bold uppercase tracking-wide text-accent-dim bg-white/95 px-2 py-1 rounded shadow-sm">Sin TACC</span>
                             <span v-if="producto.frio" class="text-[12px] font-bold uppercase tracking-wide text-white bg-sky-500 px-2 py-1 rounded shadow-sm">Frío</span>
                             <span v-if="producto.congelado" class="text-[12px] font-bold uppercase tracking-wide text-white bg-blue-600 px-2 py-1 rounded shadow-sm">Congelado</span>
-                            <span v-if="pet" class="text-[12px] font-bold uppercase tracking-wide text-white bg-slate-600 px-2 py-1 rounded shadow-sm">{{ pet }}</span>
                         </div>
                     </div>
 
