@@ -115,15 +115,30 @@ class Presentacion extends Model
     }
 
     /**
-     * Activa Y con precio. Una presentación sin precio no se puede vender: el
-     * operador no ve ese campo al cargar un producto, así que se guardaba en 0
-     * y quedaba publicada a $0, comprable. Que no aparezca es más sano que que
-     * se venda regalada; el admin la sigue viendo en el panel para ponerle el
-     * precio. Hoy no hay ninguna en ese estado (0 de 2161).
+     * Lo que se puede vender: activa, con precio, y de un producto que siga
+     * publicado.
+     *
+     * Sin precio no se puede vender: el operador no ve ese campo al cargar un
+     * producto, así que se guardaba en 0 y quedaba publicada a $0, comprable.
+     * Que no aparezca es más sano que que se venda regalada; el admin la sigue
+     * viendo en el panel para ponerle el precio.
+     *
+     * Y sin producto publicado tampoco. Antes esto miraba la presentación y
+     * nada más, así que apagar un producto no apagaba lo que colgaba de él:
+     * quedaban 331 productos dados de baja con 344 presentaciones vivas que el
+     * carrito aceptaba y el checkout cobraba. Preguntarle al producto en vez de
+     * copiarle el estado es a propósito: cuando el producto se vuelve a prender,
+     * sus presentaciones vuelven como estaban, sin perder las que estén
+     * apagadas de a una.
+     *
+     * whereHas también descarta las de un producto borrado, porque Producto usa
+     * borrado lógico.
      */
     public function scopeActivos($query)
     {
-        return $query->where('activo', true)->where('precio', '>', 0);
+        return $query->where('activo', true)
+            ->where('precio', '>', 0)
+            ->whereHas('producto', fn ($q) => $q->where('activo', true));
     }
 
     public function scopeConStock($query)

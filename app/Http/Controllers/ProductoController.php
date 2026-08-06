@@ -267,6 +267,12 @@ class ProductoController extends Controller
 
     public function show(Producto $producto)
     {
+        // Dado de baja es fuera del catálogo, también por el link directo. La
+        // ficha respondía igual, con precio y con el botón de comprar, y el
+        // carrito lo aceptaba: 331 productos apagados se podían comprar si
+        // alguien tenía la dirección guardada o llegaba desde Google.
+        abort_unless($producto->activo, 404);
+
         $producto->load(['marca', 'categoria', 'presentaciones' => fn ($q) => $q->activos()]);
 
         $relacionados = Producto::activos()
