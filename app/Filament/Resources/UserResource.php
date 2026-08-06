@@ -73,9 +73,13 @@ class UserResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
+                    ->wrap()
+                    ->width('26%')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->wrap()
+                    ->width('26%')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('role')
                     ->label('Rol')
@@ -131,8 +135,10 @@ class UserResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Sólo el icono, para que la tabla entre sin barra lateral. El
+                // nombre de cada botón sigue estando en el globito.
+                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\DeleteAction::make()->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

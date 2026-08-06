@@ -58,11 +58,14 @@ class PresentacionResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('producto.nombre')
                     ->label('Producto')
+                    ->wrap()
+                    ->width('28%')
                     ->searchable()
-                    ->sortable()
-                    ->limit(35),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('producto.marca.nombre')
                     ->label('Marca')
+                    ->wrap()
+                    ->width('16%')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('producto.categoria.nombre')

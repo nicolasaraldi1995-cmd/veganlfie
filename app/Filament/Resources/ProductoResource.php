@@ -272,6 +272,11 @@ class ProductoResource extends Resource
             ->columns([
                 Tables\Columns\ImageColumn::make('imagen')
                     ->circular()
+                    // Sin título: el ancho de esta columna lo fijaba la palabra
+                    // "Imagen" del encabezado, no la foto, y eran los últimos
+                    // píxeles que faltaban para entrar sin barra en 1280. Una
+                    // miniatura no necesita que le aclaren qué es.
+                    ->label('')
                     // Sin esto Filament le pregunta al disco si el archivo
                     // existe, una vez por fila. Con las imágenes en un bucket
                     // eso son 25 consultas por red sólo para dibujar la tabla, y
@@ -288,22 +293,35 @@ class ProductoResource extends Resource
                     ->trueColor('warning')
                     ->falseIcon('')
                     ->tooltip(fn (Producto $record) => blank($record->imagen) ? 'Sin foto' : null),
+                // Sin cortar con puntos suspensivos: el nombre baja de renglón.
+                // Antes se llevaba 311px él solo y empujaba la tabla fuera de
+                // la pantalla; cortarlo escondía el final del nombre, que es
+                // justo lo que hace falta para distinguir dos parecidos.
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable()
                     ->sortable()
-                    ->limit(40),
+                    ->wrap()
+                    ->width('24%'),
                 Tables\Columns\TextColumn::make('marca.nombre')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap()
+                    ->width('14%'),
                 Tables\Columns\TextColumn::make('categoria.nombre')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->wrap()
+                    ->width('12%'),
                 Tables\Columns\TextColumn::make('presentaciones_count')
                     ->counts('presentaciones')
                     ->label('Pres.')
                     ->sortable(),
+                // El encabezado baja de renglón en vez de ensanchar la columna:
+                // "Sin TACC" en una línea pedía 30px de más, que eran justo los
+                // que hacían aparecer la barra en una pantalla de 1280.
                 Tables\Columns\ToggleColumn::make('sin_tacc')
-                    ->label('Sin TACC'),
+                    ->label('Sin TACC')
+                    ->wrapHeader(),
                 Tables\Columns\ToggleColumn::make('frio')
                     ->label('Frío'),
                 Tables\Columns\ToggleColumn::make('congelado'),
@@ -339,8 +357,12 @@ class ProductoResource extends Resource
                 Tables\Filters\TernaryFilter::make('activo'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // Sólo el icono: esta tabla tiene once columnas y los dos
+                // botones con texto se llevaban 170px, que era justo lo que
+                // hacía aparecer la barra de desplazamiento. El nombre de cada
+                // uno sigue estando, en el globito al pasar por encima.
+                Tables\Actions\EditAction::make()->iconButton(),
+                Tables\Actions\DeleteAction::make()->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -281,7 +281,9 @@ class PedidoResource extends Resource
                     ->options(Pedido::ESTADOS),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                // Sólo el icono, para que la tabla entre sin barra lateral. El
+                // nombre sigue estando en el globito al pasar por encima.
+                Tables\Actions\ViewAction::make()->iconButton(),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('confirmar')
                         ->label('Confirmar')

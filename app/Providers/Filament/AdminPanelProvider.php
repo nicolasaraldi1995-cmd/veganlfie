@@ -14,6 +14,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -36,6 +37,16 @@ class AdminPanelProvider extends PanelProvider
             ])
             // Sin colapsar: plegado se veían sólo los iconos y no se entendía
             // qué era cada cosa. El menú siempre muestra el nombre al lado.
+            //
+            // Angosto: de fábrica se lleva 20rem (320px). 15.5rem es lo mínimo
+            // donde el nombre más largo del menú ("Pedido desde archivo", 145px
+            // de texto sobre 99px de marco) entra entero, sin recortarse con
+            // puntos suspensivos. Le quedan 72px más a la tabla.
+            ->sidebarWidth('15.5rem')
+            // Y que el contenido use todo lo que queda: de fábrica se corta
+            // en 80rem y en un monitor deja los costados vacíos mientras la
+            // tabla se desborda por dentro.
+            ->maxContentWidth(MaxWidth::Full)
             ->databaseTransactions()
             // De arriba abajo, por lo que más se usa en el día a día. Sin icono
             // en el grupo: Filament no admite icono en el grupo y en sus
