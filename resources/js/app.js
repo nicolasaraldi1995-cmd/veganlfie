@@ -6,7 +6,9 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// Escrito acá y no tomado del entorno: en producción la variable quedó como
+// "veganlfie" y se veía así en la pestaña del navegador.
+const appName = 'VeganLife';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
