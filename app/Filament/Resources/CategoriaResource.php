@@ -25,7 +25,7 @@ class CategoriaResource extends Resource
 
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 13;
+    protected static ?int $navigationSort = 14;
 
     /**
      * El middleware del panel ya frena a quien no es del equipo, pero eso

@@ -130,8 +130,8 @@ watch([buscar, marcaFiltro], () => {
                         Descargar para WhatsApp
                     </a>
                     <a :href="route('lista-precios.planilla')" class="inline-flex items-center gap-2 bg-surface-2 hover:bg-surface-3 text-text-secondary text-[13px] font-medium px-4 py-2.5 rounded-xl transition-all border border-border"
-                        title="Planilla para abrir en Excel, editar precios y volver a subirla desde el Importador">
-                        Planilla
+                        title="Excel ordenado por marca, con filtro y columna para cargar el pedido al proveedor. También sirve para editar precios y volver a subirlo desde el Importador.">
+                        Excel
                     </a>
                     <a :href="route('lista-precios.pdf')" class="inline-flex items-center gap-2 bg-surface-2 hover:bg-surface-3 text-text-secondary text-[13px] font-medium px-4 py-2.5 rounded-xl transition-all border border-border"
                         title="Versión para imprimir">

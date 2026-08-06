@@ -26,6 +26,10 @@ class MatrizDeAccesoTest extends TestCase
         'admin/users',
         'admin/configuracion',
         'admin/actualizar-precios',
+        // Costo, descuento del proveedor y margen de todo el catálogo juntos.
+        // Es la misma tabla que admin/presentacions (Stock), que el empleado sí
+        // abre: lo que las separa es qué columnas muestra cada una.
+        'admin/precios',
         'admin/ofertas-masivas',
         'admin/resumen-cuenta',
         // Subir un archivo acá reescribe el precio de todo el catálogo de una:

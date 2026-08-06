@@ -81,6 +81,32 @@ class Presentacion extends Model
     }
 
     /**
+     * El precio de venta que sale de los datos del proveedor: se le saca el
+     * descuento al costo, se le suma el margen y recién ahí el IVA.
+     *
+     * Vive acá porque la cuenta estaba escrita tres veces (el formulario de
+     * producto, IvaPorMarca y la pantalla de Precios). Con tres copias, el día
+     * que cambie el criterio dos de ellas quedan viejas y nadie se entera:
+     * salen precios distintos según por dónde se toque.
+     *
+     * Devuelve null cuando faltan costo o margen, que es lo que pasa hoy en
+     * todo el catálogo: quien llama decide si en ese caso deja el precio como
+     * está o hace otra cosa.
+     */
+    public static function calcularPrecio(float|string|null $costo, float|string|null $margen, float|string|null $descuento = null, bool $iva = false): ?float
+    {
+        if ($costo === null || $costo === '' || $margen === null || $margen === '') {
+            return null;
+        }
+
+        $precio = (float) $costo
+            * (1 - (float) ($descuento ?? 0) / 100)
+            * (1 + (float) $margen / 100);
+
+        return round($iva ? $precio * 1.21 : $precio, 2);
+    }
+
+    /**
      * @return BelongsTo<Producto, $this>
      */
     public function producto(): BelongsTo

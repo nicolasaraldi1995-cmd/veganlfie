@@ -20,7 +20,7 @@ class PresentacionResource extends Resource
 
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 11;
+    protected static ?int $navigationSort = 12;
 
     /**
      * El middleware del panel ya frena a quien no es del equipo, pero eso

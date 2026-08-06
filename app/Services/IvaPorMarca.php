@@ -79,16 +79,15 @@ class IvaPorMarca
      */
     private function precioRecalculado(Presentacion $presentacion, bool $conIva): ?float
     {
-        $costo = (float) $presentacion->precio_costo;
-        $margen = $presentacion->margen_porcentaje;
-
-        if ($costo <= 0 || $margen === null) {
+        if ((float) $presentacion->precio_costo <= 0) {
             return null;
         }
 
-        $descuento = (float) ($presentacion->descuento_porcentaje ?? 0);
-        $precio = $costo * (1 - $descuento / 100) * (1 + (float) $margen / 100);
-
-        return $conIva ? $precio * self::FACTOR : $precio;
+        return Presentacion::calcularPrecio(
+            $presentacion->precio_costo,
+            $presentacion->margen_porcentaje,
+            $presentacion->descuento_porcentaje,
+            $conIva,
+        );
     }
 }

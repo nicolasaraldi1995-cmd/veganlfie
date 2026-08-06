@@ -231,22 +231,18 @@ class ProductoResource extends Resource
 
     private static function recalcularPrecio(Forms\Get $get, Forms\Set $set): void
     {
-        $costo = $get('precio_costo');
-        $margen = $get('margen_porcentaje');
+        $precio = Presentacion::calcularPrecio(
+            $get('precio_costo'),
+            $get('margen_porcentaje'),
+            $get('descuento_porcentaje'),
+            (bool) $get('iva'),
+        );
 
-        if ($costo === null || $costo === '' || $margen === null || $margen === '') {
+        if ($precio === null) {
             return;
         }
 
-        $descuento = (float) ($get('descuento_porcentaje') ?? 0);
-
-        $precio = (float) $costo * (1 - $descuento / 100) * (1 + (float) $margen / 100);
-
-        if ($get('iva')) {
-            $precio *= 1.21;
-        }
-
-        $set('precio', round($precio, 2));
+        $set('precio', $precio);
 
         // Si ya había una oferta % cargada, su precio de oferta quedaba con
         // el valor viejo (calculado sobre el precio anterior) hasta que se

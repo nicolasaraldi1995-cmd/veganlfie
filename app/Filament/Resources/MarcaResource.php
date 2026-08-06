@@ -19,7 +19,7 @@ class MarcaResource extends Resource
 
     protected static ?string $navigationGroup = 'Catálogo';
 
-    protected static ?int $navigationSort = 12;
+    protected static ?int $navigationSort = 13;
 
     /**
      * El middleware del panel ya frena a quien no es del equipo, pero eso
