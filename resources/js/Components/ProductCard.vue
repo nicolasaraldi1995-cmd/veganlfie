@@ -89,6 +89,18 @@ const imageSrc = computed(() => {
     if (props.producto.imagen_url) return props.producto.imagen_url;
     return null;
 });
+
+// PET y PETG son el envase de plástico, y en el nombre casi siempre van al
+// final -- justo donde el título se corta a dos líneas, así que dos productos
+// que solo se diferencian en el envase se ven idénticos en la tarjeta.
+//
+// Se busca como palabra suelta y no como pedazo de texto: de los once
+// productos con "pet" adentro, cinco son "petaca" y "pétalos de rosa".
+//
+// Sin lookbehind a propósito, aunque sería más prolijo: Safari recién lo
+// soporta desde 2023, y una expresión regular que el navegador no entiende no
+// rompe esta línea, rompe el archivo entero. \b alcanza y anda en todos.
+const envasePet = computed(() => props.producto.nombre?.match(/\bpetg?\b/i)?.[0].toUpperCase() ?? null);
 </script>
 
 <template>
@@ -116,6 +128,7 @@ const imageSrc = computed(() => {
                 <span v-if="producto.sin_tacc" class="text-[8px] font-bold uppercase tracking-wider text-accent-dim bg-white/95 px-1.5 py-0.5 rounded shadow-sm">Sin TACC</span>
                 <span v-if="producto.frio" class="text-[8px] font-bold uppercase tracking-wider text-white bg-sky-500 px-1.5 py-0.5 rounded shadow-sm">Frío</span>
                 <span v-if="producto.congelado" class="text-[8px] font-bold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded shadow-sm">Congelado</span>
+                <span v-if="envasePet" class="text-[8px] font-bold uppercase tracking-wider text-white bg-slate-600 px-1.5 py-0.5 rounded shadow-sm">{{ envasePet }}</span>
             </div>
         </div>
 
