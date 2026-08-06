@@ -6,6 +6,7 @@ use App\Filament\Resources\PedidoResource\Pages;
 use App\Mail\PedidoEstadoMail;
 use App\Models\Pago;
 use App\Models\Pedido;
+use App\Models\PedidoItem;
 use App\Models\Presentacion;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -152,7 +153,10 @@ class PedidoResource extends Resource
                         // llegaba desde el navegador: con $wire.set se podía
                         // dejar un pedido de $20.000 en $2.
                         ->mutateRelationshipDataBeforeCreateUsing(fn (array $data) => self::precioDeLaBase($data))
-                        ->mutateRelationshipDataBeforeSaveUsing(fn (array $data) => self::precioDeLaBase($data))
+                        // Filament inyecta acá el PedidoItem que ya está en la
+                        // base, y sólo en los renglones que ya existían. Es lo
+                        // que distingue "renglón nuevo" de "renglón histórico".
+                        ->mutateRelationshipDataBeforeSaveUsing(fn (array $data, PedidoItem $record) => self::precioDeLaBase($data, $record))
                         ->addActionLabel('Agregar producto')
                         ->defaultItems(0)
                         ->reorderable(false)
@@ -357,21 +361,17 @@ class PedidoResource extends Resource
 
     /**
      * Deja el ítem con el precio que corresponde, sin creerle al navegador.
-     * El admin sí puede fijar un precio a mano (para eso ve el campo); al resto
-     * se le repone el de la presentación. El subtotal se calcula siempre acá:
-     * el campo está deshabilitado en pantalla, así que nunca es un dato, es una
-     * cuenta.
+     *
+     * El subtotal se calcula siempre acá: el campo está deshabilitado en
+     * pantalla, así que nunca es un dato, es una cuenta.
      *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private static function precioDeLaBase(array $data): array
+    private static function precioDeLaBase(array $data, ?PedidoItem $guardado = null): array
     {
         $cantidad = max(1, (int) ($data['cantidad'] ?? 1));
-
-        $precio = (auth()->user()?->isAdmin() ?? false)
-            ? (float) ($data['precio_unitario'] ?? 0)
-            : (float) (Presentacion::find($data['presentacion_id'] ?? null)->precio_final ?? 0);
+        $precio = self::precioDelItem($data, $guardado);
 
         return [
             ...$data,
@@ -379,6 +379,39 @@ class PedidoResource extends Resource
             'precio_unitario' => $precio,
             'subtotal' => round($precio * $cantidad, 2),
         ];
+    }
+
+    /**
+     * Qué precio le corresponde a este renglón.
+     *
+     * La distinción que importa es renglón nuevo contra renglón que ya existe.
+     * Un pedido de junio se cobró a los precios de junio: ese número es un
+     * hecho, no un dato para recalcular. Antes acá se reponía el precio del
+     * catálogo de HOY en cada guardado, así que al operador le alcanzaba con
+     * abrir un pedido viejo a corregir el domicilio y apretar guardar para
+     * reescribir los nueve renglones de los cuatro pedidos: $3.079.670
+     * pasaban a $247.761 sin que nadie tocara un precio. Y si además la
+     * presentación estaba borrada, el precio quedaba en $0.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private static function precioDelItem(array $data, ?PedidoItem $guardado): float
+    {
+        // El dueño fija el precio a mano: para eso es el único que ve el campo.
+        if (auth()->user()?->isAdmin() ?? false) {
+            return (float) ($data['precio_unitario'] ?? 0);
+        }
+
+        // Renglón que ya existe y sigue apuntando al mismo producto: vale lo
+        // que se cobró. El campo viene oculto para el operador pero igual viaja
+        // desde su navegador, así que el valor bueno se saca de la base.
+        if ($guardado !== null && (int) $guardado->presentacion_id === (int) ($data['presentacion_id'] ?? 0)) {
+            return (float) $guardado->precio_unitario;
+        }
+
+        // Renglón nuevo, o al que le cambiaron el producto: precio del catálogo.
+        // Sin ?->: el ?? ya tapa el acceso sobre null.
+        return (float) (Presentacion::find($data['presentacion_id'] ?? null)->precio_final ?? 0);
     }
 
     // PedidoPolicy (view/update) existe para el autoservicio del cliente en
