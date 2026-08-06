@@ -175,8 +175,13 @@ watch([buscar, marcaFiltro], () => {
                     </button>
 
                     <!-- Products table -->
-                    <div v-if="expandidas[cat.id]" class="border-t border-border">
-                        <table class="w-full text-[12px]">
+                    <!-- Se puede arrastrar de costado: en el celular la tabla mide
+                         623px dentro de 325, y la tarjeta padre tiene overflow-hidden,
+                         así que se recortaba sin barra. Quedaban invisibles e
+                         inalcanzables Oferta, Stock, Cant. e Importe: la planilla
+                         entera, que es para lo que se usa esta pantalla. -->
+                    <div v-if="expandidas[cat.id]" class="border-t border-border overflow-x-auto">
+                        <table class="w-full min-w-[640px] text-[12px]">
                             <thead>
                                 <tr class="bg-surface-2/50">
                                     <th class="px-5 py-2 text-left font-medium text-text-muted">Producto</th>

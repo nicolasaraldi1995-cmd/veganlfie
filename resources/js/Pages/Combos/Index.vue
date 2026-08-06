@@ -2,9 +2,11 @@
 import PublicLayout from '@/Layouts/PublicLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import ComboDetailModal from '@/Components/ComboDetailModal.vue';
-import { Head } from '@inertiajs/vue3';
-import { router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+
+// Ver el comentario de Home.vue: sin cuenta el precio viene null.
+const puedeVerPrecios = computed(() => !!usePage().props.auth?.puedeVerPrecios);
 defineProps({ combos: Object });
 const comboSeleccionado = ref(null);
 function addCombo(id) {
@@ -30,13 +32,19 @@ function addCombo(id) {
                         </div>
                         <div class="flex items-center justify-between mt-4">
                             <div>
-                                <del v-if="c.descuento_porcentaje && c.precio_sin_descuento !== c.precio_final" class="text-[12px] text-text-muted">${{ Math.round(c.precio_sin_descuento).toLocaleString('es-AR') }}</del>
-                                <span v-if="c.descuento_porcentaje" class="text-[11px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
-                                <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
+                                <template v-if="puedeVerPrecios">
+                                    <del v-if="c.descuento_porcentaje && c.precio_sin_descuento !== c.precio_final" class="text-[12px] text-text-muted">${{ Math.round(c.precio_sin_descuento).toLocaleString('es-AR') }}</del>
+                                    <span v-if="c.descuento_porcentaje" class="text-[12px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
+                                    <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
+                                </template>
+                                <p v-else class="text-[13px] font-semibold text-text-secondary">Precio para clientes</p>
                             </div>
-                            <button @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">
+                            <button v-if="puedeVerPrecios" @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">
                                 Agregar
                             </button>
+                            <Link v-else :href="route('login')" @click.stop class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all">
+                                Ingresá
+                            </Link>
                         </div>
                     </div>
                 </div>

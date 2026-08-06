@@ -10,6 +10,9 @@ const page = usePage();
 const modalImage = ref(null);
 const mostrarComparacion = ref(false);
 
+// Sin cuenta el servidor no manda precios: viene todo en null y el total en 0.
+// Mostrar "$0" sería peor que no mostrar nada.
+const puedeVerPrecios = computed(() => !!page.props.auth?.puedeVerPrecios);
 const FREE = computed(() => page.props.envioGratisDesde);
 const progress = computed(() => Math.min((props.total / FREE.value) * 100, 100));
 const tieneFrioOCongelado = computed(() => props.items.some(i => i.frio || i.congelado));
@@ -53,8 +56,10 @@ function agregarFaltante(id) { router.post(route('cart.add'), { presentacion_id:
                 <span v-if="items.length" class="text-[13px] text-text-muted">{{ items.length }} producto{{ items.length === 1 ? '' : 's' }}</span>
             </div>
             <div v-if="items.length">
-                <div class="bg-surface-1 rounded-2xl border border-border p-5 mb-6">
-                    <div class="flex justify-between text-[11px] mb-2">
+                <!-- La barra de envío gratis se calcula con el total, que sin cuenta
+                     viene en 0: al invitado le decía que le faltaba el monto entero. -->
+                <div v-if="puedeVerPrecios" class="bg-surface-1 rounded-2xl border border-border p-5 mb-6">
+                    <div class="flex justify-between text-[12px] mb-2">
                         <span v-if="total < FREE" class="text-accent">${{ (FREE - total).toLocaleString('es-AR') }} para envío gratis</span>
                         <span v-else class="text-accent">Envío gratis</span>
                     </div>
@@ -97,25 +102,37 @@ function agregarFaltante(id) { router.post(route('cart.add'), { presentacion_id:
                 <div v-for="grupo in grupos" :key="grupo.nombre" class="mb-6">
                     <div class="flex items-center justify-between mb-2 px-1">
                         <h2 class="text-[12px] font-semibold text-text-secondary uppercase tracking-wide">{{ grupo.nombre }}</h2>
-                        <span class="text-[12px] text-text-muted">${{ grupo.subtotal.toLocaleString('es-AR') }}</span>
+                        <span v-if="puedeVerPrecios" class="text-[12px] text-text-muted">${{ grupo.subtotal.toLocaleString('es-AR') }}</span>
                     </div>
                     <div class="bg-surface-1 rounded-2xl border border-border divide-y divide-border">
-                        <div v-for="item in grupo.items" :key="item.presentacion_id" class="p-4 flex items-center gap-4">
+                        <!-- El renglón puede partirse en dos. En un celular los anchos fijos
+                             (foto 56 + contador + subtotal 80 + la cruz, más los espacios)
+                             sumaban más que el renglón entero, y la columna del nombre
+                             quedaba en cero: se veía la foto y el precio, pero no qué
+                             producto era. -->
+                        <div v-for="item in grupo.items" :key="item.presentacion_id" class="p-4 flex flex-wrap items-center gap-x-4 gap-y-3">
                             <div class="w-14 h-14 rounded-lg bg-surface-2 overflow-hidden shrink-0">
                                 <img v-if="item.imagen" :src="item.imagen" :alt="item.nombre" class="w-full h-full object-cover" />
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-[13px] font-medium text-text truncate">{{ item.nombre }}</p>
-                                <p class="text-[11px] text-text-muted">{{ item.marca }} · {{ item.unidad }}</p>
-                                <p class="text-[12px] text-text-secondary mt-0.5">${{ item.precio.toLocaleString('es-AR') }}</p>
+                            <div class="flex-1 min-w-[9rem]">
+                                <p class="text-[13px] font-medium text-text">{{ item.nombre }}</p>
+                                <p class="text-[12px] text-text-muted">{{ item.marca }} · {{ item.unidad }}</p>
+                                <!-- Sin cuenta el servidor no manda precios, y llamarle
+                                     .toLocaleString() a un null tiraba la pantalla entera
+                                     en blanco. -->
+                                <p v-if="item.precio !== null" class="text-[12px] text-text-secondary mt-0.5">${{ item.precio.toLocaleString('es-AR') }}</p>
                             </div>
-                            <div class="flex items-center bg-surface-3 rounded-lg shrink-0">
-                                <button @click="updateQty(item.presentacion_id, item.cantidad - 1)" class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text text-sm transition">−</button>
-                                <span class="w-6 h-8 flex items-center justify-center text-[12px] font-semibold text-text">{{ item.cantidad }}</span>
-                                <button @click="updateQty(item.presentacion_id, item.cantidad + 1)" class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text text-sm transition">+</button>
+                            <div class="flex items-center gap-4 ml-auto shrink-0">
+                                <div class="flex items-center bg-surface-3 rounded-lg">
+                                    <button @click="updateQty(item.presentacion_id, item.cantidad - 1)" aria-label="Quitar uno" class="w-10 h-10 flex items-center justify-center text-text-muted hover:text-text text-sm transition">−</button>
+                                    <span class="w-6 h-10 flex items-center justify-center text-[12px] font-semibold text-text">{{ item.cantidad }}</span>
+                                    <button @click="updateQty(item.presentacion_id, item.cantidad + 1)" aria-label="Agregar uno" class="w-10 h-10 flex items-center justify-center text-text-muted hover:text-text text-sm transition">+</button>
+                                </div>
+                                <p v-if="item.subtotal !== null" class="text-[13px] font-semibold text-text w-20 text-right">${{ item.subtotal.toLocaleString('es-AR') }}</p>
+                                <!-- Con espacio alrededor: borra el renglón, estaba pegado al
+                                     "+" y medía 16px de lado. -->
+                                <button @click="remove(item.presentacion_id)" aria-label="Sacar del carrito" class="p-3 -m-1 text-text-muted hover:text-red-400 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                             </div>
-                            <p class="text-[13px] font-semibold text-text w-20 text-right shrink-0">${{ item.subtotal.toLocaleString('es-AR') }}</p>
-                            <button @click="remove(item.presentacion_id)" class="text-text-muted hover:text-red-400 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
                     </div>
                 </div>
@@ -123,11 +140,13 @@ function agregarFaltante(id) { router.post(route('cart.add'), { presentacion_id:
                 <div class="mt-2 bg-surface-1 rounded-2xl border border-border p-6">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-text-secondary">Total</span>
-                        <span class="text-xl font-semibold text-text">${{ total.toLocaleString('es-AR') }}</span>
+                        <span v-if="puedeVerPrecios" class="text-xl font-semibold text-text">${{ total.toLocaleString('es-AR') }}</span>
+                        <span v-else class="text-[13px] font-semibold text-text-secondary">Precio para clientes</span>
                     </div>
                     <div class="flex gap-3">
                         <Link :href="route('productos.index')" class="flex-1 text-center border border-border text-text-secondary py-3 rounded-xl hover:bg-surface-2 hover:text-text transition text-[13px] font-medium">Seguir comprando</Link>
-                        <Link :href="route('checkout.index')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white py-3 rounded-xl transition text-[13px] font-medium">Finalizar compra</Link>
+                        <Link v-if="puedeVerPrecios" :href="route('checkout.index')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white py-3 rounded-xl transition text-[13px] font-medium">Finalizar compra</Link>
+                        <Link v-else :href="route('login')" class="flex-1 text-center bg-accent hover:bg-accent-bright text-white py-3 rounded-xl transition text-[13px] font-medium">Ingresá para comprar</Link>
                     </div>
                 </div>
 

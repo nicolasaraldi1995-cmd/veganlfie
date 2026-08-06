@@ -6,8 +6,12 @@ import ImageModal from '@/Components/ImageModal.vue';
 import ComboDetailModal from '@/Components/ComboDetailModal.vue';
 import BannerSlider from '@/Components/BannerSlider.vue';
 import WelcomeGuideModal from '@/Components/WelcomeGuideModal.vue';
-import { Link, Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Link, Head, router, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+
+// Sin cuenta el servidor no manda el precio del combo: viene null, y
+// Math.round(null) es 0, asi que en la portada se leia "combito $0".
+const puedeVerPrecios = computed(() => !!usePage().props.auth?.puedeVerPrecios);
 function addCombo(id) { router.post(route('cart.add-combo'), { combo_id: id }, { preserveScroll: true }); }
 
 const props = defineProps({ banners: Array, pasillos: Array, combos: Array, masVendidos: Array, mostrarGuiaBienvenida: Boolean });
@@ -82,11 +86,15 @@ function scrollTo(id) {
                             <p v-if="c.descripcion" class="text-sm text-text-muted mt-1 line-clamp-2">{{ c.descripcion }}</p>
                             <div class="flex items-center justify-between mt-3">
                                 <div>
-                                <del v-if="c.descuento_porcentaje && c.precio_sin_descuento !== c.precio_final" class="text-[12px] text-text-muted">${{ Math.round(c.precio_sin_descuento).toLocaleString('es-AR') }}</del>
-                                <span v-if="c.descuento_porcentaje" class="text-[11px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
-                                <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
-                            </div>
-                                <button @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">Agregar</button>
+                                    <template v-if="puedeVerPrecios">
+                                        <del v-if="c.descuento_porcentaje && c.precio_sin_descuento !== c.precio_final" class="text-[12px] text-text-muted">${{ Math.round(c.precio_sin_descuento).toLocaleString('es-AR') }}</del>
+                                        <span v-if="c.descuento_porcentaje" class="text-[12px] text-red-400 ml-1">-{{ c.descuento_porcentaje }}%</span>
+                                        <p class="text-lg font-semibold text-text">${{ Math.round(c.precio_final).toLocaleString('es-AR') }}</p>
+                                    </template>
+                                    <p v-else class="text-[13px] font-semibold text-text-secondary">Precio para clientes</p>
+                                </div>
+                                <button v-if="puedeVerPrecios" @click.stop="addCombo(c.id)" class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all active:scale-[0.98]">Agregar</button>
+                                <Link v-else :href="route('login')" @click.stop class="bg-accent hover:bg-accent-bright text-white text-[12px] font-semibold px-4 py-2 rounded-lg transition-all">Ingresá</Link>
                             </div>
                         </div>
                     </div>

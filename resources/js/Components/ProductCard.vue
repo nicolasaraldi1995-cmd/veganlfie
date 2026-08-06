@@ -17,9 +17,16 @@ const enOferta = computed(() => {
     if (!selected.value) return false;
     const p = selected.value;
     if (!p.oferta_porcentaje && !p.oferta_precio) return false;
-    const now = new Date().toISOString().split('T')[0];
-    if (p.oferta_inicio && p.oferta_inicio > now) return false;
-    if (p.oferta_fin && p.oferta_fin < now) return false;
+    // Las fechas vienen con hora ("2026-08-06T00:00:00Z"); comparadas como
+    // texto contra "2026-08-06" el sufijo las hacia mayores, y una oferta que
+    // arrancaba hoy no se mostraba en todo su primer dia: el carton -X% no
+    // salia pero el carrito ya cobraba con descuento.
+    const now = new Date().toISOString().slice(0, 10);
+    const soloFecha = (f) => (f ? String(f).slice(0, 10) : null);
+    const inicio = soloFecha(p.oferta_inicio);
+    const fin = soloFecha(p.oferta_fin);
+    if (inicio && inicio > now) return false;
+    if (fin && fin < now) return false;
     return true;
 });
 

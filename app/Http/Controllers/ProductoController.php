@@ -226,6 +226,12 @@ class ProductoController extends Controller
         if ($request->boolean('sin_tacc')) {
             $query->sinTacc();
         }
+        // Faltaba éste. El enlace "Fríos" del menú está en todas las pantallas y
+        // devolvía el catálogo completo, como si no hubiera filtrado nada: el
+        // scope existía y nadie lo llamaba. En la rama de búsqueda sí estaba.
+        if ($request->boolean('frio')) {
+            $query->frios();
+        }
         if ($request->boolean('congelado')) {
             $query->congelados();
         }

@@ -38,15 +38,19 @@ watch(primerError, (texto) => {
         enter-from-class="opacity-0 translate-y-3"
         leave-active-class="transition duration-150 ease-in"
         leave-to-class="opacity-0 translate-y-3">
+        <!-- Arriba en el celular: abajo se plantaba justo encima de "Agregar al
+             carrito" y de "Finalizar compra" durante cinco segundos, o sea
+             tapando el botón en el momento en que el cliente quiere reintentar.
+             En pantalla grande va abajo a la derecha, que ahí no molesta. -->
         <div v-if="visible" role="alert" aria-live="polite"
-            class="fixed inset-x-3 bottom-4 z-50 mx-auto max-w-md sm:inset-x-auto sm:right-4">
+            class="fixed inset-x-3 top-4 z-[60] mx-auto max-w-md sm:inset-x-auto sm:right-4 sm:top-auto sm:bottom-4">
             <div class="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/95 px-4 py-3 shadow-lg backdrop-blur-sm">
                 <svg class="mt-0.5 h-5 w-5 shrink-0 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p class="flex-1 text-sm font-medium leading-snug text-white">{{ mensaje }}</p>
                 <button @click="visible = false" aria-label="Cerrar aviso"
-                    class="shrink-0 text-white/70 transition hover:text-white">
+                    class="shrink-0 -m-2 p-2 text-white/70 transition hover:text-white">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
