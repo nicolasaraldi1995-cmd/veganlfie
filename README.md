@@ -114,3 +114,18 @@ Con `APP_ENV=production`, el sitio ya fuerza que todas las URLs generadas usen `
 - El stock de `Presentacion` se reserva/libera automáticamente vía `PedidoItemObserver` cada vez que se crea, actualiza o elimina un `PedidoItem` (checkout, autoservicio del cliente en "Mis pedidos", o edición desde el panel admin). Al cancelar un pedido desde el panel, `Pedido::restaurarStock()` devuelve las unidades reservadas.
 - La lógica de carrito (sesión) vive en `App\Services\CartService`, compartida entre `CartController` y `CheckoutController`.
 - Pagos (`Pago`) son registros manuales (efectivo, transferencia, MercadoPago informado) — no hay integración con una pasarela de pago online todavía.
+
+### Castellano e inglés en el código
+
+El código está mezclado, y **es a propósito**: la costura está entre lo que trajo Laravel y lo que se escribió para este negocio.
+
+- **Lo del negocio va en castellano.** `Producto`, `Marca`, `Presentacion`, `Pedido`, `Gasto`, `Pago`, `CargarPedido`, `ResumenCuenta`, `ActualizarPrecios`. Las rutas también: `/productos`, `/carrito`, `/marcas`, `/lista-de-precios`. Los comentarios y los nombres de los tests, igual (hoy son 823 líneas de comentario en castellano contra 31 en inglés).
+- **Lo que trae el framework se deja como viene.** `User`, `Profile`, `Cart`, `Checkout`, `/dashboard`, y todos los componentes de Breeze (`InputError`, `PrimaryButton`, `Modal`, `Dropdown`...). Renombrarlos solo agrega riesgo.
+- **Al editar, seguí lo que ya tiene el archivo alrededor.** Un método nuevo en `ProductImportService` (que está alternado desde antes) va en castellano; uno nuevo en `CartService` puede seguir el estilo de sus vecinos.
+
+Dos cosas que quedaron fuera de la regla, anotadas para no volver a discutirlas:
+
+- **Los estados del pedido están guardados en inglés en la base** (`pending`, `confirmed`, `preparing`, `shipped`, `delivered`, `canceled`) y se muestran traducidos vía `Pedido::ESTADOS`. Eso ya no es un nombre, son datos: cambiarlo pide una migración sobre todos los pedidos más el código y los tests que los nombran. **No vale la pena.**
+- `ProductImportService` alterna los dos idiomas dentro del mismo archivo (`parsePrice` al lado de `claveDeNombre`). Se empareja el día que haya que abrirlo por otra cosa, no antes.
+
+**No hacer un renombrado grande.** Es mucho riesgo y cero valor para quien usa la web.
