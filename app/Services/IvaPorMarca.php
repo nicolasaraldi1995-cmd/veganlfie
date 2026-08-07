@@ -34,6 +34,9 @@ class IvaPorMarca
             $productoIds = Producto::withTrashed()->where('marca_id', $marca->id)->pluck('id');
 
             Presentacion::withTrashed()
+                // La marca se trae de entrada: margenEfectivo() la consulta y
+                // sin esto serían dos consultas por cada presentación.
+                ->with('producto.marca')
                 ->whereIn('producto_id', $productoIds)
                 // Las que ya están como corresponde no se tocan: así prender dos
                 // veces la misma marca no suma el 21% dos veces.
@@ -83,10 +86,12 @@ class IvaPorMarca
             return null;
         }
 
+        // Efectivos: el margen y el descuento pueden venir de la marca, que es
+        // justamente la que se está tocando acá.
         return Presentacion::calcularPrecio(
             $presentacion->precio_costo,
-            $presentacion->margen_porcentaje,
-            $presentacion->descuento_porcentaje,
+            $presentacion->margenEfectivo(),
+            $presentacion->descuentoEfectivo(),
             $conIva,
         );
     }

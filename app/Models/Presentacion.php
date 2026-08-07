@@ -107,6 +107,47 @@ class Presentacion extends Model
     }
 
     /**
+     * El margen que le corresponde a esta presentación: el suyo si lo tiene
+     * cargado, y si no, el de su marca.
+     *
+     * La idea es no escribir el mismo número 2161 veces. Se carga una vez en la
+     * marca y sus productos lo toman prestado; el día que la marca cambie a
+     * 35%, cambian todos solos. El que necesite otro margen se lo escribe
+     * encima y deja de seguirla.
+     *
+     * Prestado y no copiado: si al abrir un producto se le grabara el número de
+     * la marca, ese producto quedaría clavado en 30% para siempre y cambiar la
+     * marca ya no lo movería.
+     */
+    public function margenEfectivo(): ?float
+    {
+        return $this->heredadoDeLaMarca('margen_porcentaje');
+    }
+
+    public function descuentoEfectivo(): ?float
+    {
+        return $this->heredadoDeLaMarca('descuento_porcentaje');
+    }
+
+    /**
+     * Es un método y no un accesor a propósito: costo, margen y descuento son
+     * datos internos que no salen del panel, y un accesor corre el riesgo de
+     * terminar en $appends y viajar al navegador de cualquiera.
+     */
+    private function heredadoDeLaMarca(string $campo): ?float
+    {
+        $propio = $this->{$campo};
+
+        if ($propio !== null) {
+            return (float) $propio;
+        }
+
+        $deLaMarca = $this->producto?->marca?->{$campo};
+
+        return $deLaMarca !== null ? (float) $deLaMarca : null;
+    }
+
+    /**
      * @return BelongsTo<Producto, $this>
      */
     public function producto(): BelongsTo

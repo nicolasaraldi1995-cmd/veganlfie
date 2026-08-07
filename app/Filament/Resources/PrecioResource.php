@@ -86,15 +86,21 @@ class PrecioResource extends Resource
                     ->rules(['nullable', 'numeric', 'min:0'])
                     ->afterStateUpdated(fn (Presentacion $record) => self::rehacerElPrecio($record))
                     ->sortable(),
+                // Vacío no significa "no hay": significa "el de la marca". El
+                // número gris que se ve es el que está cargado en Catálogo →
+                // Marcas, y se aplica a todos sus productos. Escribir encima lo
+                // deja propio; borrarlo lo devuelve a seguir a la marca.
                 Tables\Columns\TextInputColumn::make('descuento_porcentaje')
                     ->label('Desc. prov. %')
                     ->type('number')
                     ->rules(['nullable', 'numeric', 'min:0', 'max:100'])
+                    ->extraInputAttributes(fn (Presentacion $record) => self::pistaDeLaMarca($record->producto?->marca?->descuento_porcentaje))
                     ->afterStateUpdated(fn (Presentacion $record) => self::rehacerElPrecio($record)),
                 Tables\Columns\TextInputColumn::make('margen_porcentaje')
                     ->label('Margen %')
                     ->type('number')
                     ->rules(['nullable', 'numeric', 'min:-99', 'max:500'])
+                    ->extraInputAttributes(fn (Presentacion $record) => self::pistaDeLaMarca($record->producto?->marca?->margen_porcentaje))
                     ->afterStateUpdated(fn (Presentacion $record) => self::rehacerElPrecio($record)),
                 Tables\Columns\IconColumn::make('iva')
                     ->label('IVA')
@@ -127,6 +133,9 @@ class PrecioResource extends Resource
                         false: fn ($q) => $q->where(fn ($s) => $s->whereNull('precio_costo')->orWhere('precio_costo', '<=', 0)),
                     ),
             ])
+            // La marca se trae de entrada: sin esto, las dos columnas que
+            // muestran el valor heredado piden producto y marca fila por fila.
+            ->modifyQueryUsing(fn ($query) => $query->with('producto.marca'))
             ->defaultSort('producto.nombre')
             // Igual que el resto del panel: sin "Todos", que con 2161 filas deja
             // la pantalla colgada y encima queda guardado en la sesión.
@@ -190,7 +199,21 @@ class PrecioResource extends Resource
     }
 
     /**
+     * El número de la marca, como texto gris adentro del casillero vacío.
+     *
+     * @return array<string, string>
+     */
+    private static function pistaDeLaMarca(float|string|null $valor): array
+    {
+        return ['placeholder' => $valor === null ? '' : rtrim(rtrim(number_format((float) $valor, 2, ',', ''), '0'), ',')];
+    }
+
+    /**
      * Rehace el precio de venta a partir de costo, descuento y margen, y guarda.
+     *
+     * Usa el margen y el descuento efectivos, o sea los de la marca cuando el
+     * producto no tiene los suyos: si no, cargar el costo de un producto de una
+     * marca con 30% cargado no calcularía nada.
      *
      * Si faltan costo o margen no hay cuenta que hacer: queda el precio que ya
      * tenía, salvo que quien llama traiga uno de repuesto.
@@ -199,8 +222,8 @@ class PrecioResource extends Resource
     {
         $precio = Presentacion::calcularPrecio(
             $presentacion->precio_costo,
-            $presentacion->margen_porcentaje,
-            $presentacion->descuento_porcentaje,
+            $presentacion->margenEfectivo(),
+            $presentacion->descuentoEfectivo(),
             (bool) $presentacion->iva,
         ) ?? $siNoSePuedeCalcular;
 

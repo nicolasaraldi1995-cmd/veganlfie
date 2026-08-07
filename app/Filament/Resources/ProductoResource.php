@@ -113,7 +113,7 @@ class ProductoResource extends Resource
                                     ->minValue(0)
                                     ->maxValue(100)
                                     ->suffix('%')
-                                    ->afterStateHydrated(fn (Forms\Components\TextInput $component, Forms\Get $get) => self::heredarDeMarcaSiVacio($component, $get, 'descuento_porcentaje'))
+                                    ->placeholder(fn (Forms\Get $get) => self::pistaDeLaMarca($get, 'descuento_porcentaje'))
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set)),
                                 Forms\Components\TextInput::make('margen_porcentaje')
@@ -122,10 +122,10 @@ class ProductoResource extends Resource
                                     ->minValue(-99)
                                     ->maxValue(500)
                                     ->suffix('%')
-                                    ->afterStateHydrated(fn (Forms\Components\TextInput $component, Forms\Get $get) => self::heredarDeMarcaSiVacio($component, $get, 'margen_porcentaje'))
+                                    ->placeholder(fn (Forms\Get $get) => self::pistaDeLaMarca($get, 'margen_porcentaje'))
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(fn (Forms\Get $get, Forms\Set $set) => self::recalcularPrecio($get, $set))
-                                    ->helperText('Completá costo y margen para calcular el precio de arriba solo.'),
+                                    ->helperText('Si lo dejás vacío usa el de la marca. Completá costo y margen para calcular el precio de arriba solo.'),
                                 Forms\Components\Toggle::make('iva')
                                     ->label('IVA (21%)')
                                     ->live()
@@ -187,20 +187,36 @@ class ProductoResource extends Resource
         ]);
     }
 
-    private static function heredarDeMarcaSiVacio(Forms\Components\TextInput $component, Forms\Get $get, string $campo): void
+    /**
+     * El valor de la marca, como texto gris adentro del casillero vacío.
+     *
+     * Antes esto escribía el número de la marca DENTRO del campo. Se veía igual,
+     * pero al guardar quedaba grabado como propio del producto: bastaba abrir
+     * un producto de Oralí y apretar guardar para que quedara clavado en 30% y
+     * dejara de seguir a la marca para siempre. Como pista no se guarda nada, y
+     * el producto sigue prestándolo mientras el campo esté vacío.
+     */
+    private static function pistaDeLaMarca(Forms\Get $get, string $campo): ?string
     {
-        // Solo para el dueño. Al operador estos campos ni se le muestran, pero
-        // el estado del formulario igual viaja a su navegador: este gancho le
-        // volvía a poner el margen de la marca justo después de recortarlo.
+        // Solo para el dueño. Al operador estos campos ni se le muestran.
         if (! (auth()->user()?->isAdmin() ?? false)) {
-            return;
+            return null;
         }
 
-        if (filled($component->getState())) {
-            return;
-        }
+        $valor = Marca::find($get('../../marca_id'))?->{$campo};
 
-        $component->state(Marca::find($get('../../marca_id'))?->{$campo});
+        return $valor === null ? null : rtrim(rtrim(number_format((float) $valor, 2, ',', ''), '0'), ',').' (de la marca)';
+    }
+
+    /**
+     * El valor que hay que usar para la cuenta: el que se escribió a mano, o el
+     * de la marca si el campo quedó vacío.
+     */
+    private static function conLoDeLaMarca(Forms\Get $get, string $campo): float|string|null
+    {
+        return filled($get($campo))
+            ? $get($campo)
+            : Marca::find($get('../../marca_id'))?->{$campo};
     }
 
     /**
@@ -233,8 +249,8 @@ class ProductoResource extends Resource
     {
         $precio = Presentacion::calcularPrecio(
             $get('precio_costo'),
-            $get('margen_porcentaje'),
-            $get('descuento_porcentaje'),
+            self::conLoDeLaMarca($get, 'margen_porcentaje'),
+            self::conLoDeLaMarca($get, 'descuento_porcentaje'),
             (bool) $get('iva'),
         );
 

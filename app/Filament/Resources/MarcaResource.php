@@ -69,7 +69,7 @@ class MarcaResource extends Resource
                 ->minValue(0)
                 ->maxValue(100)
                 ->suffix('%')
-                ->helperText('Valor por defecto al cargar precios de productos nuevos de esta marca. Se puede ajustar por producto.')
+                ->helperText('Lo usan todos los productos de esta marca que no tengan el suyo propio. Cargalo una vez acá y aparece en todos. Si mañana lo cambiás, cambian todos.')
                 ->visible(fn () => auth()->user()?->isAdmin()),
             Forms\Components\TextInput::make('margen_porcentaje')
                 ->label('Margen de ganancia')
@@ -77,7 +77,7 @@ class MarcaResource extends Resource
                 ->minValue(-99)
                 ->maxValue(500)
                 ->suffix('%')
-                ->helperText('Valor por defecto al cargar precios de productos nuevos de esta marca. Se puede ajustar por producto.')
+                ->helperText('Lo usan todos los productos de esta marca que no tengan el suyo propio. Cargalo una vez acá y aparece en todos. Si mañana lo cambiás, cambian todos.')
                 ->visible(fn () => auth()->user()?->isAdmin()),
         ]);
     }
