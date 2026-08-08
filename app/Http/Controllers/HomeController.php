@@ -66,7 +66,13 @@ class HomeController extends Controller
                 $combo->precio_sin_descuento = $mostrarPrecios ? $combo->precio_calculado : null;
             });
 
+        // Sólo lo que se vendió de verdad: sin el join a pedidos contaba también
+        // los pedidos cancelados y los borrados, así que un pedido grande que se
+        // canceló podía trepar un producto a los "más vendidos" de la portada.
         $topProductoIds = PedidoItem::join('presentaciones', 'pedido_items.presentacion_id', '=', 'presentaciones.id')
+            ->join('pedidos', 'pedido_items.pedido_id', '=', 'pedidos.id')
+            ->whereNull('pedidos.deleted_at')
+            ->where('pedidos.estado', '!=', 'canceled')
             ->selectRaw('presentaciones.producto_id, SUM(pedido_items.cantidad) as total_vendido')
             ->groupBy('presentaciones.producto_id')
             ->orderByDesc('total_vendido')

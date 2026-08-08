@@ -56,7 +56,13 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'visibility' => 'public',
+            // Privado por defecto: todo lo que se escriba al bucket nace cerrado.
+            // Con 'public', cualquier put() futuro quedaba accesible por la URL
+            // del bucket, salteando a MediaController -- y un comando podía volcar
+            // ahí la carpeta imports con los costos del proveedor. Las imágenes
+            // se sirven por /media, que lee el contenido, así que no necesitan
+            // ser públicas en el bucket.
+            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],

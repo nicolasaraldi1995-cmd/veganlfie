@@ -6,6 +6,7 @@ use App\Models\Producto;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 #[Signature('app:aplicar-fotos-productos-desde-zip {url}')]
@@ -14,20 +15,28 @@ class AplicarFotosProductosDesdeZip extends Command
 {
     public function handle(): int
     {
-        $url = $this->argument('url');
+        $url = (string) $this->argument('url');
+
+        // Sólo http/https, por lo mismo que el importador desde URL: nada de
+        // file://, php:// ni la dirección de metadatos de la nube.
+        if (! in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+            $this->error('La URL tiene que empezar con http:// o https://.');
+
+            return self::FAILURE;
+        }
 
         $zipPath = tempnam(sys_get_temp_dir(), 'fotos_').'.zip';
         $extractDir = sys_get_temp_dir().'/fotos_extract_'.uniqid();
         mkdir($extractDir);
 
         $this->info("Descargando {$url}...");
-        $contents = file_get_contents($url);
-        if ($contents === false) {
+        $respuesta = Http::timeout(120)->get($url);
+        if (! $respuesta->successful()) {
             $this->error('No se pudo descargar el zip.');
 
             return self::FAILURE;
         }
-        file_put_contents($zipPath, $contents);
+        file_put_contents($zipPath, $respuesta->body());
 
         $zip = new \ZipArchive;
         if ($zip->open($zipPath) !== true) {
@@ -47,7 +56,26 @@ class AplicarFotosProductosDesdeZip extends Command
         // abajo cortaba el comando con un error fatal.
         foreach (glob($extractDir.'/*') ?: [] as $file) {
             $productoId = (int) pathinfo($file, PATHINFO_FILENAME);
-            $ext = pathinfo($file, PATHINFO_EXTENSION);
+            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+            // Sólo imágenes, y no por el nombre: se mira el contenido. Un zip
+            // con una entrada "12.php" escribía productos/<slug>.php en el disco
+            // del panel, que se sirve desde public/storage; si el servidor
+            // ejecuta PHP ahí, era ejecución de código.
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'avif'], true)) {
+                $this->warn("{$file}: no es una imagen, se salteó.");
+                $fail++;
+
+                continue;
+            }
+
+            $contenido = (string) file_get_contents($file);
+            if (@getimagesizefromstring($contenido) === false) {
+                $this->warn("{$file}: el contenido no es una imagen válida, se salteó.");
+                $fail++;
+
+                continue;
+            }
 
             $producto = Producto::find($productoId);
             if (! $producto) {
@@ -58,7 +86,7 @@ class AplicarFotosProductosDesdeZip extends Command
             }
 
             $destPath = 'productos/'.$producto->slug.'.'.$ext;
-            Storage::disk($disk)->put($destPath, file_get_contents($file));
+            Storage::disk($disk)->put($destPath, $contenido);
             $producto->update(['imagen' => $destPath]);
             $ok++;
         }

@@ -16,6 +16,15 @@ class MigrarImagenesAS3 extends Command
         $origen = $this->option('origen');
         $destino = $this->option('destino');
 
+        // Sólo desde el disco de imágenes públicas. El disco 'local' guarda la
+        // carpeta imports con las listas del proveedor y sus costos; sin este
+        // freno, --origen=local las copiaba enteras al bucket.
+        if (! in_array($origen, ['public'], true)) {
+            $this->error("Este comando sólo migra desde el disco 'public' (las imágenes). El disco '{$origen}' tiene archivos internos que no van al bucket.");
+
+            return self::FAILURE;
+        }
+
         $archivos = Storage::disk($origen)->allFiles();
         $total = count($archivos);
 
