@@ -19,6 +19,17 @@ class ProductoController extends Controller
 
     public function index(Request $request)
     {
+        // Estos parámetros son escalares: buscar va a "%{$term}%", marca y
+        // categoria a where()/findOrFail. Con ?buscar[]=x llegaba un arreglo, el
+        // warning de PHP se volvía un 500 y esta ruta pública no tiene tope de
+        // peticiones. Si alguno viene como arreglo, se ignora todo y se vuelve
+        // al listado limpio.
+        foreach (['buscar', 'marca', 'categoria', 'vista', 'sin_tacc', 'frio', 'congelado'] as $campo) {
+            if (is_array($request->input($campo))) {
+                return redirect()->route('productos.index');
+            }
+        }
+
         $vista = $request->input('vista');
         $marcas = Marca::activos()->orderBy('nombre')->get();
         $categorias = Categoria::activos()->orderBy('orden')->get();
@@ -289,8 +300,10 @@ class ProductoController extends Controller
 
     public function buscar(Request $request)
     {
+        // Por lo mismo que index: ?q[]=x hacía que strlen() reventara. Un
+        // arreglo no es una búsqueda: se responde vacío.
         $q = $request->input('q', '');
-        if (strlen($q) < 2) {
+        if (! is_string($q) || strlen($q) < 2) {
             return response()->json([]);
         }
 

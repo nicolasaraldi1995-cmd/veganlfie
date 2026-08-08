@@ -23,6 +23,16 @@ class CheckoutController extends Controller
         }
 
         $items = $this->cartService->resolveItems($cart);
+
+        // El carrito tiene líneas que ya no se pueden comprar (se apagó el
+        // producto, se quedó sin precio). Mejor mandarlo al carrito, que las
+        // saca y avisa, que mostrar un checkout con menos productos -- o vacío-- y
+        // el botón de confirmar activo.
+        if ($this->carritoCambio($cart, $items)) {
+            return redirect()->route('cart.index')
+                ->with('aviso', 'Algunos productos ya no están disponibles y se sacaron del carrito. Revisá antes de confirmar.');
+        }
+
         $total = collect($items)->sum('subtotal');
         $user = auth()->user();
 
@@ -54,6 +64,17 @@ class CheckoutController extends Controller
         }
 
         $items = $this->cartService->resolveItems($cart);
+
+        // La guarda de arriba mira el carrito crudo, pero el total y los items
+        // salen de resolveItems, que descarta lo que ya no se vende. Si algo se
+        // cayó entre que se armó el carrito y ahora, no se crea el pedido: sin
+        // esto salía uno de $0 sin renglones (o cobrando de menos) y el cliente
+        // se quedaba sin carrito sin entender por qué.
+        if ($this->carritoCambio($cart, $items)) {
+            return redirect()->route('cart.index')
+                ->with('aviso', 'Algunos productos ya no están disponibles y se sacaron del carrito. Revisá antes de confirmar.');
+        }
+
         $total = collect($items)->sum('subtotal');
         $user = auth()->user();
 
@@ -97,6 +118,18 @@ class CheckoutController extends Controller
         session()->forget('cart');
 
         return redirect()->route('checkout.confirmacion', $pedido->id);
+    }
+
+    /**
+     * ¿El carrito quedó con algo que ya no se puede comprar? Se compara la
+     * cantidad de líneas del carrito con las que resolveItems dejó en pie.
+     *
+     * @param  array<int|string, int>  $cart
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function carritoCambio(array $cart, array $items): bool
+    {
+        return count($items) !== count($cart);
     }
 
     public function confirmacion(Pedido $pedido)
