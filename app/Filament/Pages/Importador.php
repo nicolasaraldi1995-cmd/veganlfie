@@ -271,7 +271,7 @@ class Importador extends Page implements Forms\Contracts\HasForms
             // deja afuera: el importador nunca da de baja nada, así que sin
             // esto un producto que el proveedor sacó de la lista queda
             // publicado para siempre.
-            $this->resumenSync = $this->resumirSync(app(SincronizarCatalogo::class)->analizar($path, $this->header_row));
+            $this->resumenSync = $this->resumirSync(app(SincronizarCatalogo::class)->analizar($path, $this->header_row, $this->columnMap));
 
             $this->step = 'preview';
         } catch (\Throwable $e) {
@@ -291,6 +291,9 @@ class Importador extends Page implements Forms\Contracts\HasForms
             'bajas' => count($plan['bajas']),
             'ejemplosMarca' => array_slice($plan['cambiosDeMarca'], 0, 8),
             'ejemplosBaja' => array_slice($plan['bajas'], 0, 8),
+            // Cuando esto es true, "Importar todo" va a frenar la sincronización.
+            'peligroso' => $plan['peligroso'] ?? false,
+            'totalActivos' => $plan['totalActivos'] ?? 0,
         ];
     }
 
@@ -303,7 +306,9 @@ class Importador extends Page implements Forms\Contracts\HasForms
             // les corresponde, y así la importación de precios los encuentra.
             if ($this->sincronizar) {
                 $sincronizador = app(SincronizarCatalogo::class);
-                $this->syncResult = $sincronizador->aplicar($sincronizador->analizar($path, $this->header_row));
+                // Si el plan da de baja casi todo, aplicar() lanza y no toca
+                // nada: el catch de abajo muestra el motivo.
+                $this->syncResult = $sincronizador->aplicar($sincronizador->analizar($path, $this->header_row, $this->columnMap));
             }
 
             $service = new ProductImportService;

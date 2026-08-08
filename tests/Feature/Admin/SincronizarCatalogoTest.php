@@ -127,4 +127,83 @@ class SincronizarCatalogoTest extends TestCase
         $this->assertCount(0, $plan['cambiosDeNombre']);
         $this->assertCount(1, $plan['bajas']);
     }
+
+    /**
+     * Una lista con la misma medida pero con los encabezados escritos distinto.
+     *
+     * @param  list<array{0: string, 1: string}>  $filas
+     */
+    private function listaCon(string $colNombre, string $colMarca, array $filas): string
+    {
+        $html = '<table>'.str_repeat('<tr><td>x</td></tr>', 4)
+            ."<tr><td>{$colNombre}</td><td>{$colMarca}</td><td>Categoría</td><td>Unidad</td><td>Precio</td></tr>";
+
+        foreach ($filas as [$nombre, $marca]) {
+            $html .= "<tr><td>{$nombre}</td><td>{$marca}</td><td>Prueba</td><td>1u</td><td>1.000,00</td></tr>";
+        }
+
+        $ruta = tempnam(sys_get_temp_dir(), 'lista_').'.xls';
+        file_put_contents($ruta, $html.'</table>');
+
+        return $ruta;
+    }
+
+    /**
+     * El caso crítico #3: el archivo trae PRODUCTO/MARCA en vez de Nombre/Marca.
+     * Sin el mapeo, el sincronizador no reconocía ninguna fila y proponía dar de
+     * baja el catálogo entero. Ahora el freno lo detiene.
+     */
+    public function test_encabezados_distintos_sin_mapeo_no_vacian_el_catalogo(): void
+    {
+        // Un catálogo por encima del mínimo para que el freno actúe.
+        $productos = [];
+        for ($i = 1; $i <= 25; $i++) {
+            $productos[] = $this->producto("Producto {$i}", 'NotCo');
+        }
+
+        $lista = $this->listaCon('PRODUCTO', 'MARCA', array_map(fn ($i) => ["Producto {$i}", 'NotCo'], range(1, 25)));
+
+        $servicio = app(SincronizarCatalogo::class);
+        $plan = $servicio->analizar($lista, 5);  // sin columnMap: no encuentra nada
+
+        $this->assertTrue($plan['peligroso'], 'No marcó el plan como peligroso.');
+        $this->assertCount(25, $plan['bajas']);
+
+        $this->expectException(\RuntimeException::class);
+        $servicio->aplicar($plan);
+    }
+
+    public function test_con_encabezados_distintos_y_mapeo_lee_bien(): void
+    {
+        $productos = [];
+        for ($i = 1; $i <= 25; $i++) {
+            $productos[] = $this->producto("Producto {$i}", 'NotCo');
+        }
+
+        $lista = $this->listaCon('PRODUCTO', 'MARCA', array_map(fn ($i) => ["Producto {$i}", 'NotCo'], range(1, 25)));
+
+        $plan = app(SincronizarCatalogo::class)
+            ->analizar($lista, 5, ['nombre' => 'PRODUCTO', 'marca' => 'MARCA']);
+
+        $this->assertFalse($plan['peligroso']);
+        $this->assertCount(0, $plan['bajas']);
+        $this->assertSame(25, $plan['sinCambios']);
+    }
+
+    /** Y una baja masiva de verdad tampoco se aplica sin querer. */
+    public function test_una_baja_masiva_se_frena(): void
+    {
+        for ($i = 1; $i <= 25; $i++) {
+            $this->producto("Viejo {$i}", 'NotCo');
+        }
+
+        $servicio = app(SincronizarCatalogo::class);
+        $plan = $servicio->analizar($this->lista([['Uno solo que queda', 'NotCo']]));
+
+        $this->assertTrue($plan['peligroso']);
+
+        // Con forzar sí se aplica: es la salida para el caso legítimo.
+        $hechos = $servicio->aplicar($plan, forzar: true);
+        $this->assertSame(25, $hechos['bajas']);
+    }
 }

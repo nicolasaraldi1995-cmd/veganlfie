@@ -29,21 +29,45 @@ class SincronizarCatalogo
     /** Qué tan parecido tiene que ser un nombre para darlo por el mismo. */
     private const PARECIDO_MINIMO = 88;
 
+    /**
+     * Si la sincronización propondría dar de baja más que esta parte del
+     * catálogo, algo salió mal (los encabezados no matchearon, la fila de
+     * encabezados está mal, el archivo es otro). Se marca el plan como peligroso
+     * y aplicar() se niega, en vez de vaciar la tienda de un saque.
+     */
+    private const TOPE_BAJAS = 0.4;
+
+    /**
+     * El freno sólo tiene sentido con un catálogo grande: con cuatro productos,
+     * dar de baja tres es 75% y no es una catástrofe. Por debajo de esto no se
+     * frena nada.
+     */
+    private const MINIMO_PARA_FRENAR = 20;
+
     public function __construct(private ProductImportService $importador) {}
 
     /**
-     * @return array{cambiosDeMarca: list<array<string, mixed>>, cambiosDeNombre: list<array<string, mixed>>, bajas: list<array<string, mixed>>, dudosos: list<array<string, mixed>>, sinCambios: int}
+     * @param  array<string, string|null>  $columnMap  El mismo mapeo de columnas
+     *   que usó el importador. Sin esto, el sincronizador adivinaba los
+     *   encabezados 'Nombre' y 'Marca' con esas mayúsculas exactas: si el
+     *   archivo los traía como 'PRODUCTO'/'MARCA', no matcheaba ninguna fila,
+     *   la lista quedaba vacía y proponía dar de baja el catálogo entero.
+     *
+     * @return array{cambiosDeMarca: list<array<string, mixed>>, cambiosDeNombre: list<array<string, mixed>>, bajas: list<array<string, mixed>>, dudosos: list<array<string, mixed>>, sinCambios: int, totalActivos: int, peligroso: bool}
      */
-    public function analizar(string $archivo, int $filaEncabezados = 5): array
+    public function analizar(string $archivo, int $filaEncabezados = 5, array $columnMap = []): array
     {
+        $colNombre = $columnMap['nombre'] ?? 'Nombre';
+        $colMarca = $columnMap['marca'] ?? 'Marca';
+
         $filas = $this->importador->readFile($archivo, $filaEncabezados)
-            ->filter(fn ($f) => ! empty($f['Nombre']) && ! empty($f['Marca']));
+            ->filter(fn ($f) => ! empty($f[$colNombre]) && ! empty($f[$colMarca]));
 
         $enLista = [];
         $porNombre = [];
         foreach ($filas as $f) {
-            $enLista[$this->clave($f['Nombre'], $f['Marca'])] = true;
-            $porNombre[$this->normalizar($f['Nombre'])][] = trim($f['Marca']);
+            $enLista[$this->clave($f[$colNombre], $f[$colMarca])] = true;
+            $porNombre[$this->normalizar($f[$colNombre])][] = trim($f[$colMarca]);
         }
         $nombresLista = array_keys($porNombre);
 
@@ -83,7 +107,7 @@ class SincronizarCatalogo
                     'marca' => $marca,
                     'nombreViejo' => $producto->nombre,
                     'destino' => $parecido,
-                    'nombreNuevo' => $this->nombreReal($filas, $parecido),
+                    'nombreNuevo' => $this->nombreReal($filas, $parecido, $colNombre),
                     'parecido' => (int) round($pct),
                 ];
 
@@ -104,6 +128,14 @@ class SincronizarCatalogo
         foreach ($dudosos as $d) {
             $resultado['bajas'][] = ['id' => $d['id'], 'nombre' => $d['nombreViejo'], 'marca' => $d['marca']];
         }
+
+        // El freno de emergencia: si daría de baja casi todo, es que la lista no
+        // se leyó bien, no que el proveedor discontinuó el catálogo entero.
+        $total = $resultado['sinCambios'] + count($resultado['cambiosDeMarca'])
+            + count($resultado['cambiosDeNombre']) + count($resultado['bajas']);
+        $resultado['totalActivos'] = $total;
+        $resultado['peligroso'] = $total >= self::MINIMO_PARA_FRENAR
+            && count($resultado['bajas']) / $total > self::TOPE_BAJAS;
 
         return $resultado;
     }
@@ -156,11 +188,23 @@ class SincronizarCatalogo
     }
 
     /**
-     * @param  array{cambiosDeMarca: list<array<string, mixed>>, cambiosDeNombre: list<array<string, mixed>>, bajas: list<array<string, mixed>>, dudosos?: list<array<string, mixed>>, sinCambios: int}  $plan
+     * @param  array{cambiosDeMarca: list<array<string, mixed>>, cambiosDeNombre: list<array<string, mixed>>, bajas: list<array<string, mixed>>, dudosos?: list<array<string, mixed>>, sinCambios: int, totalActivos?: int, peligroso?: bool}  $plan
      * @return array{marcas: int, nombres: int, bajas: int, duplicados: int}
      */
-    public function aplicar(array $plan): array
+    public function aplicar(array $plan, bool $forzar = false): array
     {
+        if (($plan['peligroso'] ?? false) && ! $forzar) {
+            $bajas = count($plan['bajas']);
+            $total = $plan['totalActivos'] ?? 0;
+
+            throw new \RuntimeException(
+                "La sincronización daría de baja {$bajas} de {$total} productos. ".
+                'Es casi todo el catálogo: seguramente la lista no se leyó bien '.
+                '(revisá la fila de encabezados y que Nombre y Marca estén bien mapeados). '.
+                'No se aplicó nada.'
+            );
+        }
+
         $hechos = ['marcas' => 0, 'nombres' => 0, 'bajas' => 0];
 
         DB::transaction(function () use ($plan, &$hechos) {
@@ -235,11 +279,11 @@ class SincronizarCatalogo
     /**
      * @param  Collection<int, array<string, mixed>>  $filas
      */
-    private function nombreReal($filas, string $normalizado): string
+    private function nombreReal($filas, string $normalizado, string $colNombre): string
     {
         foreach ($filas as $f) {
-            if ($this->normalizar($f['Nombre']) === $normalizado) {
-                return trim($f['Nombre']);
+            if ($this->normalizar($f[$colNombre]) === $normalizado) {
+                return trim($f[$colNombre]);
             }
         }
 

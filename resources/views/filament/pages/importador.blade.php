@@ -115,16 +115,27 @@
                             </div>
                         </div>
 
-                        <label class="flex items-start gap-2 text-sm text-amber-900 cursor-pointer">
-                            <input type="checkbox" wire:model="sincronizar" class="mt-0.5 rounded border-amber-400 text-amber-600">
-                            <span>
-                                <b>Poner el catálogo a tono con este archivo.</b>
-                                Mueve los productos a la marca que les corresponde y da de baja los que ya no están.
-                                <span class="block text-xs text-amber-700 mt-0.5">
-                                    La baja no borra nada: el producto queda con su foto y su historial, sólo deja de mostrarse en la web.
+                        @if($resumenSync['peligroso'] ?? false)
+                            <div class="bg-red-50 border border-red-300 rounded-lg p-3 mb-3">
+                                <p class="text-sm font-semibold text-red-800">⚠ No se va a poder poner el catálogo a tono</p>
+                                <p class="text-sm text-red-700 mt-1">
+                                    Este archivo daría de baja {{ $resumenSync['bajas'] ?? 0 }} de {{ $resumenSync['totalActivos'] ?? 0 }} productos, casi todo el catálogo.
+                                    Casi seguro la lista no se leyó bien: revisá la <b>fila de encabezados</b> y que las columnas <b>Nombre</b> y <b>Marca</b> estén bien elegidas.
+                                    Los precios se importan igual; sólo se frena la baja masiva.
+                                </p>
+                            </div>
+                        @else
+                            <label class="flex items-start gap-2 text-sm text-amber-900 cursor-pointer">
+                                <input type="checkbox" wire:model="sincronizar" class="mt-0.5 rounded border-amber-400 text-amber-600">
+                                <span>
+                                    <b>Poner el catálogo a tono con este archivo.</b>
+                                    Mueve los productos a la marca que les corresponde y da de baja los que ya no están.
+                                    <span class="block text-xs text-amber-700 mt-0.5">
+                                        La baja no borra nada: el producto queda con su foto y su historial, sólo deja de mostrarse en la web.
+                                    </span>
                                 </span>
-                            </span>
-                        </label>
+                            </label>
+                        @endif
                     </div>
                 @endif
 
