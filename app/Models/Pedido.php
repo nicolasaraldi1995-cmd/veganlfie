@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\PedidoObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
+#[ObservedBy(PedidoObserver::class)]
 class Pedido extends Model
 {
     use HasFactory, SoftDeletes;
@@ -54,6 +57,9 @@ class Pedido extends Model
         return $this->estado === 'pending';
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -85,17 +91,34 @@ class Pedido extends Model
     }
 
     /**
-     * Devuelve al stock las cantidades reservadas por este pedido.
-     * Se usa al cancelar un pedido; los items no se borran, así que
-     * PedidoItemObserver no dispara automáticamente en este caso.
+     * Devuelve al stock las cantidades reservadas por este pedido. Se usa al
+     * cancelar: los items no se borran, así que PedidoItemObserver no dispara.
      */
     public function restaurarStock(): void
     {
-        DB::transaction(function () {
+        $this->moverStock(1);
+    }
+
+    /**
+     * Vuelve a reservar las cantidades de este pedido. Se usa al revivir un
+     * pedido cancelado: sin esto, el stock que se había devuelto al cancelar
+     * quedaba de más, y volver a cancelar lo devolvía otra vez.
+     */
+    public function reservarStock(): void
+    {
+        $this->moverStock(-1);
+    }
+
+    /**
+     * @param  int  $signo  1 devuelve al stock, -1 reserva.
+     */
+    private function moverStock(int $signo): void
+    {
+        DB::transaction(function () use ($signo) {
             foreach ($this->items as $item) {
                 Presentacion::whereKey($item->presentacion_id)
                     ->lockForUpdate()
-                    ->increment('stock', $item->cantidad);
+                    ->increment('stock', $signo * $item->cantidad);
             }
         });
     }

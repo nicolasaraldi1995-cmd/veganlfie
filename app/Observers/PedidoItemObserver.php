@@ -20,6 +20,13 @@ class PedidoItemObserver
 
     public function updating(PedidoItem $item): void
     {
+        // Un pedido cancelado ya devolvió su stock: tocarle un renglón no puede
+        // volver a moverlo, o el número se infla. Editar los items de un pedido
+        // cancelado no debería pasar, pero el panel lo permite.
+        if ($this->pedidoCancelado($item)) {
+            return;
+        }
+
         // Cambiar el producto de un renglón ya cargado (se puede desde el panel)
         // mueve la reserva entera: se le devuelve al producto anterior y se le
         // descuenta al nuevo. Sin esto, el stock viejo quedaba reservado para
@@ -41,7 +48,20 @@ class PedidoItemObserver
 
     public function deleted(PedidoItem $item): void
     {
+        if ($this->pedidoCancelado($item)) {
+            return;
+        }
+
         $this->ajustar($item->presentacion_id, -$item->cantidad);
+    }
+
+    /**
+     * El stock de un pedido cancelado ya se devolvió al cancelarlo, así que sus
+     * renglones no deben mover más el stock.
+     */
+    private function pedidoCancelado(PedidoItem $item): bool
+    {
+        return $item->pedido?->estado === 'canceled';
     }
 
     /**

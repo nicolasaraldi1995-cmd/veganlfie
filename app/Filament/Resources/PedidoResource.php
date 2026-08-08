@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PedidoResource\Pages;
-use App\Mail\PedidoEstadoMail;
 use App\Models\Pago;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
@@ -15,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\HtmlString;
 
 class PedidoResource extends Resource
@@ -433,20 +431,11 @@ class PedidoResource extends Resource
 
     private static function cambiarEstado(Pedido $record, string $estado, string $label): void
     {
-        if ($estado === 'canceled') {
-            $record->restaurarStock();
-        }
-
+        // El stock y el mail los maneja PedidoObserver al cambiar el estado, así
+        // que sale igual por acá, por el botón de adentro del pedido o por el
+        // desplegable. Acá sólo queda el aviso en pantalla.
         $record->update(['estado' => $estado]);
         Notification::make()->title("Pedido #{$record->id} {$label}")->success()->send();
-
-        $email = $record->datos_cliente['email'] ?? $record->user?->email;
-        if ($email) {
-            try {
-                Mail::to($email)->send(new PedidoEstadoMail($record, $estado));
-            } catch (\Throwable $e) {
-            }
-        }
     }
 
     public static function getPages(): array
