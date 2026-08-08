@@ -15,5 +15,11 @@ trait ExigeAccesoAlRecurso
     protected function authorizeAccess(): void
     {
         abort_unless(static::getResource()::canAccess(), 403);
+
+        // Y además lo que chequea Filament de fábrica por registro (canEdit,
+        // canView, canCreate). Sin el parent, sobreescribir authorizeAccess
+        // apagaba esos chequeos en silencio: hoy no rompe nada, pero el día que
+        // alguien agregue un canEdit por registro, quedaría sin efecto.
+        parent::authorizeAccess();
     }
 }
