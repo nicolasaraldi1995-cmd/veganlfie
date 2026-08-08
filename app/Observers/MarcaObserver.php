@@ -4,6 +4,8 @@ namespace App\Observers;
 
 use App\Models\Marca;
 use App\Services\IvaPorMarca;
+use App\Services\PreciosPorMarca;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -23,17 +25,50 @@ class MarcaObserver
     private const LADO = 600;
 
     /**
-     * Prender o apagar el IVA de la marca mueve el precio de todos sus
-     * productos. Va en "saved" y no en "saving" para que los precios sólo se
-     * toquen si el cambio de la marca quedó realmente guardado.
+     * Tocar la marca mueve el precio de todos sus productos: el IVA desde
+     * siempre, y ahora también el margen y el descuento del proveedor.
+     *
+     * Va en "saved" y no en "saving" para que los precios sólo se toquen si el
+     * cambio de la marca quedó realmente guardado.
+     *
+     * El orden importa: IvaPorMarca deja el IVA nuevo en cada presentación y
+     * PreciosPorMarca lo lee para rehacer la cuenta. Si los dos cambiaron en el
+     * mismo guardado, el segundo llega al mismo número, así que no se pisan.
      */
     public function saved(Marca $marca): void
     {
-        if (! $marca->wasChanged('iva')) {
+        if ($marca->wasChanged('iva')) {
+            app(IvaPorMarca::class)->aplicar($marca, (bool) $marca->iva);
+        }
+
+        if ($marca->wasChanged(['margen_porcentaje', 'descuento_porcentaje'])) {
+            $this->avisar(app(PreciosPorMarca::class)->aplicar($marca));
+        }
+    }
+
+    /**
+     * Cambiar un porcentaje puede mover cientos de precios de un saque. Que se
+     * vea cuántos, y cuántos no se pudieron calcular por no tener el costo
+     * cargado, que hoy son casi todos.
+     *
+     * @param  array{tocadas: int, sinCosto: int, iguales: int}  $stats
+     */
+    private function avisar(array $stats): void
+    {
+        // En consola y en los tests no hay sesión donde dejar el aviso.
+        if (app()->runningInConsole()) {
             return;
         }
 
-        app(IvaPorMarca::class)->aplicar($marca, (bool) $marca->iva);
+        $cuerpo = $stats['sinCosto'] > 0
+            ? "{$stats['sinCosto']} no se pudieron calcular porque no tienen el precio de costo cargado."
+            : null;
+
+        Notification::make()
+            ->title($stats['tocadas'] === 1 ? 'Se actualizó 1 precio' : "Se actualizaron {$stats['tocadas']} precios")
+            ->body($cuerpo)
+            ->success()
+            ->send();
     }
 
     public function saving(Marca $marca): void
