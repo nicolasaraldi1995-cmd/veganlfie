@@ -233,7 +233,14 @@ class SincronizarCatalogo
                 $hechos['bajas'] += count($ids);
             }
 
-            $hechos['duplicados'] = $this->unificarDuplicados();
+            // Sólo los productos que esta sincronización movió pueden haber
+            // quedado duplicados. Un duplicado que ya estaba y era a propósito
+            // (dos variantes con el mismo nombre) no lo tocó nadie.
+            $idsTocados = array_merge(
+                array_column($plan['cambiosDeMarca'], 'id'),
+                array_column($plan['cambiosDeNombre'], 'id'),
+            );
+            $hechos['duplicados'] = $this->unificarDuplicados($idsTocados);
         });
 
         return $hechos;
@@ -247,17 +254,36 @@ class SincronizarCatalogo
      * y los dos van a "QU (Coco Iogo)"). Se conserva el que tiene foto -- y
      * entre esos, el más viejo, que es el que acumula el historial de pedidos.
      *
+     * Sólo mira los grupos que contienen alguno de los productos que ESTA
+     * sincronización movió: antes recorría toda la tabla y apagaba cualquier
+     * duplicado preexistente, aunque fuera a propósito y no tuviera nada que ver
+     * con el archivo que se subió.
+     *
+     * @param  list<int>  $idsTocados
      * @return int cuántos quedaron dados de baja
      */
-    private function unificarDuplicados(): int
+    private function unificarDuplicados(array $idsTocados): int
     {
+        if ($idsTocados === []) {
+            return 0;
+        }
+
+        // Las (nombre, marca) de los productos movidos: sólo esos grupos pueden
+        // haber quedado colisionando por la sincronización.
+        $clavesTocadas = Producto::whereIn('id', $idsTocados)
+            ->get(['nombre', 'marca_id'])
+            ->map(fn (Producto $p) => $p->nombre.'|||'.$p->marca_id)
+            ->unique()
+            ->flip();
+
         $bajas = 0;
 
         $repetidos = Producto::activos()
             ->selectRaw('nombre, marca_id')
             ->groupBy('nombre', 'marca_id')
             ->havingRaw('count(*) > 1')
-            ->get();
+            ->get()
+            ->filter(fn ($r) => $clavesTocadas->has($r->nombre.'|||'.$r->marca_id));
 
         foreach ($repetidos as $repetido) {
             $productos = Producto::activos()

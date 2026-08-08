@@ -20,6 +20,9 @@ class ProductImportService
         'categorias_creadas' => 0,
         'productos_creados' => 0,
         'productos_actualizados' => 0,
+        // De los actualizados, cuántos estaban dados de baja y volvieron porque
+        // el proveedor los tiene otra vez en la lista.
+        'productos_reactivados' => 0,
         'presentaciones_creadas' => 0,
         'presentaciones_actualizadas' => 0,
         // Las que ya existían y la planilla no traía precio: se dejaron como
@@ -124,7 +127,7 @@ class ProductImportService
             // bucle ya no cuentan nada. Sin esto, import() devolvía
             // "1879 actualizados" junto al error, y el Importador mostraba un
             // aviso VERDE de éxito sobre una base que quedó igual que antes.
-            foreach (['marcas_creadas', 'categorias_creadas', 'productos_creados', 'productos_actualizados', 'presentaciones_creadas', 'presentaciones_actualizadas', 'presentaciones_sin_precio'] as $contador) {
+            foreach (['marcas_creadas', 'categorias_creadas', 'productos_creados', 'productos_actualizados', 'productos_reactivados', 'presentaciones_creadas', 'presentaciones_actualizadas', 'presentaciones_sin_precio'] as $contador) {
                 $this->stats[$contador] = 0;
             }
 
@@ -255,6 +258,21 @@ class ProductImportService
                     $datosActualizar['nuevo'] = $nuevo;
                 }
 
+                // Si el producto estaba dado de baja y volvió a la lista del
+                // proveedor, se reactiva. Antes se le actualizaba el precio pero
+                // seguía invisible en la web, y el resumen decía "actualizado"
+                // igual: el producto volvía a estar a la venta según el
+                // proveedor pero nadie lo veía.
+                $revivio = false;
+                if ($producto->trashed()) {
+                    $producto->restore();
+                    $revivio = true;
+                }
+                if (! $producto->activo) {
+                    $datosActualizar['activo'] = true;
+                    $revivio = true;
+                }
+
                 // save() en vez de update(): si nada cambió no manda ninguna
                 // consulta. La mayoría de las filas del Excel vienen iguales a
                 // lo que ya está cargado.
@@ -263,6 +281,9 @@ class ProductImportService
                     $producto->save();
                 }
                 $this->stats['productos_actualizados']++;
+                if ($revivio) {
+                    $this->stats['productos_reactivados']++;
+                }
             }
         } else {
             $producto = Producto::create([
