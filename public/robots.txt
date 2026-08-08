@@ -1,8 +1,7 @@
 User-agent: *
-Disallow: /admin
 Disallow: /carrito
 Disallow: /checkout
 Disallow: /mis-pedidos
 Disallow: /profile
 
-Sitemap: /sitemap.xml
+Sitemap: https://distriveganlife.laravel.cloud/sitemap.xml
