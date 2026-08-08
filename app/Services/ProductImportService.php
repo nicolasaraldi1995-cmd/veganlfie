@@ -9,6 +9,8 @@ use App\Models\Producto;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\StringValueBinder;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ProductImportService
@@ -20,6 +22,10 @@ class ProductImportService
         'productos_actualizados' => 0,
         'presentaciones_creadas' => 0,
         'presentaciones_actualizadas' => 0,
+        // Las que ya existían y la planilla no traía precio: se dejaron como
+        // estaban. Aparte de filas_saltadas porque no es un error, es un renglón
+        // que a propósito no se tocó.
+        'presentaciones_sin_precio' => 0,
         'filas_saltadas' => 0,
         'errores' => [],
     ];
@@ -33,7 +39,13 @@ class ProductImportService
         // la importación iba a romper los precios, cuando en realidad los lee
         // bien.
         $mapped = $this->mapColumns($rows, $columnMap)->take(20)->map(function (array $fila) {
-            $fila['precio'] = $this->parsePrice($fila['precio'] ?? 0);
+            // Un precio ilegible (negativo) no puede tumbar la previsualización
+            // entera: se muestra en blanco, que es lo que va a pasar al importar.
+            try {
+                $fila['precio'] = $this->parsePrice($fila['precio'] ?? null);
+            } catch (\InvalidArgumentException) {
+                $fila['precio'] = null;
+            }
 
             return $fila;
         });
@@ -254,10 +266,24 @@ class ProductImportService
                 $unidad = '1u';
             }
 
-            $precio = $this->parsePrice($row['precio'] ?? 0);
+            $precio = $this->parsePrice($row['precio'] ?? null);
 
             $clave = $producto->id.'|||'.$this->normalizar($unidad);
             $presentacion = $this->presentacionesPorClave[$clave] ?? null;
+
+            // Sin precio usable (celda vacía, "Consultar", o la columna sin
+            // mapear): a la que ya existe se le deja el precio que tenía; una
+            // nueva no se crea, porque nacería a $0 y comprable. Se cuenta como
+            // salteada en vez de pisar un precio bueno con cero.
+            if ($precio === null) {
+                if ($presentacion) {
+                    $this->stats['presentaciones_sin_precio']++;
+                } else {
+                    $this->stats['filas_saltadas']++;
+                }
+
+                continue;
+            }
 
             if ($presentacion) {
                 $presentacion->precio = $precio;
@@ -457,35 +483,49 @@ class ProductImportService
             return $this->leerTablaHtml($path, $headerRow);
         }
 
-        $spreadsheet = IOFactory::load($path);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = collect();
+        // Leer cada celda como texto crudo, sin que la librería interprete los
+        // números. Al leer un CSV o un HTML, "1.105" lo tomaba como uno coma
+        // ciento cinco y devolvía el float 1.105 antes de que parsePrice lo
+        // viera: el precio ya venía partido por mil desde la lectura, y ningún
+        // arreglo en parsePrice lo podía deshacer. Con el texto intacto,
+        // parsePrice decide si el punto es de miles o de decimales. En un .xlsx
+        // el número está guardado con su tipo, así que esto no lo altera.
+        $binderAnterior = Cell::getValueBinder();
+        Cell::setValueBinder(new StringValueBinder);
 
-        $headers = [];
-        foreach ($sheet->getRowIterator($headerRow, $headerRow) as $row) {
-            foreach ($row->getCellIterator() as $cell) {
-                $headers[] = trim((string) $cell->getValue());
-            }
-        }
+        try {
+            $spreadsheet = IOFactory::load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = collect();
 
-        foreach ($sheet->getRowIterator($headerRow + 1) as $row) {
-            $rowData = [];
-            $colIndex = 0;
-            $hasData = false;
-
-            foreach ($row->getCellIterator() as $cell) {
-                $value = $cell->getCalculatedValue();
-                $key = $headers[$colIndex] ?? "col_{$colIndex}";
-                $rowData[$key] = $value;
-                if ($value !== null && $value !== '') {
-                    $hasData = true;
+            $headers = [];
+            foreach ($sheet->getRowIterator($headerRow, $headerRow) as $row) {
+                foreach ($row->getCellIterator() as $cell) {
+                    $headers[] = trim((string) $cell->getValue());
                 }
-                $colIndex++;
             }
 
-            if ($hasData) {
-                $rows->push($rowData);
+            foreach ($sheet->getRowIterator($headerRow + 1) as $row) {
+                $rowData = [];
+                $colIndex = 0;
+                $hasData = false;
+
+                foreach ($row->getCellIterator() as $cell) {
+                    $value = $cell->getValue();
+                    $key = $headers[$colIndex] ?? "col_{$colIndex}";
+                    $rowData[$key] = $value;
+                    if ($value !== null && $value !== '') {
+                        $hasData = true;
+                    }
+                    $colIndex++;
+                }
+
+                if ($hasData) {
+                    $rows->push($rowData);
+                }
             }
+        } finally {
+            Cell::setValueBinder($binderAnterior);
         }
 
         return $rows;
@@ -567,20 +607,44 @@ class ProductImportService
         return $excelCats->filter(fn ($c) => ! $existing->contains(mb_strtolower($c)))->values()->toArray();
     }
 
-    private function parsePrice($value): float
+    /**
+     * Lee un precio de una celda de la planilla.
+     *
+     * Devuelve null cuando no hay un precio usable (celda vacía, "Consultar",
+     * "s/d"): en ese caso el que llama deja el precio como estaba en vez de
+     * pisarlo con cero. Antes devolvía 0 y ese cero se guardaba, así que una
+     * celda vacía sacaba el producto de la web de a una fila, sin avisar.
+     *
+     * Lanza si el número es negativo: eso es un dato mal cargado, no una celda
+     * en blanco, y conviene que se vea.
+     */
+    private function parsePrice($value): ?float
     {
-        if (is_numeric($value)) {
+        // Sólo los números que ya vienen como número de PHP (una celda numérica
+        // de Excel) se toman tal cual. Un texto se interpreta siempre, aunque
+        // is_numeric lo acepte: "1.105" es un número válido para PHP (uno coma
+        // ciento cinco), y ese atajo era justo el que partía el precio por mil.
+        if (is_int($value) || is_float($value)) {
             $price = (float) $value;
         } else {
-            $cleaned = preg_replace('/[^\d.,]/', '', (string) $value);
+            $texto = trim((string) $value);
 
-            if (str_contains($cleaned, ',') && str_contains($cleaned, '.')) {
-                // Formato argentino ("1.234,56"): "." separa miles, "," separa decimales.
-                $cleaned = str_replace('.', '', $cleaned);
+            if ($texto === '') {
+                return null;
             }
-            $cleaned = str_replace(',', '.', $cleaned);
 
-            $price = (float) $cleaned;
+            // El signo hay que mirarlo antes de limpiar: preg_replace se lo come
+            // y "$-100" quedaba convertido en 100, salteando el rechazo de abajo.
+            // Cuenta cualquier "-" que aparezca antes del primer dígito, así el
+            // símbolo de moneda adelante no lo tapa.
+            $negativo = preg_match('/^[^\d]*-/', $texto) === 1;
+            $limpio = preg_replace('/[^\d.,]/', '', $texto);
+
+            if ($limpio === '' || preg_match('/\d/', $limpio) !== 1) {
+                return null;
+            }
+
+            $price = $this->interpretarNumero($limpio) * ($negativo ? -1 : 1);
         }
 
         if ($price < 0) {
@@ -588,6 +652,44 @@ class ProductImportService
         }
 
         return $price;
+    }
+
+    /**
+     * Convierte el número ya limpio (sólo dígitos, puntos y comas) a float,
+     * decidiendo si el punto separa miles o decimales.
+     *
+     * El problema estaba acá: "1.105" se tomaba como uno coma ciento cinco y el
+     * precio quedaba en la milésima parte. Los precios de almacén casi nunca
+     * llevan centavos, así que "1.105", "12.500" y "1.234.567" son lo más común
+     * de la lista y todos entraban partidos por mil.
+     *
+     * Con coma, la coma manda: es el decimal argentino y el punto es de miles
+     * ("1.234,56"). Sin coma, el punto es de miles sólo si todos los grupos que
+     * le siguen tienen exactamente tres dígitos ("1.105", "1.234.567"); si el
+     * último grupo no los tiene, es un decimal a la inglesa ("1.5", "12.50").
+     *
+     * El precio a la argentina "1.500" con intención de "uno y medio" se lee
+     * como mil quinientos. En un catálogo de almacén ese número no existe.
+     */
+    private function interpretarNumero(string $limpio): float
+    {
+        $tieneComa = str_contains($limpio, ',');
+        $tienePunto = str_contains($limpio, '.');
+
+        if ($tieneComa) {
+            // La coma es el decimal; si además hay puntos, son de miles.
+            return (float) str_replace(',', '.', str_replace('.', '', $limpio));
+        }
+
+        if ($tienePunto) {
+            $grupos = explode('.', $limpio);
+            $sinElPrimero = array_slice($grupos, 1);
+            $todosDeTres = $sinElPrimero !== [] && ! in_array(false, array_map(fn ($g) => strlen($g) === 3, $sinElPrimero), true);
+
+            return $todosDeTres ? (float) implode('', $grupos) : (float) $limpio;
+        }
+
+        return (float) $limpio;
     }
 
     private function parseBool($value): bool
