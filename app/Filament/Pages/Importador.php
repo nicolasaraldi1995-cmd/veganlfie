@@ -177,7 +177,21 @@ class Importador extends Page implements Forms\Contracts\HasForms
             $valor = reset($valor) ?: null;
         }
 
-        return is_string($valor) && $valor !== '' ? $valor : null;
+        if (! is_string($valor) || $valor === '') {
+            return null;
+        }
+
+        // $archivo es una propiedad pública de Livewire: viaja al navegador y
+        // vuelve, así que con $wire.set se le puede poner cualquier cosa. Sin
+        // este filtro, "../../../.env" salía de la carpeta de imports y el
+        // importador leía y mostraba cualquier archivo del servidor (.env con
+        // las credenciales, la APP_KEY). Mismo criterio que MediaController:
+        // dentro de su carpeta y sin "..".
+        if (str_contains($valor, '..') || ! str_starts_with($valor, 'imports/')) {
+            return null;
+        }
+
+        return $valor;
     }
 
     /**
