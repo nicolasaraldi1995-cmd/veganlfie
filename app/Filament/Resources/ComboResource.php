@@ -89,9 +89,21 @@ class ComboResource extends Resource
                         'manual' => 'Precio manual fijo',
                         'auto' => 'Suma de productos (sin descuento)',
                     ])
-                    ->default(fn ($record) => $record?->precio_manual ? 'manual' : ($record?->descuento_porcentaje ? 'descuento' : 'auto'))
+                    ->default(fn ($record) => $record?->precio_manual !== null ? 'manual' : ($record?->descuento_porcentaje !== null ? 'descuento' : 'auto'))
                     ->dehydrated(false)
-                    ->reactive(),
+                    ->reactive()
+                    // Al cambiar de tipo se limpia el precio del otro modo. Sin
+                    // esto, pasar de "manual" a "descuento" dejaba el precio
+                    // manual viejo escondido, y como le gana al porcentaje, el
+                    // combo seguía cobrando el precio de antes.
+                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        if ($state !== 'manual') {
+                            $set('precio_manual', null);
+                        }
+                        if ($state !== 'descuento') {
+                            $set('descuento_porcentaje', null);
+                        }
+                    }),
                 Forms\Components\TextInput::make('descuento_porcentaje')
                     ->label('Porcentaje de descuento')
                     ->numeric()
@@ -99,12 +111,17 @@ class ComboResource extends Resource
                     ->minValue(1)
                     ->maxValue(90)
                     ->visible(fn (Forms\Get $get) => $get('tipo_precio') === 'descuento')
+                    // Aunque esté oculto se guarda: así el null que deja el
+                    // cambio de tipo llega a la base y no queda el valor viejo.
+                    ->dehydratedWhenHidden()
                     ->helperText(fn ($record) => $record ? 'Precio sin descuento: $'.number_format($record->precio_calculado, 2, ',', '.') : ''),
                 Forms\Components\TextInput::make('precio_manual')
                     ->numeric()
-                    ->minValue(0)
+                    // 0.01 y no 0: un precio manual de $0 publicaba el combo gratis.
+                    ->minValue(0.01)
                     ->prefix('$')
-                    ->visible(fn (Forms\Get $get) => $get('tipo_precio') === 'manual'),
+                    ->visible(fn (Forms\Get $get) => $get('tipo_precio') === 'manual')
+                    ->dehydratedWhenHidden(),
                 Forms\Components\Placeholder::make('precio_auto')
                     ->label('Precio final')
                     ->content(fn ($record) => $record ? '$'.number_format($record->precio, 2, ',', '.') : 'Guardá el combo para ver el precio'),
@@ -115,6 +132,27 @@ class ComboResource extends Resource
                 // publicado en la web.
                 ->visible(fn () => auth()->user()?->isAdmin() ?? false),
         ]);
+    }
+
+    /**
+     * Deja sólo el precio del modo elegido y borra el del otro. El desplegable
+     * "tipo de precio" no se guarda (es virtual), así que sin esto un combo que
+     * pasó de manual a descuento se quedaba con el precio manual viejo escondido
+     * en la base -- y como le gana al porcentaje, seguía cobrando el de antes.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function limpiarPrecioSegunTipo(array $data, ?string $tipo): array
+    {
+        if ($tipo !== 'manual') {
+            $data['precio_manual'] = null;
+        }
+        if ($tipo !== 'descuento') {
+            $data['descuento_porcentaje'] = null;
+        }
+
+        return $data;
     }
 
     public static function table(Table $table): Table

@@ -406,7 +406,11 @@ class Importador extends Page implements Forms\Contracts\HasForms
             'categoria' => ['categoria', 'categoría', 'category', 'rubro'],
             'unidad' => ['unidad', 'presentacion', 'presentación', 'unit', 'medida'],
             'precio' => ['precio', 'price', 'valor'],
-            'stock' => ['stock', 'cantidad', 'qty'],
+            // Sin "cantidad": es demasiado ambiguo. Una planilla que trae una
+            // columna "Cantidad" (la que se pide, no la que hay en depósito) la
+            // mandaba a stock sola y pisaba el inventario. El Excel que exporta
+            // la app ya llama a esa columna "Cant. a pedir" justamente por esto.
+            'stock' => ['stock', 'qty'],
             'sin_tacc' => ['sin_tacc', 'sin tacc', 'tacc', 'gluten free'],
             'congelado' => ['congelado', 'frozen', 'freezado'],
             'nuevo' => ['nuevo', 'new'],

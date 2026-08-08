@@ -11,4 +11,13 @@ class CreateCombo extends CreateRecord
     use ExigeAccesoAlRecurso;
 
     protected static string $resource = ComboResource::class;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        return ComboResource::limpiarPrecioSegunTipo($data, $this->data['tipo_precio'] ?? null);
+    }
 }

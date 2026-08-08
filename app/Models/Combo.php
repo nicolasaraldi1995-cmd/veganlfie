@@ -73,11 +73,15 @@ class Combo extends Model
 
     public function getPrecioAttribute(): float
     {
-        if ($this->precio_manual) {
+        // !== null y no un truthy check: el cast decimal:2 devuelve el precio
+        // como texto ("0.00"), y (bool) "0.00" es true en PHP, así que un
+        // precio manual en cero publicaba el combo a $0. Vacío es null y cae al
+        // cálculo automático; un número cargado se respeta.
+        if ($this->precio_manual !== null) {
             return (float) $this->precio_manual;
         }
         $calculado = $this->precio_calculado;
-        if ($this->descuento_porcentaje) {
+        if ($this->descuento_porcentaje !== null) {
             return round($calculado * (1 - $this->descuento_porcentaje / 100), 2);
         }
 
