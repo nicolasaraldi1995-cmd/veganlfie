@@ -8,6 +8,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use League\Flysystem\Local\LocalFilesystemAdapter;
@@ -316,19 +317,42 @@ class Importador extends Page implements Forms\Contracts\HasForms
         try {
             $path = $this->rutaLocal();
 
-            // La sincronización va primero: mueve los productos a la marca que
-            // les corresponde, y así la importación de precios los encuentra.
-            if ($this->sincronizar) {
-                $sincronizador = app(SincronizarCatalogo::class);
-                // Si el plan da de baja casi todo, aplicar() lanza y no toca
-                // nada: el catch de abajo muestra el motivo.
-                $this->syncResult = $sincronizador->aplicar($sincronizador->analizar($path, $this->header_row, $this->columnMap));
-            }
+            // Un catálogo grande no entra en el tiempo ni la memoria por defecto
+            // de PHP, y la sincronización recorre cada producto contra cada
+            // nombre de la lista, que es caro.
+            set_time_limit(300);
+            ini_set('memory_limit', '512M');
 
-            $service = new ProductImportService;
-            $this->importResult = $service->import($path, $this->columnMap, $this->header_row, [
-                'actualizar_existentes' => $this->actualizar_existentes,
-            ]);
+            // La sincronización y la importación van juntas, en una sola
+            // transacción. La sincronización mueve los productos a la marca que
+            // les corresponde para que la importación de precios los encuentre;
+            // si un corte las separaba, el catálogo quedaba reorganizado según
+            // la lista nueva pero con los precios viejos, y los productos dados
+            // de baja no volvían. Ahora o pasa todo o no pasa nada.
+            DB::transaction(function () use ($path) {
+                if ($this->sincronizar) {
+                    $sincronizador = app(SincronizarCatalogo::class);
+                    // Si el plan da de baja casi todo, aplicar() lanza y no toca
+                    // nada: el catch de abajo muestra el motivo.
+                    $this->syncResult = $sincronizador->aplicar($sincronizador->analizar($path, $this->header_row, $this->columnMap));
+                }
+
+                $service = new ProductImportService;
+                $this->importResult = $service->import($path, $this->columnMap, $this->header_row, [
+                    'actualizar_existentes' => $this->actualizar_existentes,
+                ]);
+
+                // Un error general de la importación (todo revertido de su lado)
+                // tiene que revertir también la sincronización, o el catálogo
+                // queda movido con los precios sin tocar. Los errores por grupo
+                // (una fila mala) no cuentan: son esperados y no arrastran al resto.
+                foreach ($this->importResult['errores'] as $error) {
+                    if (str_starts_with($error, 'Error general')) {
+                        throw new \RuntimeException($error);
+                    }
+                }
+            });
+
             $this->step = 'result';
             $this->borrarLasViejas();
 
