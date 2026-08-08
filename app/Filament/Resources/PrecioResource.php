@@ -132,6 +132,19 @@ class PrecioResource extends Resource
                         true: fn ($q) => $q->where('precio_costo', '>', 0),
                         false: fn ($q) => $q->where(fn ($s) => $s->whereNull('precio_costo')->orWhere('precio_costo', '<=', 0)),
                     ),
+                // Los que dejaron de seguir a su marca. Hasta el 07/08/2026, abrir
+                // un producto y guardarlo le grababa el porcentaje de la marca
+                // como propio, y a partir de ahí la marca ya no lo movía. El
+                // formulario ya no lo hace, pero los que quedaron marcados hay
+                // que encontrarlos: son éstos.
+                Tables\Filters\TernaryFilter::make('porcentaje_propio')
+                    ->label('Porcentaje propio')
+                    ->trueLabel('Con el suyo (no siguen a la marca)')
+                    ->falseLabel('Siguen a la marca')
+                    ->queries(
+                        true: fn ($q) => $q->where(fn ($s) => $s->whereNotNull('margen_porcentaje')->orWhereNotNull('descuento_porcentaje')),
+                        false: fn ($q) => $q->whereNull('margen_porcentaje')->whereNull('descuento_porcentaje'),
+                    ),
             ])
             // La marca se trae de entrada: sin esto, las dos columnas que
             // muestran el valor heredado piden producto y marca fila por fila.
@@ -158,7 +171,51 @@ class PrecioResource extends Resource
                     ->modalSubmitActionLabel('Aplicar')
                     ->action(fn ($records, array $data) => self::aumentar($records, (float) $data['porcentaje']))
                     ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('seguir_a_la_marca')
+                    ->label('Volver a seguir a la marca')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading('Volver a seguir a la marca')
+                    ->modalDescription('Les borra el margen y el descuento propios, así vuelven a usar los de su marca. El precio de venta se rehace con esos valores en los que tengan costo cargado.')
+                    ->modalSubmitActionLabel('Volver a seguir a la marca')
+                    ->action(fn ($records) => self::volverASeguirALaMarca($records))
+                    ->deselectRecordsAfterCompletion(),
             ]);
+    }
+
+    /**
+     * Les saca el porcentaje propio para que vuelvan a tomar el de su marca.
+     *
+     * Hasta el 07/08/2026 el formulario de producto grababa el porcentaje de la
+     * marca dentro del producto: cada uno que se abrió y se guardó quedó con una
+     * foto del número de ese momento y dejó de seguir a la marca para siempre.
+     * El formulario ya no lo hace; esto limpia los que quedaron marcados.
+     *
+     * @param  iterable<Presentacion>  $records
+     */
+    private static function volverASeguirALaMarca(iterable $records): void
+    {
+        $sueltas = 0;
+
+        foreach ($records as $presentacion) {
+            if ($presentacion->margen_porcentaje === null && $presentacion->descuento_porcentaje === null) {
+                continue;
+            }
+
+            $presentacion->margen_porcentaje = null;
+            $presentacion->descuento_porcentaje = null;
+
+            // Sin precio de repuesto: si no se puede calcular queda el que tenía.
+            self::rehacerElPrecio($presentacion);
+            $sueltas++;
+        }
+
+        Notification::make()
+            ->title($sueltas === 1 ? '1 producto volvió a seguir a su marca' : "{$sueltas} productos volvieron a seguir a su marca")
+            ->body($sueltas === 0 ? 'Los que elegiste ya seguían a su marca.' : null)
+            ->success()
+            ->send();
     }
 
     /**
