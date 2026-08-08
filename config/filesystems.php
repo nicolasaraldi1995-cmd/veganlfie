@@ -33,7 +33,13 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Sin servirse por HTTP: acá vive la carpeta imports con las listas
+            // del proveedor y sus costos, y el importador las lee del disco, no
+            // por URL. Con 'serve' => true Laravel registraba /storage/{path}
+            // para este disco, y esa ruta sólo exige URL firmada en producción;
+            // si APP_ENV no era exactamente "production" en el servidor, las
+            // listas se bajaban sin estar logueado.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

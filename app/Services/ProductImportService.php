@@ -89,7 +89,12 @@ class ProductImportService
 
         DB::beginTransaction();
         try {
-            $grouped = $mapped->groupBy(fn ($row) => mb_strtolower(trim($row['nombre'] ?? '')).'|||'.mb_strtolower(trim($row['marca'] ?? '')));
+            // normalizar() (minúsculas y sin acentos), la misma clave que usa
+            // claveProducto para buscar el producto en la base. Antes esto
+            // agrupaba con mb_strtolower a secas: "Café" y "Cafe" caían en dos
+            // grupos que después apuntaban al mismo producto, así que los dos lo
+            // actualizaban, el último ganaba, y se contaba dos veces.
+            $grouped = $mapped->groupBy(fn ($row) => $this->normalizar((string) ($row['nombre'] ?? '')).'|||'.$this->normalizar((string) ($row['marca'] ?? '')));
 
             foreach ($grouped as $key => $presentaciones) {
                 $first = $presentaciones->first();
