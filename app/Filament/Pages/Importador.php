@@ -314,6 +314,15 @@ class Importador extends Page implements Forms\Contracts\HasForms
 
     public function runImport(): void
     {
+        // No se importa sin haber previsualizado: es lo que confirma que el
+        // mapeo de columnas y la fila de encabezados están bien antes de tocar
+        // los precios de todo el catálogo.
+        if ($this->step !== 'preview') {
+            Notification::make()->title('Primero previsualizá el archivo')->warning()->send();
+
+            return;
+        }
+
         try {
             $path = $this->rutaLocal();
 

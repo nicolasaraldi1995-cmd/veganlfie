@@ -31,9 +31,28 @@ class Marca extends Model
     {
         static::creating(function (Marca $marca) {
             if (empty($marca->slug)) {
-                $marca->slug = Str::slug($marca->nombre);
+                $marca->slug = static::generarSlugUnico(Str::slug($marca->nombre));
             }
         });
+    }
+
+    /**
+     * Un slug que no choque con el índice único. Dos nombres distintos pueden
+     * dar el mismo slug ("Café" y "Cafe" → "cafe"): sin esto, crear la segunda
+     * marca reventaba, y adentro de la sincronización eso revertía todo y
+     * abortaba la importación de precios antes de tocar nada.
+     */
+    protected static function generarSlugUnico(string $base): string
+    {
+        $slug = $base;
+        $sufijo = 2;
+
+        while (static::withTrashed()->where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$sufijo}";
+            $sufijo++;
+        }
+
+        return $slug;
     }
 
     /**

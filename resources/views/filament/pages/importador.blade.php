@@ -168,7 +168,7 @@
                 <p class="text-xs text-gray-400 mt-2">Mostrando primeras 20 filas de {{ $previewData['total_filas'] ?? 0 }}</p>
 
                 <div class="mt-4 flex gap-2">
-                    <x-filament::button wire:click="runImport" icon="heroicon-o-arrow-down-tray" color="success">
+                    <x-filament::button wire:click="runImport" wire:confirm="Esto reescribe los precios de todo el catálogo con este archivo. ¿Seguir?" icon="heroicon-o-arrow-down-tray" color="success">
                         Importar todo
                     </x-filament::button>
                     <x-filament::button wire:click="$set('step', 'map')" color="gray" icon="heroicon-o-arrow-left">

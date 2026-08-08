@@ -15,6 +15,15 @@ class BackupDatabase extends Command
 
     public function handle(): int
     {
+        // Con --keep=0 (o --keep=abc, que castea a 0) se borraban TODOS los
+        // backups, incluido el que se acaba de crear. Un piso de 1 evita
+        // quedarse sin ninguna copia por un dedazo.
+        if ((int) $this->option('keep') < 1) {
+            $this->error('--keep tiene que ser al menos 1: con 0 borrarías todos los backups.');
+
+            return self::FAILURE;
+        }
+
         $connectionName = config('database.default');
         $config = config("database.connections.{$connectionName}");
 
