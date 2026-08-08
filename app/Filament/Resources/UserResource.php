@@ -49,7 +49,15 @@ class UserResource extends Resource
                     'operador' => 'Operador',
                     'cliente' => 'Cliente',
                 ])
-                ->required(),
+                ->required()
+                // No podés cambiarte el rol a vos mismo. Alcanzaba con abrir la
+                // propia ficha para corregir el teléfono y tocar el desplegable
+                // sin querer: quedabas como operador y perdías el acceso al
+                // panel de costos, caja y clientes, sin forma de volver desde la
+                // app (no existe un comando que asigne roles... hasta ahora).
+                ->disabled(fn (?User $record) => $record?->id === auth()->id())
+                ->dehydrated()
+                ->helperText(fn (?User $record) => $record?->id === auth()->id() ? 'No podés cambiar tu propio rol.' : null),
             // Sin mínimo, el formulario aceptaba una contraseña de un carácter
             // para una cuenta que ve costos, márgenes y la caja.
             Forms\Components\TextInput::make('password')
@@ -142,11 +150,29 @@ class UserResource extends Resource
                 // Sólo el icono, para que la tabla entre sin barra lateral. El
                 // nombre de cada botón sigue estando en el globito.
                 Tables\Actions\EditAction::make()->iconButton(),
-                Tables\Actions\DeleteAction::make()->iconButton(),
+                // No podés borrarte a vos mismo: si sos el único admin, te
+                // quedabas sin cuenta y sin panel, y sólo se recuperaba tocando
+                // la base a mano.
+                Tables\Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->visible(fn (User $record) => $record->id !== auth()->id()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        // El borrado en lote no toca administradores: sin esto,
+                        // seleccionar todo se llevaba puestos a todos los admins
+                        // de una.
+                        ->before(function ($records, Tables\Actions\DeleteBulkAction $action) {
+                            if ($records->contains(fn (User $u) => $u->role === 'admin')) {
+                                Notification::make()
+                                    ->danger()
+                                    ->title('No se puede')
+                                    ->body('Hay administradores en la selección. Sacalos y volvé a intentar.')
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
                 ]),
             ]);
     }

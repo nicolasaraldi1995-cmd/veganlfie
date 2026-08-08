@@ -118,6 +118,11 @@ class OfertasMasivas extends Page implements Forms\Contracts\HasForms
 
         $count = $query->update([
             'oferta_porcentaje' => $this->porcentaje,
+            // Se limpia el precio de oferta fijo: si una presentación tenía uno
+            // cargado a mano, le ganaba al porcentaje (getPrecioFinalAttribute
+            // mira oferta_precio primero) y quedaba con la rebaja vieja. Así el
+            // porcentaje nuevo manda parejo en toda la selección.
+            'oferta_precio' => null,
             'oferta_inicio' => $this->fecha_inicio,
             'oferta_fin' => $this->fecha_fin,
         ]);
