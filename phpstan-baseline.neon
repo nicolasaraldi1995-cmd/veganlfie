@@ -7,36 +7,6 @@ parameters:
 			path: app/Console/Commands/BackupDatabase.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$fecha\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Pages/ResumenCuenta.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$metodo\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Filament/Pages/ResumenCuenta.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$monto\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Pages/ResumenCuenta.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$notas\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Filament/Pages/ResumenCuenta.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Filament/Pages/ResumenCuenta.php
-
-		-
 			message: '#^Offset ''comisionista''\|''logistica''\|''otro''\|''proveedor'' on array\{comisionista\: ''Comisionista'', proveedor\: ''Proveedor'', logistica\: ''Logística'', otro\: ''Otro''\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
@@ -235,12 +205,6 @@ parameters:
 			path: app/Http/Controllers/OfertasController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cantidad\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PedidoClienteController.php
-
-		-
 			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\:\:activos\(\)\.$#'
 			identifier: method.notFound
 			count: 2
@@ -293,18 +257,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Models/Combo.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$cantidad\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Pedido.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$presentacion_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Pedido.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>nombre" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

@@ -247,7 +247,7 @@ class ResumenCuenta extends Page implements Forms\Contracts\HasForms, HasActions
                 'pagos' => $p->pagos->map(fn ($pg) => [
                     'fecha' => $pg->fecha->format('d/m/Y'),
                     'monto' => (float) $pg->monto,
-                    'metodo' => Pago::METODOS[$pg->metodo] ?? $pg->metodo,
+                    'metodo' => Pago::METODOS[$pg->metodo],
                     'notas' => $pg->notas,
                 ])->toArray(),
             ])->toArray(),

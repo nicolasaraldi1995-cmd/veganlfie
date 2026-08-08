@@ -67,12 +67,15 @@ class PedidoClienteController extends Controller
                 if ($request->cantidad <= 0) {
                     $item?->delete();
                 } elseif ($item) {
-                    $presentacion = Presentacion::find($request->presentacion_id);
-                    $precio = $presentacion->precio_final;
+                    // No se reprecifica: el pedido se tomó a este precio y ese
+                    // número es un hecho. Antes se reponía el precio de HOY, así
+                    // que el cliente podía esperar a que bajara o entrara una
+                    // oferta y reprecificar su propio pedido para abajo con un
+                    // PATCH. Sólo cambia la cantidad; el subtotal se recalcula
+                    // sobre el precio que ya tenía el renglón.
                     $item->update([
                         'cantidad' => $request->cantidad,
-                        'precio_unitario' => $precio,
-                        'subtotal' => round($precio * $request->cantidad, 2),
+                        'subtotal' => round((float) $item->precio_unitario * $request->cantidad, 2),
                     ]);
                 }
 
@@ -97,9 +100,19 @@ class PedidoClienteController extends Controller
             'cantidad' => 'required|integer|min:1|max:9999',
         ]);
 
+        // El mismo corte que el carrito y la ficha (Presentacion::scopeActivos):
+        // producto publicado, presentación activa y con precio. exists no lo
+        // mira, así que con un POST directo entraba cualquier presentación de la
+        // base -- una apagada, una de un producto de baja, o una a $0, que se
+        // pedía gratis.
+        $presentacion = Presentacion::activos()->find($request->presentacion_id);
+
+        if (! $presentacion) {
+            return back()->withErrors(['presentacion_id' => 'Ese producto ya no está disponible.']);
+        }
+
         try {
-            DB::transaction(function () use ($request, $pedido) {
-                $presentacion = Presentacion::findOrFail($request->presentacion_id);
+            DB::transaction(function () use ($request, $pedido, $presentacion) {
                 $precio = $presentacion->precio_final;
 
                 $existing = $pedido->items()->where('presentacion_id', $request->presentacion_id)->first();
