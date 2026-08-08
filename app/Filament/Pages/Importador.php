@@ -333,10 +333,26 @@ class Importador extends Page implements Forms\Contracts\HasForms
             $this->borrarLasViejas();
 
             $total = $this->importResult['productos_creados'] + $this->importResult['productos_actualizados'];
-            Notification::make()
-                ->title("Importación completada: {$total} productos procesados")
-                ->success()
-                ->send();
+            $errores = $this->importResult['errores'] ?? [];
+
+            // Con errores no se muestra un verde: el aviso rojo evita que el
+            // dueño crea que actualizó los precios cuando en realidad falló y no
+            // se cambió nada. Los detalles quedan en la pantalla de resultado.
+            if ($errores !== []) {
+                Notification::make()
+                    ->title($total > 0
+                        ? "Importación con problemas: {$total} procesados, ".count($errores).' con error'
+                        : 'La importación falló y no se cambió nada')
+                    ->body('Revisá el detalle abajo.')
+                    ->danger()
+                    ->persistent()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title("Importación completada: {$total} productos procesados")
+                    ->success()
+                    ->send();
+            }
         } catch (\Throwable $e) {
             $this->avisarDelError('Error en la importación', $e);
         }

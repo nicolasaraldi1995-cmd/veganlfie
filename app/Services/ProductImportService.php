@@ -97,12 +97,20 @@ class ProductImportService
                     continue;
                 }
 
+                // Los contadores de antes del grupo, para poder volver a ellos
+                // si el grupo falla: el producto se cuenta antes de cargar sus
+                // presentaciones, así que un precio inválido en una de ellas
+                // revertía la base (savepoint) pero dejaba el contador diciendo
+                // "1 producto creado" que no existe.
+                $contadoresPrevios = $this->stats;
+
                 try {
                     // Transacción anidada (savepoint): si falla algo a mitad del grupo
                     // (ej. un precio inválido en una de sus presentaciones), se revierte
                     // solo lo de este producto en vez de dejarlo huérfano sin presentaciones.
                     DB::transaction(fn () => $this->importProductGroup($first, $presentaciones, $options, $columnMap));
                 } catch (\Throwable $e) {
+                    $this->stats = $contadoresPrevios;
                     $this->stats['errores'][] = "Error en '{$first['nombre']}': {$e->getMessage()}";
                     $this->stats['filas_saltadas'] += $presentaciones->count();
                 }
@@ -111,6 +119,15 @@ class ProductImportService
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+
+            // Se deshizo todo: los contadores que se venían sumando dentro del
+            // bucle ya no cuentan nada. Sin esto, import() devolvía
+            // "1879 actualizados" junto al error, y el Importador mostraba un
+            // aviso VERDE de éxito sobre una base que quedó igual que antes.
+            foreach (['marcas_creadas', 'categorias_creadas', 'productos_creados', 'productos_actualizados', 'presentaciones_creadas', 'presentaciones_actualizadas', 'presentaciones_sin_precio'] as $contador) {
+                $this->stats[$contador] = 0;
+            }
+
             $this->stats['errores'][] = "Error general: {$e->getMessage()}";
         }
 
