@@ -48,4 +48,28 @@ class ActualizarPreciosTest extends TestCase
 
         $this->assertEquals(1100, $presentacion->fresh()->precio);
     }
+
+    /** Toda la marca se mueve junta, aunque tenga varias presentaciones. */
+    public function test_mueve_todas_las_presentaciones_de_la_marca(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $marca = Marca::factory()->create();
+
+        $precios = collect(range(1, 5))->map(function ($i) use ($marca) {
+            $producto = Producto::factory()->create(['marca_id' => $marca->id]);
+
+            return Presentacion::factory()->create(['producto_id' => $producto->id, 'precio' => 1000 * $i]);
+        });
+
+        Livewire::actingAs($admin)
+            ->test(ActualizarPrecios::class)
+            ->set('marca_id', $marca->id)
+            ->set('porcentaje', 20)
+            ->call('aplicarAumento')
+            ->assertHasNoErrors();
+
+        foreach ($precios as $i => $p) {
+            $this->assertEquals(1000 * ($i + 1) * 1.20, $p->fresh()->precio);
+        }
+    }
 }

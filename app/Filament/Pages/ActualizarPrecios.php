@@ -8,6 +8,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\DB;
 
 class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
 {
@@ -96,12 +97,27 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
 
         $factor = 1 + $this->porcentaje / 100;
 
-        $presentaciones = Presentacion::whereHas('producto', fn ($q) => $q->where('marca_id', $this->marca_id))->get();
+        // Una marca grande no entra en el tiempo por defecto de PHP: el
+        // comentario del importador ya deja constancia de que un corte a mitad
+        // de un guardado por fila pasó de verdad.
+        set_time_limit(120);
 
-        foreach ($presentaciones as $p) {
-            $p->precio = round($p->precio * $factor, 2);
-            $p->save();
-        }
+        // Todo o nada. Sin la transacción, un corte a la mitad dejaba media
+        // marca al +15% y el resto no; el admin no veía el aviso de éxito,
+        // volvía a apretar "Aplicar" y las primeras recibían el aumento por
+        // segunda vez (+32,25% acumulado), sin forma de distinguirlas después.
+        // chunkById para no traer miles de modelos a memoria de una.
+        $cuantas = 0;
+        DB::transaction(function () use ($factor, &$cuantas) {
+            Presentacion::whereHas('producto', fn ($q) => $q->where('marca_id', $this->marca_id))
+                ->chunkById(200, function ($presentaciones) use ($factor, &$cuantas) {
+                    foreach ($presentaciones as $p) {
+                        $p->precio = round($p->precio * $factor, 2);
+                        $p->saveQuietly();
+                        $cuantas++;
+                    }
+                });
+        });
 
         $marca = Marca::find($this->marca_id);
 
@@ -111,7 +127,7 @@ class ActualizarPrecios extends Page implements Forms\Contracts\HasForms
         $signo = $this->porcentaje >= 0 ? '+' : '';
 
         Notification::make()
-            ->title("Precios actualizados: {$signo}{$this->porcentaje}% en {$marca->nombre} ({$presentaciones->count()} presentaciones)")
+            ->title("Precios actualizados: {$signo}{$this->porcentaje}% en {$marca->nombre} ({$cuantas} presentaciones)")
             ->success()
             ->send();
     }
